@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="pop">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>横浜グルメマップ</title>
+  <!-- Google Fonts & FontAwesome Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Leaflet.js CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    /* UIテーマ定義 */
+    :root[data-theme="pop"] {
+      --bg-color: #FFF8E7;
+      --panel-bg: #FFFFFF;
+      --text-color: #2D3748;
+      --primary: #FF6B6B;
+      --primary-hover: #EE5253;
+      --accent: #FFD166;
+      --border-color: #FFE3E3;
+      --shadow: 0 8px 20px rgba(255, 107, 107, 0.15);
+      --radius: 16px;
+      --font-family: 'M PLUS Rounded 1c', sans-serif;
+      
+      /* ボタン色（視認性重視・目が疲れない配色） */
+      --btn-fav-add: #F1C40F;
+      --btn-fav-remove: #E67E22;
+      --btn-edit: #3498DB;
+      --btn-origin: #9B59B6;
+    }
+
+    :root[data-theme="simple"] {
+      --bg-color: #F7FAFC;
+      --panel-bg: #FFFFFF;
+      --text-color: #1A202C;
+      --primary: #319795;
+      --primary-hover: #2C7A7B;
+      --accent: #E6FFFA;
+      --border-color: #E2E8F0;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      --radius: 8px;
+      --font-family: 'Noto Sans JP', sans-serif;
+
+      --btn-fav-add: #D4AC0D;
+      --btn-fav-remove: #CA6F1E;
+      --btn-edit: #2980B9;
+      --btn-origin: #8E44AD;
+    }
+
+    :root[data-theme="dark"] {
+      --bg-color: #1A202C;
+      --panel-bg: #2D3748;
+      --text-color: #EDF2F7;
+      --primary: #ED8936;
+      --primary-hover: #DD6B20;
+      --accent: #2C7A7B;
+      --border-color: #4A5568;
+      --shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+      --radius: 12px;
+      --font-family: 'Noto Sans JP', sans-serif;
+
+      --btn-fav-add: #D4AC0D;
+      --btn-fav-remove: #E67E22;
+      --btn-edit: #2980B9;
+      --btn-origin: #8E44AD;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-family);
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      background-color: var(--panel-bg);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow);
+      z-index: 1000;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    select, button, input, textarea {
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      border: 2px solid var(--border-color);
+      background-color: var(--panel-bg);
+      color: var(--text-color);
+      font-weight: bold;
+      outline: none;
+    }
+
+    button { cursor: pointer; border: none; }
+    button.btn-primary { background-color: var(--primary); color: #FFF; }
+    button.btn-primary:hover { background-color: var(--primary-hover); }
+    button.btn-danger { background-color: #E53E3E; color: #FFF; }
+
+    /* 視認性向上のためのカラーボタン */
+    button.btn-fav-add { background-color: var(--btn-fav-add); color: #FFF; }
+    button.btn-fav-remove { background-color: var(--btn-fav-remove); color: #FFF; }
+    button.btn-edit { background-color: var(--btn-edit); color: #FFF; }
+    button.btn-origin { background-color: var(--btn-origin); color: #FFF; }
+
+    .main-container {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 60px);
+      position: relative;
+    }
+
+    .filter-panel {
+      width: 340px;
+      background-color: var(--panel-bg);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: var(--shadow);
+      z-index: 500;
+      overflow-y: auto;
+      border-right: 2px solid var(--border-color);
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .filter-group label {
+      font-size: 0.85rem;
+      font-weight: bold;
+      opacity: 0.8;
+    }
+
+    .filter-group select, .filter-group input { width: 100%; }
+
+    #map { flex: 1; height: 100%; width: 100%; z-index: 1; }
+
+    /* モーダル */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+    .modal-content {
+      background-color: var(--panel-bg);
+      padding: 24px;
+      border-radius: var(--radius);
+      width: 90%;
+      max-width: 520px;
+      box-shadow: var(--shadow);
+      position: relative;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: var(--text-color);
+    }
+
+    .modal-title { font-size: 1.5rem; font-weight: 900; color: var(--primary); }
+    .modal-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+    .tag { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; background-color: var(--accent); font-weight: bold; }
+
+    .modal-body { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+    .modal-body p { font-size: 0.9rem; line-height: 1.4; }
+    .modal-body a { color: var(--primary); word-break: break-all; }
+
+    .modal-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .modal-actions button { flex: 1 1 calc(50% - 8px); display: flex; align-items: center; justify-content: center; gap: 6px; }
+
+    .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    .form-group label { font-size: 0.85rem; font-weight: bold; }
+    .form-row { display: flex; gap: 8px; }
+    .form-row .form-group { flex: 1; }
+    
+    .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+    .checkbox-group label { font-size: 0.85rem; font-weight: normal; cursor: pointer; }
+
+    @media (max-width: 768px) {
+      .main-container { flex-direction: column-reverse; }
+      .filter-panel { width: 100%; height: 260px; }
+      #map { height: calc(100% - 260px); }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1><i class="fa-solid fa-utensils"></i> 横浜グルメマップ</h1>
+    <div class="header-controls">
+      <select id="themeSelect" onchange="changeTheme(this.value)">
+        <option value="pop">🎉 ポップ</option>
+        <option value="simple">🌿 シンプル</option>
+        <option value="dark">🌙 ダーク</option>
+      </select>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <div class="filter-panel">
+      <!-- アクションボタン -->
+      <div class="filter-group">
+        <button class="btn-primary" onclick="openFormModal()">
+          <i class="fa-solid fa-plus"></i> 新しい店舗を追加
+        </button>
+      </div>
+
+      <!-- 原点合わせボタン・登録 -->
+      <div class="filter-group">
+        <label>原点マーキング（複数登録可）</label>
+        <select id="originSelect" onchange="moveToOrigin(this.value)">
+          <option value="">原点へ移動...</option>
+        </select>
+        <button class="btn-origin" onclick="openOriginModal()" style="margin-top: 4px;">
+          <i class="fa-solid fa-location-dot"></i> 新しい原点を登録
+        </button>
+      </div>
+
+      <div class="filter-group">
+        <button onclick="getCurrentLocation()">
+          <i class="fa-solid fa-location-crosshairs"></i> 現在地を取得
+        </button>
+      </div>
+
+      <div class="filter-group">
+        <label for="categorySelect">ジャンルで絞り込み</label>
+        <select id="categorySelect" onchange="applyFilters()">
+          <option value="all">すべてのジャンル</option>
+          <option value="和食">和食</option>
+          <option value="洋食">洋食</option>
+          <option value="中華">中華</option>
+          <option value="韓国">韓国</option>
+          <option value="アジアン">アジアン</option>
+          <option value="南国">南国</option>
+          <option value="麺類">麺類</option>
+          <option value="肉類">肉類</option>
+          <option value="寿司">寿司</option>
+          <option value="パン類">パン類</option>
+          <option value="喫茶店">喫茶店</option>
+          <option value="レストラン">レストラン</option>
+          <option value="居酒屋">居酒屋</option>
+          <option value="バー">バー</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="budgetSelect">予算で絞り込み</label>
+        <select id="budgetSelect" onchange="applyFilters()">
+          <option value="all">すべての予算</option>
+          <option value="1000円以内">1000円以内</option>
+          <option value="1000-3000円以内">1000-3000円以内</option>
+          <option value="3000-5000円以内">3000-5000円以内</option>
+          <option value="5000-7000円以内">5000-7000円以内</option>
+          <option value="7000-10000円以内">7000-10000円以内</option>
+          <option value="10000万円以上">10000万円以上</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>
+          <input type="checkbox" id="favoriteOnly" onchange="applyFilters()"> お気に入りのみ表示
+        </label>
+      </div>
+    </div>
+
+    <div id="map"></div>
+  </div>
+
+  <!-- 店舗詳細モーダル -->
+  <div class="modal-overlay" id="shopModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('shopModal')"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalName">店舗名</h2>
+        <div class="modal-tags" id="modalTags"></div>
+      </div>
+      <div class="modal-body">
+        <p><strong><i class="fa-solid fa-coins"></i> 予算:</strong> <span id="modalBudget">-</span></p>
+        <p><strong><i class="fa-solid fa-phone"></i> 連絡先:</strong> <span id="modalTel">-</span></p>
+        <p><strong><i class="fa-solid fa-link"></i> リンク:</strong></p>
+        <div id="modalLinks" style="display:flex; flex-direction:column; gap:4px; padding-left:10px;"></div>
+        <p style="margin-top: 8px;"><strong><i class="fa-solid fa-note-sticky"></i> 備考:</strong></p>
+        <p id="modalMemo" style="white-space: pre-wrap; background:#f0f0f0; padding:8px; border-radius:6px; color:#333;"></p>
+      </div>
+      <div class="modal-actions">
+        <button id="favBtn" onclick="toggleFavorite()"></button>
+        <button class="btn-primary" onclick="shareShop()"><i class="fa-solid fa-share-nodes"></i> 共有</button>
+        <button class="btn-edit" onclick="editCurrentShop()"><i class="fa-solid fa-pen-to-square"></i> 編集</button>
+        <button class="btn-danger" onclick="deleteCurrentShop()"><i class="fa-solid fa-trash"></i> 削除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 店舗登録・編集モーダル -->
+  <div class="modal-overlay" id="formModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('formModal')"><i class="fa-solid fa-xmark"></i></button>
+      <h2 class="modal-title" id="formTitle" style="margin-bottom: 16px;">店舗情報の登録</h2>
+      <form id="shopForm" onsubmit="saveShop(event)">
+        <input type="hidden" id="editShopId">
+        
+        <div class="form-group">
+          <label for="formName">店舗名 *</label>
+          <input type="text" id="formName" required placeholder="例: 横浜ダイニング">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="formCategory">ジャンル *</label>
+            <select id="formCategory" required>
+              <option value="和食">和食</option><option value="洋食">洋食</option><option value="中華">中華</option>
+              <option value="韓国">韓国</option><option value="アジアン">アジアン</option><option value="南国">南国</option>
+              <option value="麺類">麺類</option><option value="肉類">肉類</option><option value="寿司">寿司</option>
+              <option value="パン類">パン類</option><option value="喫茶店">喫茶店</option><option value="レストラン">レストラン</option>
+              <option value="居酒屋">居酒屋</option><option value="バー">バー</option><option value="その他">その他</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="formBudget">予算 *</label>
+            <select id="formBudget" required>
+              <option value="1000円以内">1000円以内</option>
+              <option value="1000-3000円以内">1000-3000円以内</option>
+              <option value="3000-5000円以内">3000-5000円以内</option>
+              <option value="5000-7000円以内">5000-7000円以内</option>
+              <option value="7000-10000円以内">7000-10000円以内</option>
+              <option value="10000万円以上">10000万円以上</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>特徴（複数選択可）</label>
+          <div class="checkbox-group">
+            <label><input type="checkbox" name="formFeatures" value="貸切"> 貸切</label>
+            <label><input type="checkbox" name="formFeatures" value="コース"> コース</label>
+            <label><input type="checkbox" name="formFeatures" value="飲み放題"> 飲み放題</label>
+            <label><input type="checkbox" name="formFeatures" value="食べ放題"> 食べ放題</label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="formTel">連絡先 (電話番号)</label>
+          <input type="tel" id="formTel" placeholder="045-000-0000">
+        </div>
+
+        <div class="form-group">
+          <label for="formOfficialUrl">公式URL</label>
+          <input type="url" id="formOfficialUrl" placeholder="https://...">
+        </div>
+        <div class="form-group">
+          <label for="formTabelogUrl">食べログURL</label>
+          <input type="url" id="formTabelogUrl" placeholder="https://tabelog.com/...">
+        </div>
+        <div class="form-group">
+          <label for="formHotpepperUrl">ホットペッパーURL</label>
+          <input type="url" id="formHotpepperUrl" placeholder="https://www.hotpepper.jp/...">
+        </div>
+        <div class="form-group">
+          <label for="formOtherUrl">その他サイトURL</label>
+          <input type="url" id="formOtherUrl" placeholder="https://...">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="formLat">緯度 *</label>
+            <input type="number" step="any" id="formLat" required>
+          </div>
+          <div class="form-group">
+            <label for="formLng">経度 *</label>
+            <input type="number" step="any" id="formLng" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="formMemo">備考 (自由記述)</label>
+          <textarea id="formMemo" rows="3" placeholder="メモや詳細情報を入力..."></textarea>
+        </div>
+
+        <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;">保存する</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 原点追加モーダル -->
+  <div class="modal-overlay" id="originModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('originModal')"><i class="fa-solid fa-xmark"></i></button>
+      <h2 class="modal-title" style="margin-bottom: 16px;">原点の登録</h2>
+      <form onsubmit="saveOrigin(event)">
+        <div class="form-group">
+          <label for="originName">原点名 *</label>
+          <input type="text" id="originName" required placeholder="例: 自宅, 会社, 横浜駅">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="originLat">緯度 *</label>
+            <input type="number" step="any" id="originLat" required>
+          </div>
+          <div class="form-group">
+            <label for="originLng">経度 *</label>
+            <input type="number" step="any" id="originLng" required>
+          </div>
+        </div>
+        <button type="submit" class="btn-origin" style="width: 100%; margin-top: 10px; padding: 12px;">原点を保存</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Leaflet.js JavaScript -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // 段階別ピンカラー定義（段階式）
+    const BUDGET_COLORS = {
+      "1000円以内": "#2ECC71",       // 緑
+      "1000-3000円以内": "#3498DB",  // 青
+      "3000-5000円以内": "#F1C40F",  // 黄
+      "5000-7000円以内": "#E67E22",  // オレンジ
+      "7000-10000円以内": "#E74C3C", // 赤
+      "10000万円以上": "#9B59B6"     // 紫
+    };
+
+    const defaultShopData = [
+      {
+        id: "shop_001",
+        name: "サンプル家系ラーメン",
+        category: "麺類",
+        budget: "1000円以内",
+        features: ["コース"],
+        tel: "045-123-4567",
+        officialUrl: "",
+        tabelogUrl: "https://tabelog.com",
+        hotpepperUrl: "",
+        otherUrl: "",
+        lat: 35.4644, lng: 139.6168,
+        memo: "横浜駅近くの人気のラーメン店。"
+      }
+    ];
+
+    let shopData = JSON.parse(localStorage.getItem('yokohama_shops')) || defaultShopData;
+    let originData = JSON.parse(localStorage.getItem('yokohama_origins')) || [
+      { id: "org_1", name: "横浜駅", lat: 35.4658, lng: 139.6223 }
+    ];
+    let map;
+    let markersLayer = L.layerGroup();
+    let originMarkersLayer = L.layerGroup();
+    let userLocation = null;
+    let selectedShop = null;
+    let favorites = JSON.parse(localStorage.getItem('yokohama_favs') || '[]');
+
+    function saveShopsToStorage() { localStorage.setItem('yokohama_shops', JSON.stringify(shopData)); }
+    function saveOriginsToStorage() { localStorage.setItem('yokohama_origins', JSON.stringify(originData)); }
+
+    function initMap() {
+      map = L.map('map').setView([35.4658, 139.6223], 14);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
+
+      markersLayer.addTo(map);
+      originMarkersLayer.addTo(map);
+
+      renderMarkers(shopData);
+      renderOriginMarkers();
+      updateOriginSelectOptions();
+    }
+
+    // 段階式ピンカラーの適用
+    function createCustomIcon(budget, isFav) {
+      const displayColor = isFav ? "#F39C12" : (BUDGET_COLORS[budget] || "#95A5A6");
+      const html = `<div style="
+        background-color: ${displayColor};
+        width: 24px;
+        height: 24px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        border: 2px solid #FFF;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      "></div>`;
+
+      return L.divIcon({ className: 'custom-pin', html: html, iconSize: [24, 24], iconAnchor: [12, 24] });
+    }
+
+    function renderMarkers(data) {
+      markersLayer.clearLayers();
+      data.forEach(shop => {
+        const isFav = favorites.includes(shop.id);
+        const icon = createCustomIcon(shop.budget, isFav);
+        const marker = L.marker([shop.lat, shop.lng], { icon: icon });
+        marker.on('click', () => openModal(shop));
+        markersLayer.addLayer(marker);
+      });
+    }
+
+    /* 原点マーキング関連 */
+    function renderOriginMarkers() {
+      originMarkersLayer.clearLayers();
+      originData.forEach(org => {
+        const icon = L.divIcon({
+          className: 'origin-pin',
+          html: `<div style="background:#9B59B6; color:#FFF; padding:4px 8px; border-radius:12px; font-weight:bold; font-size:11px; border:2px solid #FFF; white-space:nowrap;"><i class="fa-solid fa-flag"></i> ${org.name}</div>`,
+          iconSize: [80, 20]
+        });
+        const marker = L.marker([org.lat, org.lng], { icon: icon });
+        originMarkersLayer.addLayer(marker);
+      });
+    }
+
+    function updateOriginSelectOptions() {
+      const select = document.getElementById("originSelect");
+      select.innerHTML = '<option value="">原点へ移動...</option>';
+      originData.forEach(org => {
+        const opt = document.createElement("option");
+        opt.value = org.id;
+        opt.textContent = org.name;
+        select.appendChild(opt);
+      });
+    }
+
+    function moveToOrigin(id) {
+      if (!id) return;
+      const target = originData.find(o => o.id === id);
+      if (target) {
+        map.setView([target.lat, target.lng], 15);
+      }
+    }
+
+    function openOriginModal() {
+      document.getElementById("originLat").value = userLocation ? userLocation.lat : 35.4658;
+      document.getElementById("originLng").value = userLocation ? userLocation.lng : 139.6223;
+      document.getElementById("originModal").classList.add("active");
+    }
+
+    function saveOrigin(e) {
+      e.preventDefault();
+      const newOrigin = {
+        id: "org_" + Date.now(),
+        name: document.getElementById("originName").value,
+        lat: parseFloat(document.getElementById("originLat").value),
+        lng: parseFloat(document.getElementById("originLng").value)
+      };
+      originData.push(newOrigin);
+      saveOriginsToStorage();
+      renderOriginMarkers();
+      updateOriginSelectOptions();
+      closeModal('originModal');
+    }
+
+    function applyFilters() {
+      const category = document.getElementById("categorySelect").value;
+      const budget = document.getElementById("budgetSelect").value;
+      const favOnly = document.getElementById("favoriteOnly").checked;
+
+      const filtered = shopData.filter(shop => {
+        if (category !== "all" && shop.category !== category) return false;
+        if (budget !== "all" && shop.budget !== budget) return false;
+        if (favOnly && !favorites.includes(shop.id)) return false;
+        return true;
+      });
+
+      renderMarkers(filtered);
+    }
+
+    function getCurrentLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            map.setView([userLocation.lat, userLocation.lng], 15);
+            alert("現在地を取得しました！");
+          },
+          () => alert("現在地の取得に失敗しました。")
+        );
+      }
+    }
+
+    /* モーダル表示 */
+    function openModal(shop) {
+      selectedShop = shop;
+      document.getElementById("modalName").innerText = shop.name;
+      
+      const tagsContainer = document.getElementById("modalTags");
+      tagsContainer.innerHTML = `<span class="tag">${shop.category}</span>`;
+      if (shop.features) {
+        shop.features.forEach(f => tagsContainer.innerHTML += `<span class="tag" style="background:#E2E8F0;">${f}</span>`);
+      }
+
+      document.getElementById("modalBudget").innerText = shop.budget || "-";
+      document.getElementById("modalTel").innerText = shop.tel || "-";
+      document.getElementById("modalMemo").innerText = shop.memo || "なし";
+
+      const linksDiv = document.getElementById("modalLinks");
+      linksDiv.innerHTML = "";
+      if (shop.officialUrl) linksDiv.innerHTML += `<a href="${shop.officialUrl}" target="_blank">公式Webサイト</a>`;
+      if (shop.tabelogUrl) linksDiv.innerHTML += `<a href="${shop.tabelogUrl}" target="_blank">食べログ</a>`;
+      if (shop.hotpepperUrl) linksDiv.innerHTML += `<a href="${shop.hotpepperUrl}" target="_blank">ホットペッパー</a>`;
+      if (shop.otherUrl) linksDiv.innerHTML += `<a href="${shop.otherUrl}" target="_blank">その他リンク</a>`;
+      if (!linksDiv.innerHTML) linksDiv.innerHTML = "なし";
+
+      updateFavButtonUI();
+      document.getElementById("shopModal").classList.add("active");
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+
+    function toggleFavorite() {
+      if (!selectedShop) return;
+      const id = selectedShop.id;
+      const idx = favorites.indexOf(id);
+      if (idx > -1) favorites.splice(idx, 1);
+      else favorites.push(id);
+
+      localStorage.setItem('yokohama_favs', JSON.stringify(favorites));
+      updateFavButtonUI();
+      applyFilters();
+    }
+
+    /* ボタン背景色と視認性の向上 */
+    function updateFavButtonUI() {
+      const btn = document.getElementById("favBtn");
+      const isFav = favorites.includes(selectedShop.id);
+      if (isFav) {
+        btn.className = "btn-fav-remove";
+        btn.innerHTML = `<i class="fa-solid fa-star"></i> お気に入り解除`;
+      } else {
+        btn.className = "btn-fav-add";
+        btn.innerHTML = `<i class="fa-regular fa-star"></i> お気に入り追加`;
+      }
+    }
+
+    function shareShop() {
+      if (!selectedShop) return;
+      const url = `${window.location.origin}${window.location.pathname}?shop=${selectedShop.id}`;
+      navigator.clipboard.writeText(url);
+      alert("店舗共有URLをコピーしました！");
+    }
+
+    function openFormModal(shop = null) {
+      const isEdit = !!shop;
+      document.getElementById("formTitle").innerText = isEdit ? "店舗情報の編集" : "店舗情報の追加";
+      document.getElementById("editShopId").value = isEdit ? shop.id : "";
+      document.getElementById("formName").value = isEdit ? shop.name : "";
+      document.getElementById("formCategory").value = isEdit ? shop.category : "和食";
+      document.getElementById("formBudget").value = isEdit ? shop.budget : "1000-3000円以内";
+      document.getElementById("formTel").value = isEdit ? (shop.tel || "") : "";
+      document.getElementById("formOfficialUrl").value = isEdit ? (shop.officialUrl || "") : "";
+      document.getElementById("formTabelogUrl").value = isEdit ? (shop.tabelogUrl || "") : "";
+      document.getElementById("formHotpepperUrl").value = isEdit ? (shop.hotpepperUrl || "") : "";
+      document.getElementById("formOtherUrl").value = isEdit ? (shop.otherUrl || "") : "";
+      document.getElementById("formLat").value = isEdit ? shop.lat : (userLocation ? userLocation.lat : 35.4658);
+      document.getElementById("formLng").value = isEdit ? shop.lng : (userLocation ? userLocation.lng : 139.6223);
+      document.getElementById("formMemo").value = isEdit ? (shop.memo || "") : "";
+
+      const featureBoxes = document.getElementsByName("formFeatures");
+      featureBoxes.forEach(box => {
+        box.checked = isEdit && shop.features ? shop.features.includes(box.value) : false;
+      });
+
+      document.getElementById("formModal").classList.add("active");
+    }
+
+    function saveShop(e) {
+      e.preventDefault();
+      const editId = document.getElementById("editShopId").value;
+      const featureBoxes = document.getElementsByName("formFeatures");
+      const selectedFeatures = Array.from(featureBoxes).filter(b => b.checked).map(b => b.value);
+
+      const shopObj = {
+        id: editId || "shop_" + Date.now(),
+        name: document.getElementById("formName").value,
+        category: document.getElementById("formCategory").value,
+        budget: document.getElementById("formBudget").value,
+        features: selectedFeatures,
+        tel: document.getElementById("formTel").value,
+        officialUrl: document.getElementById("formOfficialUrl").value,
+        tabelogUrl: document.getElementById("formTabelogUrl").value,
+        hotpepperUrl: document.getElementById("formHotpepperUrl").value,
+        otherUrl: document.getElementById("formOtherUrl").value,
+        lat: parseFloat(document.getElementById("formLat").value),
+        lng: parseFloat(document.getElementById("formLng").value),
+        memo: document.getElementById("formMemo").value
+      };
+
+      if (editId) {
+        const idx = shopData.findIndex(s => s.id === editId);
+        if (idx !== -1) shopData[idx] = shopObj;
+      } else {
+        shopData.push(shopObj);
+      }
+
+      saveShopsToStorage();
+      applyFilters();
+      closeModal('formModal');
+      closeModal('shopModal');
+    }
+
+    function editCurrentShop() { if (selectedShop) openFormModal(selectedShop); }
+    function deleteCurrentShop() {
+      if (selectedShop && confirm(`「${selectedShop.name}」を削除しますか？`)) {
+        shopData = shopData.filter(s => s.id !== selectedShop.id);
+        saveShopsToStorage();
+        applyFilters();
+        closeModal('shopModal');
+      }
+    }
+
+    function changeTheme(themeName) {
+      document.documentElement.setAttribute("data-theme", themeName);
+      localStorage.setItem("yokohama_theme", themeName);
+    }
+
+    window.onload = function() {
+      initMap();
+      const savedTheme = localStorage.getItem("yokohama_theme") || "pop";
+      document.getElementById("themeSelect").value = savedTheme;
+      changeTheme(savedTheme);
+    };
+  </script>
+</body>
+</html>
