@@ -51,12 +51,26 @@
     button { cursor: pointer; background-color: var(--primary-color); color: #fff; border: none; font-weight: bold; }
     button:hover { opacity: 0.9; }
     
-    /* UI レイアウト配置（PC） */
+    /* UI レイアウト配置 */
     .top-bar {
       position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 1000;
       background: var(--panel-bg); padding: 4px 10px; border-radius: var(--radius); border: 1px solid var(--border-color);
       display: flex; gap: 6px; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); white-space: nowrap;
     }
+    
+    /* 店舗数インジケーターのボタン風スタイル */
+    .indicator-btn {
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+      user-select: none;
+    }
+    .indicator-btn:hover {
+      background-color: rgba(0, 0, 0, 0.08);
+      text-decoration: underline;
+    }
+
     .top-left { position: absolute; top: 8px; left: 8px; z-index: 1000; display: flex; flex-direction: column; gap: 4px; }
     .top-right { position: absolute; top: 8px; right: 8px; z-index: 1000; }
     
@@ -74,173 +88,85 @@
     /* スマホ・タブレット用コンパクト最適化 */
     @media (max-width: 768px) {
       :root { --font-size: 11.5px; }
-
       button, input, select, textarea { padding: 4px 6px; }
-
       .top-bar {
         top: 6px; left: 6px; transform: none; right: 55px;
         justify-content: space-between; font-size: 11px; padding: 3px 6px;
       }
-      .top-left {
-        top: 42px; left: 6px; flex-direction: row; gap: 4px;
-      }
+      .top-left { top: 42px; left: 6px; flex-direction: row; gap: 4px; }
       .top-left button { padding: 4px 6px; font-size: 11px; }
       .top-right { top: 6px; right: 6px; }
       .top-right button { padding: 4px 8px; font-size: 11px; }
-
-      .bottom-container {
-        flex-direction: column-reverse;
-        max-height: 48vh;
-        gap: 6px;
-      }
-      .bottom-left, .bottom-right {
-        width: 100%; max-height: 22vh; padding: 6px 8px;
-      }
+      .bottom-container { flex-direction: column-reverse; max-height: 48vh; gap: 6px; }
+      .bottom-left, .bottom-right { width: 100%; max-height: 22vh; padding: 6px 8px; }
       h4 { font-size: 12px; margin-bottom: 2px !important; }
     }
 
-    /* カスタムピンのCSS */
-    .custom-pin-icon {
-      display: flex; align-items: center; justify-content: center;
-    }
+    .custom-pin-icon { display: flex; align-items: center; justify-content: center; }
 
     /* 検索結果リストスタイル */
-    .search-results-list {
-      margin-top: 6px;
-      border-top: 1px dashed var(--border-color);
-      padding-top: 4px;
-    }
-    .search-item {
-      padding: 5px 6px;
-      margin-top: 3px;
-      background: rgba(0, 0, 0, 0.03);
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .search-item:hover {
-      background: rgba(0, 0, 0, 0.08);
-    }
+    .search-results-list { margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 4px; }
+    .search-item { padding: 5px 6px; margin-top: 3px; background: rgba(0, 0, 0, 0.03); border-radius: 4px; cursor: pointer; transition: background 0.2s; }
+    .search-item:hover { background: rgba(0, 0, 0, 0.08); }
 
-    /* 画像スライダー/カルーセル用スタイル */
-    .image-slider-container {
-      position: relative;
-      width: 100%;
-      height: 140px;
-      margin: 6px 0;
+    /* モーダル内アコーディオン店舗リスト用スタイル */
+    .modal-store-item {
+      border: 1px solid var(--border-color);
       border-radius: var(--radius);
+      margin-bottom: 6px;
       overflow: hidden;
-      background: #000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: rgba(255, 255, 255, 0.5);
     }
-    .image-slider-container img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
-    .slider-btn {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      background: rgba(0,0,0,0.5);
-      color: #fff;
-      border: none;
-      padding: 4px 8px;
-      cursor: pointer;
-      border-radius: 50%;
-      font-size: 12px;
-      z-index: 10;
-    }
-    .slider-btn-left { left: 5px; }
-    .slider-btn-right { right: 5px; }
-    .slider-counter {
-      position: absolute;
-      bottom: 4px;
-      right: 8px;
-      background: rgba(0,0,0,0.6);
-      color: #fff;
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 10px;
-    }
-
-    /* リンクアコーディオンのスタイル */
-    details.links-details {
-      margin: 4px 0;
-      padding: 2px 0;
-    }
-    details.links-details summary {
-      cursor: pointer;
+    .modal-store-item summary {
+      padding: 8px;
       font-weight: bold;
+      cursor: pointer;
+      background: rgba(0, 0, 0, 0.03);
       outline: none;
       user-select: none;
-    }
-    .link-list {
       display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 4px;
-      padding-left: 8px;
-    }
-
-    /* モーダル内画像プレビュー */
-    .preview-container {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-top: 4px;
-    }
-    .preview-item {
-      position: relative;
-      width: 50px;
-      height: 50px;
-      border-radius: 4px;
-      overflow: hidden;
-      border: 1px solid var(--border-color);
-    }
-    .preview-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    .preview-remove-btn {
-      position: absolute;
-      top: 0;
-      right: 0;
-      background: rgba(220, 53, 69, 0.8);
-      color: #fff;
-      border: none;
-      font-size: 9px;
-      width: 16px;
-      height: 16px;
-      display: flex;
+      justify-content: space-between;
       align-items: center;
-      justify-content: center;
-      cursor: pointer;
+    }
+    .modal-store-item summary:hover {
+      background: rgba(0, 0, 0, 0.07);
+    }
+    .modal-store-details {
+      padding: 8px;
+      border-top: 1px solid var(--border-color);
+      font-size: 12px;
+      line-height: 1.5;
     }
 
-    /* モーダル・ポップアップ */
-    .modal-overlay {
-      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 2000; display: none; justify-content: center; align-items: center;
+    /* 画像スライダー */
+    .image-slider-container {
+      position: relative; width: 100%; height: 140px; margin: 6px 0; border-radius: var(--radius); overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center;
     }
-    .modal-content {
-      background: var(--panel-bg); color: var(--text-color); border-radius: var(--radius); padding: 14px; max-width: 450px; width: 92%; max-height: 85vh; overflow-y: auto; border: 1px solid var(--border-color); font-size: var(--font-size);
-    }
+    .image-slider-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: #fff; border: none; padding: 4px 8px; cursor: pointer; border-radius: 50%; font-size: 12px; z-index: 10; }
+    .slider-btn-left { left: 5px; } .slider-btn-right { right: 5px; }
+    .slider-counter { position: absolute; bottom: 4px; right: 8px; background: rgba(0,0,0,0.6); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; }
+
+    /* リンクアコーディオン */
+    details.links-details { margin: 4px 0; padding: 2px 0; }
+    details.links-details summary { cursor: pointer; font-weight: bold; outline: none; user-select: none; }
+    .link-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; padding-left: 8px; }
+
+    /* プレビュー */
+    .preview-container { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .preview-item { position: relative; width: 50px; height: 50px; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); }
+    .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+    .preview-remove-btn { position: absolute; top: 0; right: 0; background: rgba(220, 53, 69, 0.8); color: #fff; border: none; font-size: 9px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+    /* モーダル */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 2000; display: none; justify-content: center; align-items: center; }
+    .modal-content { background: var(--panel-bg); color: var(--text-color); border-radius: var(--radius); padding: 14px; max-width: 450px; width: 92%; max-height: 85vh; overflow-y: auto; border: 1px solid var(--border-color); font-size: var(--font-size); }
     .form-group { margin-bottom: 8px; display: flex; flex-direction: column; }
     .form-group label { font-weight: bold; margin-bottom: 2px; }
-    
     .nav-buttons { display: flex; gap: 4px; }
-
-    /* ハンバーガーメニュー */
     .menu-dropdown { display: none; position: absolute; right: 0; top: 32px; background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 8px; width: 180px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1001; }
     .menu-dropdown button { display: block; width: 100%; text-align: left; margin: 3px 0; }
-
-    /* パスワード忘れ等リンクスタイル */
-    .form-link {
-      font-size: 11px; color: var(--primary-color); cursor: pointer; text-decoration: underline; margin-top: 4px; display: inline-block;
-    }
+    .form-link { font-size: 11px; color: var(--primary-color); cursor: pointer; text-decoration: underline; margin-top: 4px; display: inline-block; }
   </style>
 </head>
 <body>
@@ -250,7 +176,7 @@
 
   <!-- 上部インジケーター & エリア切替 -->
   <div class="top-bar">
-    <span id="map-indicator">店舗: 0/50</span>
+    <span id="map-indicator" class="indicator-btn" onclick="openStoreListModal()" title="登録店舗一覧を表示">店舗: 0/50 📋</span>
     <select id="area-select" onchange="moveToArea(this.value)">
       <option value="">エリア移動</option>
     </select>
@@ -322,7 +248,6 @@
         <label><input type="checkbox" id="feat-eat" onchange="filterStores()"> 食べ放題</label>
       </div>
 
-      <!-- 絞り込み該当店舗のリスト領域（左側） -->
       <div id="search-results-container" class="search-results-list" style="display:none;"></div>
     </div>
 
@@ -341,11 +266,8 @@
     /* ==================== グローバル状態 ==================== */
     let map;
     let currentUser = JSON.parse(localStorage.getItem('gourmet_current_user')) || { loggedIn: false, email: '', name: '' };
-    
-    // アカウントデータ保持用DB
     let users = JSON.parse(localStorage.getItem('gourmet_users')) || {};
 
-    // ゲスト時のデフォルト初期データ
     let maps = [];
     let currentMapId = 'default';
 
@@ -354,13 +276,12 @@
     let storeMarkers = [];
     let areaMarkers = [];
     
-    // 画像管理用の現在インデックス
     let currentSlideImageIndex = 0;
     let currentEditingImages = [];
 
-    // データ読み込みロジック
     function loadCurrentUserData() {
       if (currentUser.loggedIn && users[currentUser.email]) {
+        currentUser.name = users[currentUser.email].name || currentUser.name || 'ユーザー';
         maps = users[currentUser.email].maps || [];
         currentMapId = users[currentUser.email].currentMapId || (maps[0] ? maps[0].id : 'default');
       } else {
@@ -394,7 +315,6 @@
       }
     }
 
-    // 初期化
     window.onload = function() {
       loadCurrentUserData();
       updateAuthUI();
@@ -405,11 +325,9 @@
         attribution: '© OpenStreetMap'
       }).addTo(map);
 
-      // タッチ・クリック時に仮ピンを設置
       map.on('click', function(e) {
         tempPinLocation = e.latlng;
         if (tempMarker) map.removeLayer(tempMarker);
-        
         tempMarker = L.marker(e.latlng, { opacity: 0.85 }).addTo(map);
         
         const panel = document.getElementById('right-panel');
@@ -425,7 +343,7 @@
 
     function updateIndicator() {
       const cur = getCurrentMap();
-      document.getElementById('map-indicator').innerText = `店舗: ${cur ? cur.stores.length : 0}/50`;
+      document.getElementById('map-indicator').innerText = `店舗: ${cur ? cur.stores.length : 0}/50 📋`;
     }
 
     function checkGuestRestriction() {
@@ -435,6 +353,66 @@
         return true;
       }
       return false;
+    }
+
+    /* ==================== 登録店舗リスト（ポップアップ） ==================== */
+    function openStoreListModal() {
+      const curMap = getCurrentMap();
+      const content = document.getElementById('modal-content');
+      document.getElementById('modal-overlay').style.display = 'flex';
+
+      if (!curMap.stores || curMap.stores.length === 0) {
+        content.innerHTML = `
+          <h3>登録店舗一覧</h3>
+          <p style="color:#666; margin:10px 0;">まだ登録されている店舗はありません。</p>
+          <button onclick="closeModal()" style="background:#6c757d; width:100%;">閉じる</button>
+        `;
+        return;
+      }
+
+      let listHtml = curMap.stores.map((s, index) => {
+        const features = [s.charter?'貸切':null, s.course?'コース':null, s.drink?'飲み放題':null, s.eat?'食べ放題':null].filter(Boolean).join('・');
+        const links = [];
+        if (isValidUrl(s.site)) links.push(`<a href="${s.site}" target="_blank" rel="noopener noreferrer">公式サイト</a>`);
+        if (isValidUrl(s.tabelog)) links.push(`<a href="${s.tabelog}" target="_blank" rel="noopener noreferrer">食べログ</a>`);
+        if (isValidUrl(s.hotpepper)) links.push(`<a href="${s.hotpepper}" target="_blank" rel="noopener noreferrer">ホットペッパー</a>`);
+        if (isValidUrl(s.othersite)) links.push(`<a href="${s.othersite}" target="_blank" rel="noopener noreferrer">他サイト</a>`);
+
+        return `
+          <details class="modal-store-item" ontoggle="if(this.open) onStoreItemOpen('${s.id}', ${s.lat}, ${s.lng})">
+            <summary>
+              <span>${s.fav ? '★ ' : ''}${s.name}</span>
+              <small style="font-size:10px; color:#888;">${s.genre}</small>
+            </summary>
+            <div class="modal-store-details">
+              <p><b>形式:</b> ${s.form} | <b>ジャンル:</b> ${s.genre}</p>
+              <p><b>予算:</b> ${s.budget}</p>
+              <p><b>特徴:</b> ${features || 'なし'}</p>
+              <p><b>連絡先:</b> ${s.contact || '-'}</p>
+              <p><b>予約:</b> ${s.reserve || '-'}</p>
+              ${links.length > 0 ? `<p><b>リンク:</b> ${links.join(' | ')}</p>` : ''}
+              <p><b>備考:</b> ${s.memo || '-'}</p>
+              <div style="margin-top:6px; text-align:right;">
+                <button onclick="closeModal(); showStoreDetail('${s.id}');" style="padding:3px 8px; font-size:11px;">詳細パネルを開く</button>
+              </div>
+            </div>
+          </details>
+        `;
+      }).join('');
+
+      content.innerHTML = `
+        <h3>登録店舗一覧 (${curMap.stores.length}件)</h3>
+        <p style="font-size:11px; color:#666; margin-bottom:8px;">店舗名を選択すると登録情報が開き、地図がその場所に移動します。</p>
+        <div style="max-height:60vh; overflow-y:auto; margin-bottom:10px;">
+          ${listHtml}
+        </div>
+        <button onclick="closeModal()" style="background:#6c757d; width:100%;">閉じる</button>
+      `;
+    }
+
+    // アコーディオン開閉時に地図移動
+    function onStoreItemOpen(storeId, lat, lng) {
+      map.panTo([lat, lng]);
     }
 
     /* ==================== ユーザー認証・UI管理 ==================== */
@@ -461,7 +439,7 @@
       document.getElementById('modal-overlay').style.display = 'flex';
       content.innerHTML = `
         <h3>アカウント ログイン / 登録</h3>
-        <p style="font-size:11px; color:#666; margin-bottom:8px;">メールアドレスとパスワード（6文字以上）を入力してください。<br>（ニックネームはログイン後にいつでも設定・変更できます）</p>
+        <p style="font-size:11px; color:#666; margin-bottom:8px;">メールアドレスとパスワード（6文字以上）を入力してください。</p>
         <div class="form-group"><label>メールアドレス</label><input type="email" id="auth-email" placeholder="example@email.com"></div>
         <div class="form-group"><label>パスワード (6文字以上)</label><input type="password" id="auth-pass" placeholder="******"></div>
         <div style="text-align:right;">
@@ -475,13 +453,12 @@
       `;
     }
 
-    /* パスワード再設定画面関連 */
     function openForgotPasswordModal() {
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
       content.innerHTML = `
         <h3>パスワードの再設定</h3>
-        <p style="font-size:11px; color:#666; margin-bottom:8px;">ご登録済みのメールアドレスを入力してください。<br>パスワード再設定のご案内（日本語）をお送りします。</p>
+        <p style="font-size:11px; color:#666; margin-bottom:8px;">ご登録済みのメールアドレスを入力してください。</p>
         <div class="form-group"><label>メールアドレス</label><input type="email" id="reset-email" placeholder="example@email.com"></div>
         <div style="display:flex; gap:6px; margin-top:10px;">
           <button onclick="sendPasswordResetEmail()">送信する</button>
@@ -496,15 +473,11 @@
         alert('ご入力のメールアドレスは登録されていません。');
         return;
       }
-
-      // 日本語の再設定メールを模した通知・メッセージ表示
       const mailBody = `【地区特化 グルメマップ】パスワード再設定のご案内\n\n` +
                        `いつもご利用いただきありがとうございます。\n` +
                        `以下の「パスワード再設定へ進む」ボタンより、新しいパスワードを設定してください。`;
 
       alert(`【送信完了】\n以下のメールアドレスにパスワード再設定メールを送信しました。\n\n宛先: ${email}\n\n--- メール内容 ---\n${mailBody}`);
-
-      // 模擬的にそのままパスワード変更画面に遷移
       openResetPasswordFormModal(email);
     }
 
@@ -512,7 +485,7 @@
       const content = document.getElementById('modal-content');
       content.innerHTML = `
         <h3>新しいパスワードの設定</h3>
-        <p style="font-size:11px; color:#666; margin-bottom:8px;">対象アカウント: <b>${email}</b><br>新しいパスワード（6文字以上）を入力してください。</p>
+        <p style="font-size:11px; color:#666; margin-bottom:8px;">対象アカウント: <b>${email}</b></p>
         <div class="form-group"><label>新しいパスワード</label><input type="password" id="new-reset-pass" placeholder="******"></div>
         <div style="display:flex; gap:6px; margin-top:10px;">
           <button onclick="saveNewPassword('${email}')">パスワードを更新</button>
@@ -527,7 +500,6 @@
         alert('パスワードは6文字以上で入力してください。');
         return;
       }
-
       if (users[email]) {
         users[email].password = newPass;
         localStorage.setItem('gourmet_users', JSON.stringify(users));
@@ -542,7 +514,6 @@
       document.getElementById('modal-overlay').style.display = 'flex';
       content.innerHTML = `
         <h3>ニックネームの変更</h3>
-        <p style="font-size:11px; color:#666; margin-bottom:8px;">表示用のニックネームを設定・変更できます。</p>
         <div class="form-group"><label>新しいニックネーム</label><input type="text" id="edit-name" value="${currentUser.name || ''}" placeholder="例: グルメ太郎"></div>
         <div style="display:flex; gap:6px; margin-top:10px;">
           <button onclick="saveProfileName()">変更を保存</button>
@@ -578,24 +549,18 @@
 
       if (isRegister) {
         if (users[email]) {
-          alert('このメールアドレスは既に登録されています。「ログイン」を行ってください。');
+          alert('このメールアドレスは既に登録されています。');
           return;
         }
-        // ゲストデータをアカウント初期データへ引き継ぐ
         const guestMaps = JSON.parse(localStorage.getItem('gourmet_guest_maps')) || maps;
         const guestMapId = localStorage.getItem('gourmet_guest_map_id') || currentMapId;
 
-        users[email] = {
-          name: 'ユーザー',
-          password: pass,
-          maps: guestMaps,
-          currentMapId: guestMapId
-        };
+        users[email] = { name: 'ユーザー', password: pass, maps: guestMaps, currentMapId: guestMapId };
         currentUser = { loggedIn: true, email: email, name: 'ユーザー' };
-        alert('新規会員登録が完了しました。操作メニューよりニックネームを設定いただけます。');
+        alert('新規会員登録が完了しました。');
       } else {
         if (!users[email]) {
-          alert('登録されていないアカウントです。新規登録を行ってください。');
+          alert('登録されていないアカウントです。');
           return;
         }
         if (users[email].password !== pass) {
@@ -603,10 +568,9 @@
           return;
         }
         
-        // ゲストデータを登録済みアカウントへ引き継ぎ（統合）
         const guestMaps = JSON.parse(localStorage.getItem('gourmet_guest_maps'));
         if (guestMaps && guestMaps.length > 0) {
-          if (confirm('ゲスト状態で作成・編集したデータをこのアカウントに統合・引き継ぎますか？')) {
+          if (confirm('ゲスト状態で作成したデータをこのアカウントに引き継ぎますか？')) {
             guestMaps.forEach(gMap => {
               const existMap = users[email].maps.find(m => m.id === gMap.id);
               if (existMap) {
@@ -642,10 +606,10 @@
       loadCurrentUserData();
       updateAuthUI();
       renderCurrentMap();
-      document.getElementById('right-panel').innerHTML = '<p style="color:#888;">ログアウトしました。ゲストモードで表示しています。</p>';
+      document.getElementById('right-panel').innerHTML = '<p style="color:#888;">ログアウトしました。</p>';
     }
 
-    /* ==================== カスタムピン生成SVG ==================== */
+    /* ==================== SVGピン ==================== */
     function createAreaIconHtml() {
       return `
         <div style="width:36px; height:36px; background:radial-gradient(circle, #00d2ff 0%, #3a7bd5 100%); border:2px solid #ffffff; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 8px rgba(0,0,0,0.4); font-size:18px;">
@@ -662,14 +626,14 @@
         svgContent = `<polygon points="16,2 20,12 30,12 22,19 25,29 16,23 7,29 10,19 2,12 12,12" fill="${c}" stroke="#ffffff" stroke-width="2" />`;
       } else if (shape === 'triangle') {
         svgContent = `<polygon points="2,4 30,4 16,28" fill="${c}" stroke="#ffffff" stroke-width="2" />`;
-      } else { // circle (デフォルト)
+      } else {
         svgContent = `<circle cx="16" cy="16" r="12" fill="${c}" stroke="#ffffff" stroke-width="2.5" />`;
       }
 
       return `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.3));">${svgContent}</svg>`;
     }
 
-    /* ==================== ピンからの登録処理 ==================== */
+    /* ==================== 店舗・エリア登録 ==================== */
     function openStoreRegisterModalFromPin() {
       if (checkGuestRestriction()) return;
       if (!tempPinLocation) {
@@ -880,7 +844,6 @@
       const curMap = getCurrentMap();
       if (!curMap) return;
 
-      // エリアピンの描画
       const areaSelect = document.getElementById('area-select');
       areaSelect.innerHTML = '<option value="">エリア移動</option>';
       curMap.areas.forEach(a => {
@@ -897,7 +860,6 @@
         areaMarkers.push(aMarker);
       });
 
-      // 店舗ピンの描画
       curMap.stores.forEach(s => {
         const pinColor = s.isTemp ? '#888888' : s.color;
         const shape = s.shape || 'circle';
@@ -923,7 +885,7 @@
       map.setView([parseFloat(lat), parseFloat(lng)], 16);
     }
 
-    /* ==================== 詳細表示 & ナビゲーション & カルーセル ==================== */
+    /* ==================== 詳細表示 ==================== */
     function isValidUrl(url) {
       return url && url !== '-' && url.trim() !== '';
     }
@@ -933,7 +895,7 @@
       const s = curMap.stores.find(item => item.id === storeId);
       if (!s) return;
 
-      currentSlideImageIndex = 0; // スライダー初期化
+      currentSlideImageIndex = 0;
 
       const panel = document.getElementById('right-panel');
       
@@ -945,7 +907,6 @@
       const prevId = nearby[currentIndex - 1] ? nearby[currentIndex - 1].id : null;
       const nextId = nearby[currentIndex + 1] ? nearby[currentIndex + 1].id : null;
 
-      // 画像スライダーHTMLの準備
       let imageHtml = '';
       if (s.images && s.images.length > 0) {
         imageHtml = `
@@ -958,26 +919,15 @@
         `;
       }
 
-      // リンク項目のアコーディオンHTML生成（登録済みのものだけテキストリンク表示）
       const links = [];
       if (isValidUrl(s.site)) links.push(`<a href="${s.site}" target="_blank" rel="noopener noreferrer">公式サイト</a>`);
       if (isValidUrl(s.tabelog)) links.push(`<a href="${s.tabelog}" target="_blank" rel="noopener noreferrer">食べログ</a>`);
       if (isValidUrl(s.hotpepper)) links.push(`<a href="${s.hotpepper}" target="_blank" rel="noopener noreferrer">ホットペッパー</a>`);
       if (isValidUrl(s.othersite)) links.push(`<a href="${s.othersite}" target="_blank" rel="noopener noreferrer">他サイト</a>`);
 
-      let linksHtml = '';
-      if (links.length > 0) {
-        linksHtml = `
-          <details class="links-details">
-            <summary>🔗 関連リンク</summary>
-            <div class="link-list">
-              ${links.join(' | ')}
-            </div>
-          </details>
-        `;
-      } else {
-        linksHtml = `<p><b>リンク:</b> なし</p>`;
-      }
+      let linksHtml = links.length > 0 
+        ? `<details class="links-details"><summary>🔗 関連リンク</summary><div class="link-list">${links.join(' | ')}</div></details>`
+        : `<p><b>リンク:</b> なし</p>`;
 
       panel.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
@@ -1032,7 +982,7 @@
       document.getElementById('right-panel').innerHTML = '<p style="color:#888;">削除しました。</p>';
     }
 
-    /* ==================== 検索 & 左側リスト表示 ==================== */
+    /* ==================== 検索 ==================== */
     function filterStores() {
       const name = document.getElementById('search-name').value.toLowerCase();
       const form = document.getElementById('search-form').value;
@@ -1044,9 +994,8 @@
       const eat = document.getElementById('feat-eat').checked;
 
       const resultsContainer = document.getElementById('search-results-container');
-
-      // 検索条件が全て空の場合はリスト表示を隠す
       const isFilterActive = name || form || genre || budget || charter || course || drink || eat;
+      
       if (!isFilterActive) {
         resultsContainer.style.display = 'none';
         resultsContainer.innerHTML = '';
@@ -1066,7 +1015,6 @@
         return true;
       });
 
-      // 左側のリスト領域へ描画
       resultsContainer.style.display = 'block';
       let html = `<div style="font-weight:bold; margin-bottom:4px; font-size:11px;">該当店舗 (${filtered.length}件)</div>`;
       
@@ -1086,7 +1034,7 @@
       resultsContainer.innerHTML = html;
     }
 
-    /* ==================== 共有コード・バックアップ ==================== */
+    /* ==================== 共有・バックアップ ==================== */
     function exportCode() {
       const curMap = getCurrentMap();
       const code = btoa(encodeURIComponent(JSON.stringify(curMap)));
@@ -1161,7 +1109,7 @@
       input.click();
     }
 
-    /* ==================== UI補助・マップ切り替え ==================== */
+    /* ==================== UI補助 ==================== */
     function toggleMenu() {
       const menu = document.getElementById('menu-dropdown');
       menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
@@ -1197,12 +1145,8 @@
 
     function switchMap(id) {
       currentMapId = id;
-      
       tempPinLocation = null;
-      if (tempMarker) {
-        map.removeLayer(tempMarker);
-        tempMarker = null;
-      }
+      if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
 
       document.getElementById('search-name').value = '';
       document.getElementById('search-form').value = '';
@@ -1217,7 +1161,7 @@
       resultsContainer.style.display = 'none';
       resultsContainer.innerHTML = '';
 
-      document.getElementById('right-panel').innerHTML = '<p style="color:#888;">マップを切り替えました。ピンを選択するか検索を行ってください。</p>';
+      document.getElementById('right-panel').innerHTML = '<p style="color:#888;">マップを切り替えました。</p>';
 
       saveStorage();
       renderCurrentMap();
@@ -1245,7 +1189,6 @@
       if (!name) return;
       const newMap = { id: 'm_' + Date.now(), name: name, stores: [], areas: [] };
       maps.push(newMap);
-      
       switchMap(newMap.id);
     }
   </script>
