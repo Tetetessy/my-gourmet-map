@@ -85,21 +85,54 @@
       overflow-y: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); flex: 1; max-height: 100%;
     }
 
-    /* スマホ・タブレット用コンパクト最適化 */
+    /* 8色カラーパレット選択用スタイル */
+    .color-picker-container {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .color-option {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      transition: transform 0.1s, border-color 0.1s;
+    }
+    .color-option:hover {
+      transform: scale(1.1);
+    }
+    .color-option.selected {
+      border-color: #333;
+      transform: scale(1.15);
+      box-shadow: 0 0 0 2px var(--primary-color);
+    }
+
+    /* スマホ・タブレット用コンパクト最適化（調整版） */
     @media (max-width: 768px) {
-      :root { --font-size: 11.5px; }
-      button, input, select, textarea { padding: 4px 6px; }
+      :root { --font-size: 11px; }
+      button, input, select, textarea { padding: 3px 5px; font-size: 11px; }
       .top-bar {
         top: 6px; left: 6px; transform: none; right: 55px;
-        justify-content: space-between; font-size: 11px; padding: 3px 6px;
+        justify-content: space-between; font-size: 10.5px; padding: 2px 5px;
       }
-      .top-left { top: 42px; left: 6px; flex-direction: row; gap: 4px; }
-      .top-left button { padding: 4px 6px; font-size: 11px; }
+      .indicator-btn { padding: 1px 4px; }
+      .top-left { top: 38px; left: 6px; flex-direction: row; gap: 4px; }
+      .top-left button { padding: 3px 6px; font-size: 10.5px; }
       .top-right { top: 6px; right: 6px; }
-      .top-right button { padding: 4px 8px; font-size: 11px; }
-      .bottom-container { flex-direction: column-reverse; max-height: 48vh; gap: 6px; }
-      .bottom-left, .bottom-right { width: 100%; max-height: 22vh; padding: 6px 8px; }
-      h4 { font-size: 12px; margin-bottom: 2px !important; }
+      .top-right button { padding: 3px 7px; font-size: 10.5px; }
+      
+      .bottom-container { flex-direction: column-reverse; max-height: 40vh; gap: 4px; bottom: 6px; left: 6px; right: 6px; }
+      .bottom-left, .bottom-right { width: 100%; max-height: 18vh; padding: 5px 7px; }
+      h4 { font-size: 11px; margin-bottom: 2px !important; }
+      
+      .modal-content { padding: 10px; max-height: 80vh; font-size: 11px; }
+      .modal-store-item summary { padding: 6px; font-size: 11px; }
+      .modal-store-details { padding: 6px; font-size: 11px; }
+      .image-slider-container { height: 110px; }
+      .color-option { width: 20px; height: 20px; }
     }
 
     .custom-pin-icon { display: flex; align-items: center; justify-content: center; }
@@ -154,9 +187,9 @@
 
     /* プレビュー */
     .preview-container { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
-    .preview-item { position: relative; width: 50px; height: 50px; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); }
+    .preview-item { position: relative; width: 45px; height: 45px; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); }
     .preview-item img { width: 100%; height: 100%; object-fit: cover; }
-    .preview-remove-btn { position: absolute; top: 0; right: 0; background: rgba(220, 53, 69, 0.8); color: #fff; border: none; font-size: 9px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .preview-remove-btn { position: absolute; top: 0; right: 0; background: rgba(220, 53, 69, 0.8); color: #fff; border: none; font-size: 9px; width: 15px; height: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
     /* モーダル */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 2000; display: none; justify-content: center; align-items: center; }
@@ -278,6 +311,19 @@
     
     let currentSlideImageIndex = 0;
     let currentEditingImages = [];
+
+    // 固定8色カラーパレット定義
+    const COLOR_PALETTE = [
+      '#ff6b6b', // 赤
+      '#ff922b', // オレンジ
+      '#fcc419', // 黄
+      '#51cf66', // 緑
+      '#22b8cf', // シアン
+      '#339af0', // 青
+      '#cc5de8', // 紫
+      '#845ef7'  // ディープパープル
+    ];
+    let selectedColorTemp = COLOR_PALETTE[0];
 
     function loadCurrentUserData() {
       if (currentUser.loggedIn && users[currentUser.email]) {
@@ -410,7 +456,6 @@
       `;
     }
 
-    // アコーディオン開閉時に地図移動
     function onStoreItemOpen(storeId, lat, lng) {
       map.panTo([lat, lng]);
     }
@@ -619,7 +664,7 @@
     }
 
     function createStoreIconSvg(shape, color) {
-      const c = color || '#ff6b6b';
+      const c = color || COLOR_PALETTE[0];
       let svgContent = '';
 
       if (shape === 'star') {
@@ -652,6 +697,20 @@
       registerArea(tempPinLocation);
     }
 
+    function selectColor(colorHex) {
+      selectedColorTemp = colorHex;
+      COLOR_PALETTE.forEach((c, idx) => {
+        const el = document.getElementById(`color-opt-${idx}`);
+        if (el) {
+          if (c === colorHex) {
+            el.classList.add('selected');
+          } else {
+            el.classList.remove('selected');
+          }
+        }
+      });
+    }
+
     function openStoreRegisterForm(latlng, isTemp = false, existingData = null) {
       if (checkGuestRestriction()) return;
 
@@ -661,6 +720,14 @@
 
       const d = existingData || {};
       currentEditingImages = d.images ? [...d.images] : [];
+      selectedColorTemp = d.color || COLOR_PALETTE[0];
+
+      const colorOptionsHtml = COLOR_PALETTE.map((c, idx) => `
+        <div id="color-opt-${idx}" 
+             class="color-option ${selectedColorTemp === c ? 'selected' : ''}" 
+             style="background-color: ${c};" 
+             onclick="selectColor('${c}')"></div>
+      `).join('');
 
       content.innerHTML = `
         <h3 style="font-size:14px; margin-bottom:8px;">${existingData ? '店舗情報の編集' : '店舗登録'}</h3>
@@ -701,7 +768,12 @@
             <option value="triangle" ${d.shape==='triangle'?'selected':''}>▼ 逆三角</option>
           </select>
         </div>
-        <div class="form-group"><label>ピン色</label><input type="color" id="store-color" value="${d.color || '#ff6b6b'}" style="height:30px;"></div>
+        <div class="form-group">
+          <label>ピン色 (8色から選択)</label>
+          <div class="color-picker-container">
+            ${colorOptionsHtml}
+          </div>
+        </div>
         <div class="form-group"><label>連絡先</label><input type="text" id="store-contact" value="${d.contact || '-'}"></div>
         <div class="form-group"><label>予約有無</label><input type="text" id="store-reserve" value="${d.reserve || '-'}"></div>
         <div class="form-group"><label>公式サイト</label><input type="text" id="store-site" value="${d.site || '-'}"></div>
@@ -792,7 +864,7 @@
         drink: document.getElementById('c-drink').checked,
         eat: document.getElementById('c-eat').checked,
         shape: document.getElementById('store-shape').value,
-        color: document.getElementById('store-color').value,
+        color: selectedColorTemp,
         contact: document.getElementById('store-contact').value,
         reserve: document.getElementById('store-reserve').value,
         site: document.getElementById('store-site').value,
