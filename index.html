@@ -166,7 +166,6 @@
   </div>
 
   <!-- Leaflet JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     // 定数制限設定 <1>
@@ -490,7 +489,7 @@
     function openListManageModal() {
       const container = document.getElementById("accordionContainer");
       container.innerHTML = "";
-      
+
       const currentStores = appData.stores[appData.currentMapId] || [];
       if (currentStores.length === 0) {
         container.innerHTML = "<p>登録されている店舗はありません。</p>";
@@ -622,7 +621,7 @@
       checkedBoxes.forEach(cb => {
         const targetMapId = cb.value;
         if (!appData.stores[targetMapId]) appData.stores[targetMapId] = [];
-        
+
         // 上限チェック
         if (appData.stores[targetMapId].length < MAX_STORES) {
           appData.stores[targetMapId].push({
