@@ -68,14 +68,18 @@
     .top-left { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 4px; }
     .top-right { position: absolute; top: 10px; right: 10px; z-index: 1000; }
     
+    /* 下部パネル制御 */
     .bottom-container {
       position: absolute; bottom: 10px; left: 10px; right: 10px; z-index: 1000;
-      display: flex; gap: 8px; pointer-events: none; max-height: 42vh;
+      display: flex; gap: 8px; pointer-events: none; max-height: 45vh;
     }
-    .bottom-left, .bottom-right {
+    .bottom-panel {
       pointer-events: auto; background: var(--panel-bg); backdrop-filter: blur(8px);
       padding: 8px 10px; border-radius: var(--radius); border: 1px solid var(--border-color);
-      overflow-y: auto; box-shadow: 0 4px 14px rgba(0,0,0,0.08); flex: 1; max-height: 100%;
+      overflow-y: auto; box-shadow: 0 4px 14px rgba(0,0,0,0.15); flex: 1; max-height: 100%; display: none;
+    }
+    .panel-toggle-btn {
+      position: absolute; bottom: 10px; left: 10px; z-index: 1000;
     }
 
     @media (max-width: 768px) {
@@ -85,17 +89,24 @@
       .top-left { top: 40px; left: 6px; flex-direction: row; gap: 4px; }
       .top-right { top: 6px; right: 6px; }
       .bottom-container { flex-direction: column-reverse; max-height: 40vh; gap: 4px; bottom: 6px; left: 6px; right: 6px; }
-      .bottom-left, .bottom-right { width: 100%; max-height: 18vh; padding: 6px; }
+      .bottom-panel { width: 100%; max-height: 25vh; padding: 6px; }
     }
 
     .color-picker-container { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
     .color-option { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
     .color-option.selected { border-color: #333; transform: scale(1.15); box-shadow: 0 0 0 2px var(--primary-color); }
 
-    .menu-dropdown { display: none; position: absolute; right: 0; top: 36px; background: var(--panel-bg); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 8px; width: 200px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 1001; }
+    /* 操作ドロップダウン（スクロール化） */
+    .menu-dropdown {
+      display: none; position: absolute; right: 0; top: 36px;
+      background: var(--panel-bg); backdrop-filter: blur(10px);
+      border: 1px solid var(--border-color); border-radius: var(--radius);
+      padding: 8px; width: 210px; max-height: 80vh; overflow-y: auto;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 1001;
+    }
     .menu-dropdown button { display: block; width: 100%; text-align: left; margin: 2px 0; }
 
-    /* ==================== ポップアップモーダル ==================== */
+    /* モーダル */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(4px);
@@ -184,10 +195,18 @@
     </div>
   </div>
 
+  <!-- 下部検索パネル起動ボタン -->
+  <div class="panel-toggle-btn">
+    <button onclick="toggleSearchPanel()">🔍 店舗絞り込み</button>
+  </div>
+
   <!-- 下部表示エリア -->
   <div class="bottom-container">
-    <div class="bottom-left" id="left-panel">
-      <h4 style="margin-bottom: 4px;">🔍 店舗絞り込み</h4>
+    <div class="bottom-panel" id="left-panel">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
+        <h4 style="margin: 0;">🔍 店舗絞り込み</h4>
+        <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
+      </div>
       <input type="text" id="search-name" placeholder="店舗名検索" oninput="filterStores()" style="width:100%;">
       <select id="search-list" onchange="filterStores()" style="width:100%;">
         <option value="">全てのリスト</option>
@@ -205,12 +224,15 @@
       <div id="search-results-container" style="margin-top:6px; border-top:1px dashed var(--border-color); padding-top:4px;"></div>
     </div>
 
-    <div class="bottom-right" id="right-panel">
-      <p style="color:#888;">地図上をタップするとピンが立ちます。左上のボタンから登録に進んでください。</p>
+    <div class="bottom-panel" id="right-panel">
+      <div style="display:flex; justify-content:flex-end;">
+        <button onclick="closeDetailPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
+      </div>
+      <div id="detail-content"></div>
     </div>
   </div>
 
-  <!-- モーダル各種（ポップアップ） -->
+  <!-- モーダル各種 -->
   <div class="modal-overlay" id="modal-overlay" onclick="if(event.target === this) closeModal();">
     <div class="modal-content" id="modal-content"></div>
   </div>
@@ -237,6 +259,15 @@
     function toggleMenu() {
       const dropdown = document.getElementById('menu-dropdown');
       dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+    }
+
+    function toggleSearchPanel() {
+      const panel = document.getElementById('left-panel');
+      panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+    }
+
+    function closeDetailPanel() {
+      document.getElementById('right-panel').style.display = 'none';
     }
 
     function closeModal() {
@@ -330,7 +361,10 @@
         if (tempMarker) map.removeLayer(tempMarker);
         tempMarker = L.marker(e.latlng, { opacity: 0.9 }).addTo(map);
         
-        document.getElementById('right-panel').innerHTML = `
+        const detailPanel = document.getElementById('right-panel');
+        const detailContent = document.getElementById('detail-content');
+        detailPanel.style.display = 'block';
+        detailContent.innerHTML = `
           <p style="color:var(--primary-color); font-weight:bold;">📍 ピンを置きました</p>
           <p style="font-size:11px; color:#666; margin-top:2px;">左上の「📍 ピンを店舗登録」または「🚩 エリア登録」を押して情報を登録してください。</p>
         `;
@@ -586,7 +620,11 @@
           `</div>`;
       }
 
-      document.getElementById('right-panel').innerHTML = `
+      const detailPanel = document.getElementById('right-panel');
+      const detailContent = document.getElementById('detail-content');
+      detailPanel.style.display = 'block';
+
+      detailContent.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
           <h3 style="margin-bottom:2px; color:var(--primary-color);">${store.name}</h3>
           <button onclick="deleteStore('${store.id}')" style="background:#dc3545; font-size:10px; padding:2px 6px;">削除</button>
@@ -603,7 +641,7 @@
       const curMap = getCurrentMap();
       curMap.stores = curMap.stores.filter(s => s.id !== storeId);
       saveStorage();
-      document.getElementById('right-panel').innerHTML = `<p style="color:#888;">削除しました。</p>`;
+      closeDetailPanel();
     }
 
     function filterStores() {
@@ -634,7 +672,7 @@
       `).join('');
     }
 
-    /* ==================== 共有機能 (最新同期対応) ==================== */
+    /* ==================== 共有機能 ==================== */
     function exportCode() {
       toggleMenu();
       const curMap = getCurrentMap();
