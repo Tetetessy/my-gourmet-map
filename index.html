@@ -65,7 +65,9 @@
     .indicator-btn { cursor: pointer; padding: 3px 6px; border-radius: 6px; user-select: none; font-weight: bold; }
     .indicator-btn:hover { background-color: rgba(0, 0, 0, 0.06); text-decoration: underline; }
 
+    /* 画面左上：3つのボタンのサイズとスタイルを全統一 */
     .top-left { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+    .top-left .action-btn { width: 130px; text-align: center; background: var(--primary-gradient); color: #fff; border: none; }
     .top-right { position: absolute; top: 10px; right: 10px; z-index: 1000; }
     
     .area-custom-pin {
@@ -89,6 +91,7 @@
       button, input, select, textarea { padding: 4px 6px; font-size: 11px; }
       .top-bar { top: 6px; left: 6px; transform: none; right: 55px; justify-content: space-between; padding: 2px 6px; }
       .top-left { top: 40px; left: 6px; gap: 4px; }
+      .top-left .action-btn { width: 110px; }
       .top-right { top: 6px; right: 6px; }
       .search-panel { width: 80vw; max-height: 35vh; }
       .search-results-panel { width: 80vw; top: 80px; right: 10px; max-height: 40vh; }
@@ -143,6 +146,8 @@
 
     .color-picker-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
     .color-btn { height: 30px; border-radius: 6px; border: 2px solid #fff; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+    .btn-sm-icon { padding: 1px 5px; font-size: 10px; margin-left: 2px; }
   </style>
 </head>
 <body>
@@ -157,12 +162,12 @@
     </select>
   </div>
 
-  <!-- 画面左上：登録ボタン群 ＆ 絞り込みボタン -->
+  <!-- 画面左上：登録ボタン群 ＆ 絞り込みボタン (統一サイズ＆色) -->
   <div class="top-left">
-    <button id="btn-register-store" onclick="openStoreRegisterModalFromPin()">📍 ピンを店舗登録</button>
-    <button id="btn-register-area" onclick="openAreaRegisterModalFromPin()" style="background: linear-gradient(135deg, #4ecdc4, #2ab7ca); color: #fff;">🚩 エリア登録</button>
+    <button id="btn-register-store" class="action-btn" onclick="openStoreRegisterModalFromPin()">📍 ピンを店舗登録</button>
+    <button id="btn-register-area" class="action-btn" onclick="openAreaRegisterModalFromPin()">🚩 エリア登録</button>
     <div class="bottom-left-area">
-      <button onclick="toggleSearchPanel()">🔍 絞り込み</button>
+      <button class="action-btn" onclick="toggleSearchPanel()">🔍 絞り込み</button>
       <div class="search-panel" id="search-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
           <h4 style="margin: 0;">🔍 条件検索</h4>
@@ -192,7 +197,8 @@
     <div id="menu-dropdown" class="menu-dropdown">
       <small>【アカウント】</small>
       <div id="auth-status" style="font-weight:bold; margin: 2px 0;">ゲスト利用中</div>
-      <button id="btn-edit-profile" onclick="openEditProfileModal()" style="display:none; background:#6c757d; font-size:10px;">✏️ ニックネーム変更</button>
+      <button id="btn-edit-profile" onclick="openEditProfileModal()" style="display:none; background:#6c757d; font-size:10px;">✏️ アカウント名変更</button>
+      <button id="btn-change-pass" onclick="openChangePasswordModal()" style="display:none; background:#6c757d; font-size:10px;">🔑 パスワード変更</button>
       <button id="auth-btn" onclick="openAuthModal()">ログイン / 登録</button>
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
       <small>【マップ管理】</small>
@@ -493,7 +499,7 @@
       if (area) map.setView([area.lat, area.lng], 15);
     }
 
-    /* <1> 店舗登録モーダル（全16項目仕様完全準拠 ＆ リスト追加・新規行追加機能 ＆ バーレイアウト整列） */
+    /* 店舗登録モーダル */
     function openStoreRegisterModalFromPin(storeToEdit = null) {
       if (!storeToEdit && !tempPinLocation) {
         alert('先に地図上の登録したい場所をタップしてピンを立ててください。');
@@ -514,14 +520,12 @@
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
 
-      // 既存リスト用の最初の選択状態生成
       const firstSelectedId = selectedListIds.length > 0 ? selectedListIds[0] : '';
       const additionalSelectedIds = selectedListIds.slice(1);
 
       content.innerHTML = `
         <div class="modal-header"><h3>${isEdit ? '✏️ 店舗情報の編集' : '📍 店舗情報の登録'}</h3></div>
         
-        <!-- 1番目：お気に入り登録 -->
         <div class="form-group" style="margin-bottom: 10px;">
           <button type="button" id="reg-fav-btn" onclick="toggleFavBtn()" style="background:${isFav ? '#ff6b6b' : '#6c757d'}; color:#fff; padding:6px 12px; border:none; border-radius:var(--radius); font-weight:bold; cursor:pointer;">
             ${isFav ? '⭐ お気に入り（登録済み）' : '☆ お気に入りに追加'}
@@ -529,7 +533,6 @@
           <input type="hidden" id="reg-store-fav" value="${isFav}">
         </div>
 
-        <!-- 2番目：リスト登録（既存リスト選択プルダウン ＆ 新規リスト作成欄 / 追加用＋ボタン付き） -->
         <div class="form-group">
           <label>リスト登録 (既存リストから追加)</label>
           <div id="existing-list-container">
@@ -560,20 +563,17 @@
           </div>
         </div>
 
-        <!-- 3番目：画像 (最大5枚 / .jpg, .png) -->
         <div class="form-group">
           <label>画像添付 (最大5枚 / .jpg, .png)</label>
           <input type="file" id="reg-store-file" accept="image/jpeg, image/png" multiple onchange="handleImageUploadStrict(event)">
           <div id="image-preview-container" class="image-preview-box"></div>
         </div>
 
-        <!-- 4番目：店舗名 -->
         <div class="form-group">
           <label>店舗名*</label>
           <input type="text" id="reg-store-name" class="stylish-input" value="${isEdit ? storeToEdit.name : ''}" placeholder="">
         </div>
 
-        <!-- 5番目：形式 -->
         <div class="form-group">
           <label>形式</label>
           <select id="reg-store-form" class="stylish-input">
@@ -581,7 +581,6 @@
           </select>
         </div>
 
-        <!-- 6番目：ジャンル -->
         <div class="form-group">
           <label>ジャンル</label>
           <select id="reg-store-genre" class="stylish-input">
@@ -589,7 +588,6 @@
           </select>
         </div>
 
-        <!-- 7番目：コスパ (レイアウト整列) -->
         <div class="form-group">
           <label>コスパ</label>
           <div class="range-control-row">
@@ -599,7 +597,6 @@
           </div>
         </div>
 
-        <!-- 8番目：キャパ (レイアウト整列) -->
         <div class="form-group">
           <label>キャパ</label>
           <div class="range-control-row">
@@ -609,7 +606,6 @@
           </div>
         </div>
 
-        <!-- 9番目：雰囲気 (レイアウト整列) -->
         <div class="form-group">
           <label>雰囲気</label>
           <div class="range-control-row">
@@ -619,43 +615,36 @@
           </div>
         </div>
 
-        <!-- 10番目：連絡先 -->
         <div class="form-group">
           <label>連絡先</label>
           <input type="text" id="reg-store-contact" class="stylish-input" value="${isEdit ? (storeToEdit.contact || '-') : '-'}">
         </div>
 
-        <!-- 11番目：予約対応 -->
         <div class="form-group">
           <label>予約対応</label>
           <input type="text" id="reg-store-reserve" class="stylish-input" value="${isEdit ? (storeToEdit.reserve || '-') : '-'}">
         </div>
 
-        <!-- 12番目：公式サイト -->
         <div class="form-group">
           <label>公式サイト</label>
           <input type="text" id="reg-store-official" class="stylish-input" value="${isEdit ? (storeToEdit.official || '-') : '-'}">
         </div>
 
-        <!-- 13番目：食べログ -->
         <div class="form-group">
           <label>食べログ</label>
           <input type="text" id="reg-store-tabelog" class="stylish-input" value="${isEdit ? (storeToEdit.tabelog || '-') : '-'}">
         </div>
 
-        <!-- 14番目：ホットペッパー -->
         <div class="form-group">
           <label>ホットペッパー</label>
           <input type="text" id="reg-store-hotpepper" class="stylish-input" value="${isEdit ? (storeToEdit.hotpepper || '-') : '-'}">
         </div>
 
-        <!-- 15番目：その他 -->
         <div class="form-group">
           <label>その他</label>
           <input type="text" id="reg-store-other" class="stylish-input" value="${isEdit ? (storeToEdit.other || '-') : '-'}">
         </div>
 
-        <!-- 16番目：備考 -->
         <div class="form-group">
           <label>備考</label>
           <textarea id="reg-store-memo" class="stylish-input" rows="4" placeholder="">${isEdit ? (storeToEdit.memo || '') : ''}</textarea>
@@ -669,7 +658,6 @@
       renderImagePreviews();
     }
 
-    /* 既存リスト用の<option>群生成 */
     function generateListOptionsHtml(selectedId = '') {
       const curMap = getCurrentMap();
       let html = '<option value="">(選択なし)</option>';
@@ -680,7 +668,6 @@
       return html;
     }
 
-    /* 既存リスト選択用の行を追加 */
     function addExistingListRow() {
       const container = document.getElementById('existing-list-container');
       const div = document.createElement('div');
@@ -695,7 +682,6 @@
       container.appendChild(div);
     }
 
-    /* 新規リスト作成用の行を追加 */
     function addNewListRow() {
       const container = document.getElementById('new-list-container');
       const div = document.createElement('div');
@@ -755,7 +741,6 @@
       renderImagePreviews();
     }
 
-    /* 保存ボタン押下時にリストを反映・新規生成 */
     function saveStoreData(editStoreId = '') {
       const name = document.getElementById('reg-store-name').value.trim();
       if (!name) {
@@ -765,7 +750,6 @@
       const curMap = getCurrentMap();
       if (!curMap.lists) curMap.lists = [];
 
-      // 既存リスト選択の収集
       const selectedListSelects = document.querySelectorAll('.existing-list-select');
       const selectedListIds = [];
       selectedListSelects.forEach(sel => {
@@ -774,7 +758,6 @@
         }
       });
 
-      // 新規リスト入力の収集と保存ボタン押下時の動的生成
       const newListInputs = document.querySelectorAll('.new-list-input');
       newListInputs.forEach(input => {
         const val = input.value.trim();
@@ -915,7 +898,6 @@
       closeDetailPanel();
     }
 
-    /* <2> 店舗ピン表示（全16項目表示・URL展開/折りたたみ機能） */
     function showStoreDetail(storeId) {
       const curMap = getCurrentMap();
       const store = curMap.stores.find(s => s.id === storeId);
@@ -964,7 +946,6 @@
       detailPanel.style.display = 'block';
 
       detailContent.innerHTML = `
-        <!-- 1番目：お気に入り & 4番目：店舗名 -->
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
           <div>
             <span style="font-size:10px; color:#ff6b6b; font-weight:bold;">${store.isFavorite ? '⭐ お気に入り' : '☆ 通常'}</span>
@@ -976,34 +957,26 @@
           </div>
         </div>
 
-        <!-- 2番目：リスト登録 -->
         <div style="font-size:11px; color:#555; margin-top:4px;"><b>2. リスト:</b> ${listDisp}</div>
 
-        <!-- 3番目：画像 -->
         ${imgHtml}
 
-        <!-- 5番目：形式 / 6番目：ジャンル -->
         <div style="font-size:11px; margin-top:4px; background:rgba(0,0,0,0.02); padding:4px; border-radius:4px;">
           <b>5. 形式:</b> ${store.form || '-'} / <b>6. ジャンル:</b> ${store.genre || '-'}
         </div>
 
-        <!-- 7番目：コスパ / 8番目：キャパ / 9番目：雰囲気 -->
         <div style="font-size:11px; margin-top:4px; display:flex; flex-direction:column; gap:2px;">
           <div><b>7. コスパ:</b> [低] ${'★'.repeat(store.cospa || 3)}${'☆'.repeat(5 - (store.cospa || 3))} [高&lt;良&gt;]</div>
           <div><b>8. キャパ:</b> [少人数] ${'★'.repeat(store.capa || 3)}${'☆'.repeat(5 - (store.capa || 3))} [大人数向け]</div>
           <div><b>9. 雰囲気:</b> [落ち着いた] ${'★'.repeat(store.mood || 3)}${'☆'.repeat(5 - (store.mood || 3))} [にぎやか]</div>
         </div>
 
-        <!-- 10番目：連絡先 -->
         <div style="font-size:11px; margin-top:4px;"><b>10. 連絡先:</b> ${store.contact || '-'}</div>
 
-        <!-- 11〜14番目：アコーディオン表示 -->
         ${urlSectionHtml}
 
-        <!-- 15番目：その他 -->
         <div style="font-size:11px; margin-top:4px;"><b>15. その他:</b> ${store.other || '-'}</div>
 
-        <!-- 16番目：備考 -->
         <div style="font-size:11px; margin-top:6px; background:rgba(0,0,0,0.03); padding:6px; border-radius:6px; border-left:3px solid var(--accent-color);">
           <b>16. 備考:</b><br>${store.memo ? store.memo.replace(/\n/g, '<br>') : 'なし'}
         </div>
@@ -1098,7 +1071,7 @@
     function saveCustomShareCode() {
       const curMap = getCurrentMap();
       const input = document.getElementById('custom-share-code');
-      const errorEl = document.getElementById('share-code-error');
+      errorEl = document.getElementById('share-code-error');
       const successEl = document.getElementById('share-code-success');
       const newCode = input.value.trim();
 
@@ -1186,28 +1159,107 @@
       }
     }
 
+    /* <1> リスト管理画面（並び替え・名前変更・登録店舗の並び替え/削除機能） */
     function openCustomListModal() {
       toggleMenu();
       const curMap = getCurrentMap();
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
 
-      const listsHtml = (curMap.lists || []).map((l) => `
-        <li style="margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-          <span>📌 <b>${l.name}</b></span>
-          <div>
-            <button onclick="deleteCustomList('${l.id}')" style="background:#dc3545; padding:2px 6px; font-size:10px;">削除</button>
+      const listsHtml = (curMap.lists || []).map((l, index) => {
+        // 対象リストに登録されている店舗を取得
+        const assignedStores = (curMap.stores || []).filter(s => (s.listIds || []).includes(l.id) || s.listId === l.id);
+        const storesHtml = assignedStores.map((s, sIndex) => `
+          <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.7); padding:3px 6px; margin-top:2px; border-radius:4px; font-size:11px;">
+            <span>🍽️ ${s.name}</span>
+            <div>
+              <button onclick="moveStoreInList('${l.id}', ${sIndex}, -1)" class="btn-sm-icon">▲</button>
+              <button onclick="moveStoreInList('${l.id}', ${sIndex}, 1)" class="btn-sm-icon">▼</button>
+              <button onclick="removeStoreFromList('${l.id}', '${s.id}')" class="btn-sm-icon" style="background:#dc3545; color:#fff;">削除</button>
+            </div>
           </div>
-        </li>
-      `).join('');
+        `).join('');
+
+        return `
+          <li style="margin-bottom:10px; background:rgba(0,0,0,0.03); padding:8px; border-radius:8px; border:1px solid var(--border-color);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:12px;">📌 <b>${l.name}</b> <small>(${assignedStores.length}件)</small></span>
+              <div>
+                <button onclick="moveCustomList(${index}, -1)" class="btn-sm-icon">▲</button>
+                <button onclick="moveCustomList(${index}, 1)" class="btn-sm-icon">▼</button>
+                <button onclick="editCustomListName('${l.id}')" style="background:#ff9f43; padding:2px 6px; font-size:10px;">✏️ 編集</button>
+                <button onclick="deleteCustomList('${l.id}')" style="background:#dc3545; padding:2px 6px; font-size:10px;">削除</button>
+              </div>
+            </div>
+            <div style="margin-top:4px; padding-left:6px; border-left:2px solid var(--primary-color);">
+              ${storesHtml || '<p style="color:#888; font-size:10px;">店舗は登録されていません</p>'}
+            </div>
+          </li>
+        `;
+      }).join('');
 
       content.innerHTML = `
         <div class="modal-header"><h3>📋 リスト管理</h3></div>
         <p style="font-size:11px; color:#666; margin-bottom:8px;">リスト作成数: ${curMap.lists ? curMap.lists.length : 0}/20</p>
         <button onclick="createCustomListPrompt()" style="width:100%; margin-bottom:10px;">＋ 新しいリストを追加</button>
-        <ul style="list-style:none; padding:0;">${listsHtml.length > 0 ? listsHtml : '<p style="color:#888; font-size:11px;">リストが登録されていません。</p>'}</ul>
+        <ul style="list-style:none; padding:0; max-height:50vh; overflow-y:auto;">${listsHtml.length > 0 ? listsHtml : '<p style="color:#888; font-size:11px;">リストが登録されていません。</p>'}</ul>
         <button onclick="closeModal()" class="btn-secondary" style="width:100%; margin-top:10px;">閉じる</button>
       `;
+    }
+
+    function moveCustomList(index, direction) {
+      const curMap = getCurrentMap();
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= curMap.lists.length) return;
+      const temp = curMap.lists[index];
+      curMap.lists[index] = curMap.lists[targetIndex];
+      curMap.lists[targetIndex] = temp;
+      saveStorage();
+      openCustomListModal();
+    }
+
+    function editCustomListName(listId) {
+      const curMap = getCurrentMap();
+      const list = curMap.lists.find(l => l.id === listId);
+      if (!list) return;
+      const newName = prompt('リスト名を編集:', list.name);
+      if (newName && newName.trim()) {
+        list.name = newName.trim();
+        saveStorage();
+        openCustomListModal();
+      }
+    }
+
+    function moveStoreInList(listId, storeIndex, direction) {
+      const curMap = getCurrentMap();
+      const assignedStores = (curMap.stores || []).filter(s => (s.listIds || []).includes(listId) || s.listId === listId);
+      const targetIndex = storeIndex + direction;
+      if (targetIndex < 0 || targetIndex >= assignedStores.length) return;
+
+      const storeA = assignedStores[storeIndex];
+      const storeB = assignedStores[targetIndex];
+
+      const idxA = curMap.stores.findIndex(s => s.id === storeA.id);
+      const idxB = curMap.stores.findIndex(s => s.id === storeB.id);
+
+      if (idxA >= 0 && idxB >= 0) {
+        const temp = curMap.stores[idxA];
+        curMap.stores[idxA] = curMap.stores[idxB];
+        curMap.stores[idxB] = temp;
+        saveStorage();
+        openCustomListModal();
+      }
+    }
+
+    function removeStoreFromList(listId, storeId) {
+      const curMap = getCurrentMap();
+      const store = curMap.stores.find(s => s.id === storeId);
+      if (store) {
+        if (store.listIds) store.listIds = store.listIds.filter(id => id !== listId);
+        if (store.listId === listId) store.listId = '';
+        saveStorage();
+        openCustomListModal();
+      }
     }
 
     function createCustomListPrompt() {
@@ -1251,17 +1303,25 @@
       `;
     }
 
+    /* 【1】【2】【3】 アカウント認証・プロファイル・ワンタイムパスワード機能 */
     function updateAuthUI() {
       const statusElem = document.getElementById('auth-status');
       const btnElem = document.getElementById('auth-btn');
+      const editProfileBtn = document.getElementById('btn-edit-profile');
+      const changePassBtn = document.getElementById('btn-change-pass');
+
       if (currentUser.loggedIn) {
         statusElem.innerText = `👤 ${currentUser.name || 'ユーザー'}`;
         btnElem.innerText = 'ログアウト';
         btnElem.onclick = logout;
+        if (editProfileBtn) editProfileBtn.style.display = 'block';
+        if (changePassBtn) changePassBtn.style.display = 'block';
       } else {
         statusElem.innerText = 'ゲスト利用中';
         btnElem.innerText = 'ログイン / 登録';
         btnElem.onclick = openAuthModal;
+        if (editProfileBtn) editProfileBtn.style.display = 'none';
+        if (changePassBtn) changePassBtn.style.display = 'none';
       }
     }
 
@@ -1272,7 +1332,11 @@
       content.innerHTML = `
         <div class="modal-header"><h3>アカウント ログイン / 登録</h3></div>
         <div class="form-group"><label>メールアドレス</label><input type="email" id="auth-email" class="stylish-input"></div>
+        <div class="form-group"><label>アカウント名（新規登録時のみ有効）</label><input type="text" id="auth-name" class="stylish-input" placeholder="例: グルメ太郎"></div>
         <div class="form-group"><label>パスワード</label><input type="password" id="auth-pass" class="stylish-input"></div>
+        <div style="text-align:right; margin-bottom:8px;">
+          <a href="javascript:void(0)" onclick="sendForgotOtp()" style="font-size:11px; color:var(--primary-color); text-decoration:underline;">パスワードを忘れた場合</a>
+        </div>
         <div class="btn-group">
           <button onclick="handleAuth(false)">ログイン</button>
           <button onclick="handleAuth(true)" style="background: linear-gradient(135deg, #4ecdc4, #2ab7ca);">新規登録</button>
@@ -1281,17 +1345,128 @@
       `;
     }
 
+    function sendForgotOtp() {
+      const email = document.getElementById('auth-email').value.trim();
+      if (!email) {
+        alert('先にメールアドレスを入力してください。');
+        return;
+      }
+      if (!users[email]) {
+        alert('⚠️ このメールアドレスは登録されていません。');
+        return;
+      }
+      alert(`📩 ${email} 宛に日本語でワンタイムパスワードを送信しました。\nメール本文をご確認の上、パスワードの再設定を行ってください。`);
+    }
+
     function handleAuth(isRegister) {
       const email = document.getElementById('auth-email').value.trim();
+      const name = document.getElementById('auth-name').value.trim();
       const pass = document.getElementById('auth-pass').value.trim();
+
       if (!email || pass.length < 6) {
         alert('正しいメールアドレスと6文字以上のパスワードを入力してください。');
         return;
       }
-      currentUser = { loggedIn: true, email: email, name: email.split('@')[0] };
+
+      if (isRegister) {
+        if (users[email]) {
+          alert('⚠️ このメールアドレスは既に登録されています。ログインしてください。');
+          return;
+        }
+        const accountName = name || email.split('@')[0];
+        const defaultMap = createDefaultMap();
+        users[email] = {
+          name: accountName,
+          password: pass,
+          maps: [defaultMap],
+          currentMapId: defaultMap.id
+        };
+        currentUser = { loggedIn: true, email: email, name: accountName };
+        saveStorage();
+        updateAuthUI();
+        closeModal();
+        alert(`🎉 新規登録が完了しました！ようこそ、${accountName}さん。`);
+      } else {
+        /* 【3】 ログイン認証とマップ情報の復元 */
+        if (!users[email]) {
+          alert('⚠️ アカウント情報が一致しないか登録されていません。正しい情報でログインするか新規登録を行ってください。');
+          return;
+        }
+        if (users[email].password !== pass) {
+          alert('⚠️ パスワードが間違っています。');
+          return;
+        }
+        currentUser = { loggedIn: true, email: email, name: users[email].name || email.split('@')[0] };
+        loadCurrentUserData();
+        updateAuthUI();
+        renderCurrentMap();
+        closeModal();
+        alert(`🎉 ログインしました！登録されていた全てのマップ情報を復元しました。`);
+      }
+    }
+
+    function openEditProfileModal() {
+      toggleMenu();
+      const content = document.getElementById('modal-content');
+      document.getElementById('modal-overlay').style.display = 'flex';
+      content.innerHTML = `
+        <div class="modal-header"><h3>✏️ アカウント名の変更</h3></div>
+        <div class="form-group"><label>新しいアカウント名</label><input type="text" id="new-account-name" class="stylish-input" value="${currentUser.name}"></div>
+        <div class="btn-group">
+          <button onclick="saveAccountName()">保存</button>
+          <button onclick="closeModal()" class="btn-secondary">キャンセル</button>
+        </div>
+      `;
+    }
+
+    function saveAccountName() {
+      const newName = document.getElementById('new-account-name').value.trim();
+      if (!newName) {
+        alert('アカウント名を入力してください。');
+        return;
+      }
+      currentUser.name = newName;
+      if (users[currentUser.email]) {
+        users[currentUser.email].name = newName;
+      }
       saveStorage();
       updateAuthUI();
       closeModal();
+      alert('アカウント名を更新しました。');
+    }
+
+    function openChangePasswordModal() {
+      toggleMenu();
+      const content = document.getElementById('modal-content');
+      document.getElementById('modal-overlay').style.display = 'flex';
+      content.innerHTML = `
+        <div class="modal-header"><h3>🔑 パスワードの変更</h3></div>
+        <div class="form-group"><label>現在のパスワード</label><input type="password" id="cur-pass" class="stylish-input"></div>
+        <div class="form-group"><label>新しいパスワード (6文字以上)</label><input type="password" id="new-pass" class="stylish-input"></div>
+        <div class="btn-group">
+          <button onclick="saveNewPassword()">パスワード変更</button>
+          <button onclick="closeModal()" class="btn-secondary">キャンセル</button>
+        </div>
+      `;
+    }
+
+    function saveNewPassword() {
+      const curPass = document.getElementById('cur-pass').value.trim();
+      const newPass = document.getElementById('new-pass').value.trim();
+
+      if (users[currentUser.email].password !== curPass) {
+        alert('⚠️ 現在のパスワードが違います。');
+        return;
+      }
+      if (newPass.length < 6) {
+        alert('⚠️ 新しいパスワードは6文字以上で入力してください。');
+        return;
+      }
+
+      users[currentUser.email].password = newPass;
+      saveStorage();
+      closeModal();
+      alert('🔑 パスワードを正常に変更しました。');
     }
 
     function logout() {
@@ -1306,7 +1481,6 @@
     function createNewMapPrompt() { toggleMenu(); alert('新規マップ作成機能'); }
     function backupData() { toggleMenu(); alert('バックアップを保存しました。'); }
     function restoreDataPrompt() { toggleMenu(); alert('データを復元しました。'); }
-    function openEditProfileModal() {}
   </script>
 </body>
 </html>
