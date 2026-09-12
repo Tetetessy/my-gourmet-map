@@ -86,14 +86,28 @@
 
     /* 8色カラーパレット選択用スタイル */
     .color-picker-container {
-      display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
     }
     .color-option {
-      width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform 0.1s, border-color 0.1s;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      transition: transform 0.1s, border-color 0.1s;
     }
-    .color-option:hover { transform: scale(1.1); }
-    .color-option.selected { border-color: #333; transform: scale(1.15); box-shadow: 0 0 0 2px var(--primary-color); }
+    .color-option:hover {
+      transform: scale(1.1);
+    }
+    .color-option.selected {
+      border-color: #333;
+      transform: scale(1.15);
+      box-shadow: 0 0 0 2px var(--primary-color);
+    }
 
     /* レスポンシブ最適化 */
     @media (max-width: 768px) {
@@ -129,13 +143,32 @@
 
     /* モーダル内アコーディオン店舗リスト用スタイル */
     .modal-store-item {
-      border: 1px solid var(--border-color); border-radius: var(--radius); margin-bottom: 6px; overflow: hidden; background: rgba(255, 255, 255, 0.5);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      margin-bottom: 6px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.5);
     }
     .modal-store-item summary {
-      padding: 8px; font-weight: bold; cursor: pointer; background: rgba(0, 0, 0, 0.03); outline: none; user-select: none; display: flex; justify-content: space-between; align-items: center;
+      padding: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      background: rgba(0, 0, 0, 0.03);
+      outline: none;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    .modal-store-item summary:hover { background: rgba(0, 0, 0, 0.07); }
-    .modal-store-details { padding: 8px; border-top: 1px solid var(--border-color); font-size: 12px; line-height: 1.5; }
+    .modal-store-item summary:hover {
+      background: rgba(0, 0, 0, 0.07);
+    }
+    .modal-store-details {
+      padding: 8px;
+      border-top: 1px solid var(--border-color);
+      font-size: 12px;
+      line-height: 1.5;
+    }
 
     /* 画像スライダー */
     .image-slider-container {
@@ -166,9 +199,6 @@
     .menu-dropdown { display: none; position: absolute; right: 0; top: 32px; background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 8px; width: 180px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1001; }
     .menu-dropdown button { display: block; width: 100%; text-align: left; margin: 3px 0; }
     .form-link { font-size: 11px; color: var(--primary-color); cursor: pointer; text-decoration: underline; margin-top: 4px; display: inline-block; }
-    
-    .error-msg { color: #dc3545; font-size: 11px; margin-top: 4px; display: none; font-weight: bold; }
-    .success-msg { color: #28a745; font-size: 11px; margin-top: 4px; display: none; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -205,7 +235,7 @@
       <button onclick="openCustomListModal()">📋 リスト管理</button>
       <hr style="margin:6px 0;">
       <small>【共有・バックアップ】</small>
-      <button onclick="exportCode()">共有コード設定・表示</button>
+      <button onclick="exportCode()">共有コード発行</button>
       <button onclick="importCodePrompt()">共有コード読み込み</button>
       <button onclick="backupData()">バックアップ保存</button>
       <button onclick="restoreDataPrompt()">データ復元</button>
@@ -285,24 +315,22 @@
     let currentSlideImageIndex = 0;
     let currentEditingImages = [];
 
-    const COLOR_PALETTE = ['#ff6b6b', '#ff922b', '#fcc419', '#51cf66', '#22b8cf', '#339af0', '#cc5de8', '#845ef7'];
+    // 固定8色カラーパレット定義
+    const COLOR_PALETTE = [
+      '#ff6b6b', // 赤
+      '#ff922b', // オレンジ
+      '#fcc419', // 黄
+      '#51cf66', // 緑
+      '#22b8cf', // シアン
+      '#339af0', // 青
+      '#cc5de8', // 紫
+      '#845ef7'  // ディープパープル
+    ];
     let selectedColorTemp = COLOR_PALETTE[0];
 
-    function toggleMenu() {
-      const dropdown = document.getElementById('menu-dropdown');
-      dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
-    }
-
-    function closeModal() {
-      document.getElementById('modal-overlay').style.display = 'none';
-    }
-
-    function changeTheme(themeName) {
-      document.documentElement.setAttribute('data-theme', themeName);
-    }
-
-    function generateDefaultShareCode() {
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    // 11文字（前半5文字 - 後半5文字）のランダム共有コード生成
+    function generate11CharShareCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 誤読しやすい文字を除外
       let part1 = '', part2 = '';
       for (let i = 0; i < 5; i++) {
         part1 += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -313,11 +341,11 @@
 
     function createDefaultMap(id, name) {
       return {
-        id: id || generateDefaultShareCode(),
+        id: id || generate11CharShareCode(),
         name: name || 'マイグルメマップ',
         stores: [],
         areas: [],
-        lists: []
+        lists: [] // マップ固有のリストデータ
       };
     }
 
@@ -340,7 +368,10 @@
         currentMapId = maps[0].id;
       }
 
-      maps.forEach(m => { if (!m.lists) m.lists = []; });
+      // 既存データの構造互換担保
+      maps.forEach(m => {
+        if (!m.lists) m.lists = [];
+      });
     }
 
     function saveStorage() {
@@ -391,11 +422,6 @@
       return maps.find(m => m.id === currentMapId) || maps[0];
     }
 
-    function renderCurrentMap() {
-      updateIndicator();
-      updateSearchListDropdown();
-    }
-
     function updateIndicator() {
       const cur = getCurrentMap();
       document.getElementById('map-indicator').innerText = `店舗: ${cur ? cur.stores.length : 0}/50 📋`;
@@ -425,87 +451,14 @@
       return false;
     }
 
-    /* ==================== 共有コード設定・検証機能 ==================== */
-    function exportCode() {
-      const curMap = getCurrentMap();
-      const content = document.getElementById('modal-content');
-      document.getElementById('modal-overlay').style.display = 'flex';
-
-      content.innerHTML = `
-        <h3>共有コードの設定・発行</h3>
-        <p style="font-size:11px; color:#666; margin-bottom:8px;">任意の共有コード（6文字以上20文字以内）を設定できます。</p>
-        <div class="form-group">
-          <label>現在の共有コード</label>
-          <input type="text" id="custom-share-code" value="${curMap.id}" minlength="6" maxlength="20" placeholder="例: gourmet2026">
-          <p id="share-code-error" class="error-msg"></p>
-          <p id="share-code-success" class="success-msg"></p>
-        </div>
-        <div style="display:flex; gap:6px; margin-top:8px;">
-          <button onclick="saveCustomShareCode()">コードを保存・更新</button>
-          <button onclick="closeModal()" style="background:#6c757d;">閉じる</button>
-        </div>
-      `;
-    }
-
-    function saveCustomShareCode() {
-      const curMap = getCurrentMap();
-      const input = document.getElementById('custom-share-code');
-      const errorEl = document.getElementById('share-code-error');
-      const successEl = document.getElementById('share-code-success');
-      const newCode = input.value.trim();
-
-      errorEl.style.display = 'none';
-      successEl.style.display = 'none';
-
-      // 1. 文字数判定 (6〜20文字)
-      if (newCode.length < 6 || newCode.length > 20) {
-        errorEl.textContent = '⚠️ 共有コードは6文字以上20文字以内で入力してください。';
-        errorEl.style.display = 'block';
-        return;
-      }
-
-      // 2. 使用可能文字判定 (半角英数字・ハイフン・アンダースコア)
-      const validRegex = /^[a-zA-Z0-9-_]+$/;
-      if (!validRegex.test(newCode)) {
-        errorEl.textContent = '⚠️ 半角英数字、ハイフン(-)、アンダースコア(_)のみ使用できます。';
-        errorEl.style.display = 'block';
-        return;
-      }
-
-      // 3. 重複判定 (同一アカウント内の他マップとの重複確認)
-      const isDuplicate = maps.some(m => m.id === newCode && m !== curMap);
-      if (isDuplicate) {
-        errorEl.textContent = '⚠️ この共有コードは既に別のマップで使用されています。別のコードを入力してください。';
-        errorEl.style.display = 'block';
-        return;
-      }
-
-      // 保存処理
-      const oldId = curMap.id;
-      curMap.id = newCode;
-      if (currentMapId === oldId) {
-        currentMapId = newCode;
-      }
-
-      saveStorage();
-      successEl.textContent = '✅ 共有コードを更新しました！';
-      successEl.style.display = 'block';
-    }
-
-    function importCodePrompt() {
-      const code = prompt('読み込む共有コード（6〜20文字）を入力してください:');
-      if (!code || !code.trim()) return;
-      alert(`共有コード「${code.trim()}」のマップデータを読み込みました。`);
-    }
-
-    /* ==================== その他の機能 ==================== */
+    /* ==================== リスト管理機能 ==================== */
     function openCustomListModal() {
       if (checkGuestRestriction()) return;
       const curMap = getCurrentMap();
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
 
-      const listsHtml = (curMap.lists || []).map((l) => `
+      const listsHtml = (curMap.lists || []).map((l, i) => `
         <li style="margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
           <span>📌 <b>${l.name}</b></span>
           <div>
@@ -532,14 +485,18 @@
       if (!curMap.lists) curMap.lists = [];
 
       if (curMap.lists.length >= 20) {
-        alert('⚠️ リストは1マップにつき20個までしか作成できません。');
+        alert('⚠️ リストは1アカウント（1マップ）につき20個までしか作成できません。');
         return;
       }
 
       const listName = prompt('新規リスト名を入力してください:');
       if (!listName || !listName.trim()) return;
 
-      curMap.lists.push({ id: 'lst_' + Date.now(), name: listName.trim() });
+      curMap.lists.push({
+        id: 'lst_' + Date.now(),
+        name: listName.trim()
+      });
+
       saveStorage();
       openCustomListModal();
     }
@@ -560,16 +517,21 @@
 
     function deleteCustomList(listId) {
       if (checkGuestRestriction()) return;
-      if (!confirm('このリストを削除しますか？')) return;
+      if (!confirm('このリストを削除しますか？ (店舗の割り当ては解除されます)')) return;
 
       const curMap = getCurrentMap();
       curMap.lists = curMap.lists.filter(l => l.id !== listId);
-      curMap.stores.forEach(s => { if (s.listId === listId) s.listId = ''; });
+
+      // 店舗側のリスト指定解除
+      curMap.stores.forEach(s => {
+        if (s.listId === listId) s.listId = '';
+      });
 
       saveStorage();
       openCustomListModal();
     }
 
+    /* ==================== 登録店舗リスト（ポップアップ） ==================== */
     function openStoreListModal() {
       const curMap = getCurrentMap();
       const content = document.getElementById('modal-content');
@@ -584,22 +546,55 @@
         return;
       }
 
-      let listHtml = curMap.stores.map((s) => `
-        <details class="modal-store-item">
-          <summary><span>${s.name}</span><small>${s.genre || ''}</small></summary>
-          <div class="modal-store-details">
-            <p><b>形式:</b> ${s.form || '-'}</p>
-          </div>
-        </details>
-      `).join('');
+      let listHtml = curMap.stores.map((s) => {
+        const features = [s.charter?'貸切':null, s.course?'コース':null, s.drink?'飲み放題':null, s.eat?'食べ放題':null].filter(Boolean).join('・');
+        const links = [];
+        if (isValidUrl(s.site)) links.push(`<a href="${s.site}" target="_blank" rel="noopener noreferrer">公式サイト</a>`);
+        if (isValidUrl(s.tabelog)) links.push(`<a href="${s.tabelog}" target="_blank" rel="noopener noreferrer">食べログ</a>`);
+        if (isValidUrl(s.hotpepper)) links.push(`<a href="${s.hotpepper}" target="_blank" rel="noopener noreferrer">ホットペッパー</a>`);
+        if (isValidUrl(s.othersite)) links.push(`<a href="${s.othersite}" target="_blank" rel="noopener noreferrer">他サイト</a>`);
+
+        const listObj = curMap.lists ? curMap.lists.find(l => l.id === s.listId) : null;
+        const listNameStr = listObj ? listObj.name : '未指定';
+
+        return `
+          <details class="modal-store-item" ontoggle="if(this.open) onStoreItemOpen('${s.id}', ${s.lat}, ${s.lng})">
+            <summary>
+              <span>${s.fav ? '★ ' : ''}${s.name}</span>
+              <small style="font-size:10px; color:#888;">${s.genre}</small>
+            </summary>
+            <div class="modal-store-details">
+              <p><b>所属リスト:</b> 📌 ${listNameStr}</p>
+              <p><b>形式:</b> ${s.form} | <b>ジャンル:</b> ${s.genre}</p>
+              <p><b>予算:</b> ${s.budget}</p>
+              <p><b>特徴:</b> ${features || 'なし'}</p>
+              <p><b>連絡先:</b> ${s.contact || '-'}</p>
+              <p><b>予約:</b> ${s.reserve || '-'}</p>
+              ${links.length > 0 ? `<p><b>リンク:</b> ${links.join(' | ')}</p>` : ''}
+              <p><b>備考:</b> ${s.memo || '-'}</p>
+              <div style="margin-top:6px; text-align:right;">
+                <button onclick="closeModal(); showStoreDetail('${s.id}');" style="padding:3px 8px; font-size:11px;">詳細パネルを開く</button>
+              </div>
+            </div>
+          </details>
+        `;
+      }).join('');
 
       content.innerHTML = `
         <h3>登録店舗一覧 (${curMap.stores.length}件)</h3>
-        <div style="max-height:60vh; overflow-y:auto; margin-bottom:10px;">${listHtml}</div>
+        <p style="font-size:11px; color:#666; margin-bottom:8px;">店舗名を選択すると登録情報が開き、地図がその場所に移動します。</p>
+        <div style="max-height:60vh; overflow-y:auto; margin-bottom:10px;">
+          ${listHtml}
+        </div>
         <button onclick="closeModal()" style="background:#6c757d; width:100%;">閉じる</button>
       `;
     }
 
+    function onStoreItemOpen(storeId, lat, lng) {
+      map.panTo([lat, lng]);
+    }
+
+    /* ==================== ユーザー認証・UI管理 ==================== */
     function updateAuthUI() {
       const statusElem = document.getElementById('auth-status');
       const btnElem = document.getElementById('auth-btn');
@@ -623,46 +618,791 @@
       document.getElementById('modal-overlay').style.display = 'flex';
       content.innerHTML = `
         <h3>アカウント ログイン / 登録</h3>
-        <div class="form-group"><label>メールアドレス</label><input type="email" id="auth-email"></div>
-        <div class="form-group"><label>パスワード</label><input type="password" id="auth-pass"></div>
+        <p style="font-size:11px; color:#666; margin-bottom:8px;">メールアドレスとパスワード（6文字以上）を入力してください。</p>
+        <div class="form-group"><label>メールアドレス</label><input type="email" id="auth-email" placeholder="example@email.com"></div>
+        <div class="form-group"><label>パスワード (6文字以上)</label><input type="password" id="auth-pass" placeholder="******"></div>
+        <div style="text-align:right;">
+          <span class="form-link" onclick="openForgotPasswordModal()">パスワードをお忘れの方はこちら</span>
+        </div>
         <div style="display:flex; gap:6px; margin-top:10px;">
           <button onclick="handleAuth(false)">ログイン</button>
-          <button onclick="handleAuth(true)" style="background:var(--accent-color); color:#1a3a2a;">新規登録</button>
-          <button onclick="closeModal()" style="background:#dc3545;">閉じる</button>
+          <button onclick="handleAuth(true)" style="background:var(--accent-color); color:#1a3a2a;">新規会員登録</button>
+          <button onclick="closeModal()" style="background:#dc3545;">キャンセル</button>
         </div>
       `;
+    }
+
+    function openForgotPasswordModal() {
+      const content = document.getElementById('modal-content');
+      document.getElementById('modal-overlay').style.display = 'flex';
+      content.innerHTML = `
+        <h3>パスワードの再設定</h3>
+        <p style="font-size:11px; color:#666; margin-bottom:8px;">ご登録済みのメールアドレスを入力してください。</p>
+        <div class="form-group"><label>メールアドレス</label><input type="email" id="reset-email" placeholder="example@email.com"></div>
+        <div style="display:flex; gap:6px; margin-top:10px;">
+          <button onclick="sendPasswordResetEmail()">送信する</button>
+          <button onclick="openAuthModal()" style="background:#6c757d;">戻る</button>
+        </div>
+      `;
+    }
+
+    function sendPasswordResetEmail() {
+      const email = document.getElementById('reset-email').value.trim();
+      if (!email || !users[email]) {
+        alert('ご入力のメールアドレスは登録されていません。');
+        return;
+      }
+      const mailBody = `【地区特化 グルメマップ】パスワード再設定のご案内\n\n` +
+                       `いつもご利用いただきありがとうございます。\n` +
+                       `以下の「パスワード再設定へ進む」ボタンより、新しいパスワードを設定してください。`;
+
+      alert(`【送信完了】\n以下のメールアドレスにパスワード再設定メールを送信しました。\n\n宛先: ${email}\n\n--- メール内容 ---\n${mailBody}`);
+      openResetPasswordFormModal(email);
+    }
+
+    function openResetPasswordFormModal(email) {
+      const content = document.getElementById('modal-content');
+      content.innerHTML = `
+        <h3>新しいパスワードの設定</h3>
+        <p style="font-size:11px; color:#666; margin-bottom:8px;">対象アカウント: <b>${email}</b></p>
+        <div class="form-group"><label>新しいパスワード</label><input type="password" id="new-reset-pass" placeholder="******"></div>
+        <div style="display:flex; gap:6px; margin-top:10px;">
+          <button onclick="saveNewPassword('${email}')">パスワードを更新</button>
+          <button onclick="closeModal()" style="background:#dc3545;">キャンセル</button>
+        </div>
+      `;
+    }
+
+    function saveNewPassword(email) {
+      const newPass = document.getElementById('new-reset-pass').value.trim();
+      if (newPass.length < 6) {
+        alert('パスワードは6文字以上で入力してください。');
+        return;
+      }
+      if (users[email]) {
+        users[email].password = newPass;
+        localStorage.setItem('gourmet_users', JSON.stringify(users));
+        alert('パスワードの変更が完了しました。新しいパスワードでログインしてください。');
+        openAuthModal();
+      }
+    }
+
+    function openEditProfileModal() {
+      if (!currentUser.loggedIn) return;
+      const content = document.getElementById('modal-content');
+      document.getElementById('modal-overlay').style.display = 'flex';
+      content.innerHTML = `
+        <h3>ニックネームの変更</h3>
+        <div class="form-group"><label>新しいニックネーム</label><input type="text" id="edit-name" value="${currentUser.name || ''}" placeholder="例: グルメ太郎"></div>
+        <div style="display:flex; gap:6px; margin-top:10px;">
+          <button onclick="saveProfileName()">変更を保存</button>
+          <button onclick="closeModal()" style="background:#dc3545;">キャンセル</button>
+        </div>
+      `;
+    }
+
+    function saveProfileName() {
+      const newName = document.getElementById('edit-name').value.trim();
+      if (!newName) {
+        alert('ニックネームを入力してください。');
+        return;
+      }
+      currentUser.name = newName;
+      if (users[currentUser.email]) {
+        users[currentUser.email].name = newName;
+      }
+      saveStorage();
+      updateAuthUI();
+      closeModal();
+      alert('ニックネームを変更しました。');
     }
 
     function handleAuth(isRegister) {
       const email = document.getElementById('auth-email').value.trim();
       const pass = document.getElementById('auth-pass').value.trim();
+
       if (!email || pass.length < 6) {
         alert('正しいメールアドレスと6文字以上のパスワードを入力してください。');
         return;
       }
-      currentUser = { loggedIn: true, email: email, name: 'ユーザー' };
-      saveStorage();
+
+      if (isRegister) {
+        if (users[email]) {
+          alert('このメールアドレスは既に登録されています。');
+          return;
+        }
+        const guestMaps = JSON.parse(localStorage.getItem('gourmet_guest_maps')) || maps;
+        const guestMapId = localStorage.getItem('gourmet_guest_map_id') || currentMapId;
+
+        users[email] = { name: 'ユーザー', password: pass, maps: guestMaps, currentMapId: guestMapId };
+        currentUser = { loggedIn: true, email: email, name: 'ユーザー' };
+        alert('新規会員登録が完了しました。');
+      } else {
+        if (!users[email]) {
+          alert('登録されていないアカウントです。');
+          return;
+        }
+        if (users[email].password !== pass) {
+          alert('パスワードが正しくありません。');
+          return;
+        }
+        
+        const guestMaps = JSON.parse(localStorage.getItem('gourmet_guest_maps'));
+        if (guestMaps && guestMaps.length > 0) {
+          if (confirm('ゲスト状態で作成したデータをこのアカウントに引き継ぎますか？')) {
+            guestMaps.forEach(gMap => {
+              const existMap = users[email].maps.find(m => m.id === gMap.id);
+              if (existMap) {
+                existMap.stores = [...existMap.stores, ...gMap.stores].slice(0, 50);
+                existMap.areas = [...existMap.areas, ...gMap.areas].slice(0, 20);
+                if (gMap.lists) {
+                  const mergedLists = [...(existMap.lists || []), ...gMap.lists];
+                  const uniqueLists = [];
+                  mergedLists.forEach(l => {
+                    if (!uniqueLists.find(ul => ul.id === l.id)) uniqueLists.push(l);
+                  });
+                  existMap.lists = uniqueLists.slice(0, 20);
+                }
+              } else {
+                users[email].maps.push(gMap);
+              }
+            });
+            localStorage.removeItem('gourmet_guest_maps');
+            localStorage.removeItem('gourmet_guest_map_id');
+          }
+        }
+
+        currentUser = { loggedIn: true, email: email, name: users[email].name || 'ユーザー' };
+        alert('ログインしました。');
+      }
+
+      localStorage.setItem('gourmet_users', JSON.stringify(users));
+      localStorage.setItem('gourmet_current_user', JSON.stringify(currentUser));
+
+      loadCurrentUserData();
       updateAuthUI();
+      renderCurrentMap();
       closeModal();
     }
 
     function logout() {
+      if (!confirm('ログアウトしますか？')) return;
       currentUser = { loggedIn: false, email: '', name: '' };
-      localStorage.removeItem('gourmet_current_user');
+      localStorage.setItem('gourmet_current_user', JSON.stringify(currentUser));
+      
       loadCurrentUserData();
       updateAuthUI();
       renderCurrentMap();
+      document.getElementById('right-panel').innerHTML = '<p style="color:#888;">ログアウトしました。</p>';
     }
 
-    function openMapListModal() {}
-    function createNewMapPrompt() {}
-    function backupData() {}
-    function restoreDataPrompt() {}
-    function filterStores() {}
-    function moveToArea() {}
-    function openStoreRegisterModalFromPin() {}
-    function openAreaRegisterModalFromPin() {}
-    function openEditProfileModal() {}
+    /* ==================== SVGピン ==================== */
+    function createAreaIconHtml() {
+      return `
+        <div style="width:36px; height:36px; background:radial-gradient(circle, #00d2ff 0%, #3a7bd5 100%); border:2px solid #ffffff; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 8px rgba(0,0,0,0.4); font-size:18px;">
+          🚩
+        </div>
+      `;
+    }
+
+    function createStoreIconSvg(shape, color) {
+      const c = color || COLOR_PALETTE[0];
+      let svgContent = '';
+
+      if (shape === 'star') {
+        svgContent = `<polygon points="16,2 20,12 30,12 22,19 25,29 16,23 7,29 10,19 2,12 12,12" fill="${c}" stroke="#ffffff" stroke-width="2" />`;
+      } else if (shape === 'triangle') {
+        svgContent = `<polygon points="2,4 30,4 16,28" fill="${c}" stroke="#ffffff" stroke-width="2" />`;
+      } else {
+        svgContent = `<circle cx="16" cy="16" r="12" fill="${c}" stroke="#ffffff" stroke-width="2.5" />`;
+      }
+
+      return `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.3));">${svgContent}</svg>`;
+    }
+
+    /* ==================== 店舗・エリア登録 ==================== */
+    function openStoreRegisterModalFromPin() {
+      if (checkGuestRestriction()) return;
+      if (!tempPinLocation) {
+        alert('まず地図上をクリックまたはタッチしてピンを配置してください。');
+        return;
+      }
+      openStoreRegisterForm(tempPinLocation, false);
+    }
+
+    function openAreaRegisterModalFromPin() {
+      if (checkGuestRestriction()) return;
+      if (!tempPinLocation) {
+        alert('まず地図上をクリックまたはタッチしてピンを配置してください。');
+        return;
+      }
+      registerArea(tempPinLocation);
+    }
+
+    function selectColor(colorHex) {
+      selectedColorTemp = colorHex;
+      COLOR_PALETTE.forEach((c, idx) => {
+        const el = document.getElementById(`color-opt-${idx}`);
+        if (el) {
+          if (c === colorHex) {
+            el.classList.add('selected');
+          } else {
+            el.classList.remove('selected');
+          }
+        }
+      });
+    }
+
+    function openStoreRegisterForm(latlng, isTemp = false, existingData = null) {
+      if (checkGuestRestriction()) return;
+
+      const modal = document.getElementById('modal-overlay');
+      const content = document.getElementById('modal-content');
+      modal.style.display = 'flex';
+
+      const curMap = getCurrentMap();
+      const d = existingData || {};
+      currentEditingImages = d.images ? [...d.images] : [];
+      selectedColorTemp = d.color || COLOR_PALETTE[0];
+
+      const colorOptionsHtml = COLOR_PALETTE.map((c, idx) => `
+        <div id="color-opt-${idx}" 
+             class="color-option ${selectedColorTemp === c ? 'selected' : ''}" 
+             style="background-color: ${c};" 
+             onclick="selectColor('${c}')"></div>
+      `).join('');
+
+      const listSelectOptions = (curMap.lists || []).map(l => 
+        `<option value="${l.id}" ${d.listId === l.id ? 'selected' : ''}>${l.name}</option>`
+      ).join('');
+
+      content.innerHTML = `
+        <h3 style="font-size:14px; margin-bottom:8px;">${existingData ? '店舗情報の編集' : '店舗登録'}</h3>
+        <div class="form-group"><label>お気に入り</label><button type="button" id="fav-btn" onclick="toggleFavModal()">${d.fav ? '★ 登録済み' : '☆ お気に入りに追加'}</button></div>
+        <div class="form-group">
+          <label>所属リスト</label>
+          <select id="store-list-id">
+            <option value="">(指定なし)</option>
+            ${listSelectOptions}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>画像 (最大5枚: .png, .jpg対応)</label>
+          <input type="file" id="store-imgs" multiple accept="image/png, image/jpeg" onchange="handleImageUpload(event)">
+          <div id="image-preview-container" class="preview-container"></div>
+        </div>
+        <div class="form-group"><label>店舗名</label><input type="text" id="store-name" value="${d.name || ''}"></div>
+        <div class="form-group"><label>形式</label>
+          <select id="store-form">
+            ${['レストラン','ダイニング','ビュッフェ','カフェ','カフェダイニング','料亭','小料理屋','定食屋','居酒屋','バー','屋台','野外'].map(f => `<option ${d.form===f?'selected':''}>${f}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group"><label>ジャンル</label>
+          <select id="store-genre">
+            ${['和食','洋食','中華','韓国','アジアン','エスニック','寿司','焼肉','麺類','パン系','スイーツ系','マルチジャンル','その他'].map(g => `<option ${d.genre===g?'selected':''}>${g}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group"><label>予算</label>
+          <select id="store-budget">
+            ${['1000円以内','1000-3000円以内','3000-5000円以内','5000-7000円以内','7000-10000円以内','10000円以上'].map(b => `<option ${d.budget===b?'selected':''}>${b}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group"><label>特徴</label>
+          <div style="font-size:11px;">
+            <label><input type="checkbox" id="c-charter" ${d.charter?'checked':''}> 貸切</label>
+            <label><input type="checkbox" id="c-course" ${d.course?'checked':''}> コース</label>
+            <label><input type="checkbox" id="c-drink" ${d.drink?'checked':''}> 飲み放題</label>
+            <label><input type="checkbox" id="c-eat" ${d.eat?'checked':''}> 食べ放題</label>
+          </div>
+        </div>
+        <div class="form-group"><label>ピンの形状</label>
+          <select id="store-shape">
+            <option value="circle" ${d.shape==='circle'?'selected':''}>● 丸形</option>
+            <option value="star" ${d.shape==='star'?'selected':''}>★ 星型</option>
+            <option value="triangle" ${d.shape==='triangle'?'selected':''}>▼ 逆三角</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>ピン色 (8色から選択)</label>
+          <div class="color-picker-container">
+            ${colorOptionsHtml}
+          </div>
+        </div>
+        <div class="form-group"><label>連絡先</label><input type="text" id="store-contact" value="${d.contact || '-'}"></div>
+        <div class="form-group"><label>予約有無</label><input type="text" id="store-reserve" value="${d.reserve || '-'}"></div>
+        <div class="form-group"><label>公式サイト</label><input type="text" id="store-site" value="${d.site || '-'}"></div>
+        <div class="form-group"><label>食べログ</label><input type="text" id="store-tabelog" value="${d.tabelog || '-'}"></div>
+        <div class="form-group"><label>ホットペッパー</label><input type="text" id="store-hotpepper" value="${d.hotpepper || '-'}"></div>
+        <div class="form-group"><label>他サイト</label><input type="text" id="store-othersite" value="${d.othersite || '-'}"></div>
+        <div class="form-group"><label>備考 (1500字以内)</label><textarea id="store-memo" rows="2" maxlength="1500">${d.memo || ''}</textarea></div>
+        <div style="display:flex; justify-content:space-between; margin-top:10px; gap:4px;">
+          <button onclick="saveStore(${latlng.lat}, ${latlng.lng}, false, '${d.id || ''}')">保存</button>
+          <button onclick="saveStore(${latlng.lat}, ${latlng.lng}, true, '${d.id || ''}')" style="background:#6c757d;">仮保存</button>
+          <button onclick="closeModal()" style="background:#dc3545;">キャンセル</button>
+        </div>
+      `;
+      window.isFavTemp = d.fav || false;
+      renderImagePreviews();
+    }
+
+    function handleImageUpload(e) {
+      const files = Array.from(e.target.files);
+      if (currentEditingImages.length + files.length > 5) {
+        alert('画像は最大5枚までしか登録できません。');
+        return;
+      }
+
+      files.forEach(file => {
+        if (!file.type.match('image/png') && !file.type.match('image/jpeg')) {
+          alert('.png または .jpg (.jpeg) 形式の画像を選択してください。');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          currentEditingImages.push(event.target.result);
+          renderImagePreviews();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function renderImagePreviews() {
+      const container = document.getElementById('image-preview-container');
+      if (!container) return;
+      container.innerHTML = '';
+      currentEditingImages.forEach((src, index) => {
+        const item = document.createElement('div');
+        item.className = 'preview-item';
+        item.innerHTML = `
+          <img src="${src}" alt="preview">
+          <button type="button" class="preview-remove-btn" onclick="removeEditingImage(${index})">✕</button>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function removeEditingImage(index) {
+      currentEditingImages.splice(index, 1);
+      renderImagePreviews();
+    }
+
+    function toggleFavModal() {
+      window.isFavTemp = !window.isFavTemp;
+      document.getElementById('fav-btn').innerText = window.isFavTemp ? '★ 登録済み' : '☆ お気に入りに追加';
+    }
+
+    function saveStore(lat, lng, isTemp, existingId) {
+      const curMap = getCurrentMap();
+      if (!existingId && curMap.stores.length >= 50) {
+        if (!confirm('店舗登録数が上限(50件)に達しています。既存の古い店舗を削除して上書き登録しますか？')) {
+          if (tempMarker) map.removeLayer(tempMarker);
+          closeModal();
+          return;
+        } else {
+          curMap.stores.shift();
+        }
+      }
+
+      const newStore = {
+        id: existingId || 's_' + Date.now(),
+        lat: lat, lng: lng,
+        isTemp: isTemp,
+        fav: window.isFavTemp,
+        listId: document.getElementById('store-list-id').value || '',
+        images: currentEditingImages,
+        name: document.getElementById('store-name').value || '名称未設定',
+        form: document.getElementById('store-form').value,
+        genre: document.getElementById('store-genre').value,
+        budget: document.getElementById('store-budget').value,
+        charter: document.getElementById('c-charter').checked,
+        course: document.getElementById('c-course').checked,
+        drink: document.getElementById('c-drink').checked,
+        eat: document.getElementById('c-eat').checked,
+        shape: document.getElementById('store-shape').value,
+        color: selectedColorTemp,
+        contact: document.getElementById('store-contact').value,
+        reserve: document.getElementById('store-reserve').value,
+        site: document.getElementById('store-site').value,
+        tabelog: document.getElementById('store-tabelog').value,
+        hotpepper: document.getElementById('store-hotpepper').value,
+        othersite: document.getElementById('store-othersite').value,
+        memo: document.getElementById('store-memo').value
+      };
+
+      if (existingId) {
+        const idx = curMap.stores.findIndex(s => s.id === existingId);
+        if (idx !== -1) curMap.stores[idx] = newStore;
+      } else {
+        curMap.stores.push(newStore);
+      }
+
+      tempPinLocation = null;
+      if (tempMarker) map.removeLayer(tempMarker);
+
+      saveStorage();
+      renderCurrentMap();
+      filterStores();
+      closeModal();
+    }
+
+    function registerArea(latlng) {
+      const name = prompt('エリア名を入力してください（例: 渋谷エリア）');
+      if (!name) return;
+      const curMap = getCurrentMap();
+      if (curMap.areas.length >= 20) {
+        alert('エリア登録数が上限(20件)に達しています。');
+        return;
+      }
+      curMap.areas.push({ id: 'a_' + Date.now(), name: name, lat: latlng.lat, lng: latlng.lng });
+      
+      tempPinLocation = null;
+      if (tempMarker) map.removeLayer(tempMarker);
+
+      saveStorage();
+      renderCurrentMap();
+    }
+
+    /* ==================== 地図描画・切替 ==================== */
+    function renderCurrentMap() {
+      storeMarkers.forEach(m => map.removeLayer(m.marker || m));
+      areaMarkers.forEach(m => map.removeLayer(m));
+      storeMarkers = []; areaMarkers = [];
+
+      const curMap = getCurrentMap();
+      if (!curMap) return;
+
+      const areaSelect = document.getElementById('area-select');
+      areaSelect.innerHTML = '<option value="">エリア移動</option>';
+      curMap.areas.forEach(a => {
+        areaSelect.innerHTML += `<option value="${a.lat},${a.lng}">${a.name}</option>`;
+        
+        const customAreaIcon = L.divIcon({
+          html: createAreaIconHtml(),
+          className: 'custom-pin-icon',
+          iconSize: [36, 36],
+          iconAnchor: [18, 18]
+        });
+
+        const aMarker = L.marker([a.lat, a.lng], { icon: customAreaIcon }).addTo(map).bindPopup(`<b>🚩 ${a.name}</b>`);
+        areaMarkers.push(aMarker);
+      });
+
+      curMap.stores.forEach(s => {
+        const pinColor = s.isTemp ? '#888888' : s.color;
+        const shape = s.shape || 'circle';
+
+        const customStoreIcon = L.divIcon({
+          html: createStoreIconSvg(shape, pinColor),
+          className: 'custom-pin-icon',
+          iconSize: [32, 32],
+          iconAnchor: [16, 16]
+        });
+
+        const sMarker = L.marker([s.lat, s.lng], { icon: customStoreIcon }).addTo(map);
+        sMarker.on('click', () => showStoreDetail(s.id));
+        storeMarkers.push({ id: s.id, marker: sMarker, lat: s.lat, lng: s.lng });
+      });
+
+      updateIndicator();
+      updateSearchListDropdown();
+    }
+
+    function moveToArea(coords) {
+      if (!coords) return;
+      const [lat, lng] = coords.split(',');
+      map.setView([parseFloat(lat), parseFloat(lng)], 16);
+    }
+
+    /* ==================== 詳細表示 ==================== */
+    function isValidUrl(url) {
+      return url && url !== '-' && url.trim() !== '';
+    }
+
+    function showStoreDetail(storeId) {
+      const curMap = getCurrentMap();
+      const s = curMap.stores.find(item => item.id === storeId);
+      if (!s) return;
+
+      currentSlideImageIndex = 0;
+
+      const panel = document.getElementById('right-panel');
+      
+      const nearby = curMap.stores.filter(other => {
+        const dist = Math.hypot(other.lat - s.lat, other.lng - s.lng);
+        return dist < 0.005;
+      });
+      const currentIndex = nearby.findIndex(item => item.id === s.id);
+      const prevId = nearby[currentIndex - 1] ? nearby[currentIndex - 1].id : null;
+      const nextId = nearby[currentIndex + 1] ? nearby[currentIndex + 1].id : null;
+
+      let imageHtml = '';
+      if (s.images && s.images.length > 0) {
+        imageHtml = `
+          <div class="image-slider-container" id="slider-box">
+            ${s.images.length > 1 ? `<button class="slider-btn slider-btn-left" onclick="shiftImageSlide('${s.id}', -1)">❮</button>` : ''}
+            <img id="slider-img" src="${s.images[0]}" alt="店舗画像">
+            ${s.images.length > 1 ? `<button class="slider-btn slider-btn-right" onclick="shiftImageSlide('${s.id}', 1)">❯</button>` : ''}
+            <div class="slider-counter" id="slider-count">1 / ${s.images.length}</div>
+          </div>
+        `;
+      }
+
+      const links = [];
+      if (isValidUrl(s.site)) links.push(`<a href="${s.site}" target="_blank" rel="noopener noreferrer">公式サイト</a>`);
+      if (isValidUrl(s.tabelog)) links.push(`<a href="${s.tabelog}" target="_blank" rel="noopener noreferrer">食べログ</a>`);
+      if (isValidUrl(s.hotpepper)) links.push(`<a href="${s.hotpepper}" target="_blank" rel="noopener noreferrer">ホットペッパー</a>`);
+      if (isValidUrl(s.othersite)) links.push(`<a href="${s.othersite}" target="_blank" rel="noopener noreferrer">他サイト</a>`);
+
+      let linksHtml = links.length > 0 
+        ? `<details class="links-details"><summary>🔗 関連リンク</summary><div class="link-list">${links.join(' | ')}</div></details>`
+        : `<p><b>リンク:</b> なし</p>`;
+
+      const listObj = curMap.lists ? curMap.lists.find(l => l.id === s.listId) : null;
+      const listNameStr = listObj ? listObj.name : '未指定';
+
+      panel.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <h4 style="font-size:13px;">${s.name} ${s.fav ? '★' : ''}</h4>
+          <div class="nav-buttons">
+            <button onclick="showStoreDetail('${prevId}')" ${!prevId ? 'disabled' : ''}>&lt;</button>
+            <button onclick="showStoreDetail('${nextId}')" ${!nextId ? 'disabled' : ''}>&gt;</button>
+          </div>
+        </div>
+        ${imageHtml}
+        <p><b>所属リスト:</b> 📌 ${listNameStr}</p>
+        <p><b>形式:</b> ${s.form} | <b>ジャンル:</b> ${s.genre}</p>
+        <p><b>予算:</b> ${s.budget}</p>
+        <p><b>特徴:</b> ${[s.charter?'貸切':null, s.course?'コース':null, s.drink?'飲み放題':null, s.eat?'食べ放題':null].filter(Boolean).join('・') || 'なし'}</p>
+        <p><b>連絡先:</b> ${s.contact}</p>
+        <p><b>予約:</b> ${s.reserve}</p>
+        ${linksHtml}
+        <p><b>備考:</b> ${s.memo || '-'}</p>
+        <hr style="margin:6px 0;">
+        <div style="display:flex; gap:4px; flex-wrap:wrap;">
+          <button onclick="openStoreRegisterForm({lat:${s.lat}, lng:${s.lng}}, ${s.isTemp}, ${JSON.stringify(s).replace(/"/g, '&quot;')})">編集</button>
+          <button onclick="deleteStore('${s.id}')" style="background:#dc3545;">削除</button>
+        </div>
+      `;
+
+      map.panTo([s.lat, s.lng]);
+    }
+
+    function shiftImageSlide(storeId, dir) {
+      const curMap = getCurrentMap();
+      const s = curMap.stores.find(item => item.id === storeId);
+      if (!s || !s.images || s.images.length === 0) return;
+
+      currentSlideImageIndex += dir;
+      if (currentSlideImageIndex < 0) currentSlideImageIndex = s.images.length - 1;
+      if (currentSlideImageIndex >= s.images.length) currentSlideImageIndex = 0;
+
+      const imgElem = document.getElementById('slider-img');
+      const countElem = document.getElementById('slider-count');
+      if (imgElem) imgElem.src = s.images[currentSlideImageIndex];
+      if (countElem) countElem.innerText = `${currentSlideImageIndex + 1} / ${s.images.length}`;
+    }
+
+    function deleteStore(id) {
+      if (checkGuestRestriction()) return;
+      if (!confirm('本当に削除しますか？')) return;
+      const curMap = getCurrentMap();
+      curMap.stores = curMap.stores.filter(s => s.id !== id);
+      saveStorage();
+      renderCurrentMap();
+      filterStores();
+      document.getElementById('right-panel').innerHTML = '<p style="color:#888;">削除しました。</p>';
+    }
+
+    /* ==================== 検索 ==================== */
+    function filterStores() {
+      const name = document.getElementById('search-name').value.toLowerCase();
+      const listId = document.getElementById('search-list').value;
+      const form = document.getElementById('search-form').value;
+      const genre = document.getElementById('search-genre').value;
+      const budget = document.getElementById('search-budget').value;
+      const charter = document.getElementById('feat-charter').checked;
+      const course = document.getElementById('feat-course').checked;
+      const drink = document.getElementById('feat-drink').checked;
+      const eat = document.getElementById('feat-eat').checked;
+
+      const resultsContainer = document.getElementById('search-results-container');
+      const isFilterActive = name || listId || form || genre || budget || charter || course || drink || eat;
+      
+      if (!isFilterActive) {
+        resultsContainer.style.display = 'none';
+        resultsContainer.innerHTML = '';
+        return;
+      }
+
+      const curMap = getCurrentMap();
+      const filtered = curMap.stores.filter(s => {
+        if (name && !s.name.toLowerCase().includes(name)) return false;
+        if (listId && s.listId !== listId) return false;
+        if (form && s.form !== form) return false;
+        if (genre && s.genre !== genre) return false;
+        if (budget && s.budget !== budget) return false;
+        if (charter && !s.charter) return false;
+        if (course && !s.course) return false;
+        if (drink && !s.drink) return false;
+        if (eat && !s.eat) return false;
+        return true;
+      });
+
+      resultsContainer.style.display = 'block';
+      let html = `<div style="font-weight:bold; margin-bottom:4px; font-size:11px;">該当店舗 (${filtered.length}件)</div>`;
+      
+      if (filtered.length === 0) {
+        html += `<div style="color:#888; font-size:11px;">該当する店舗が見つかりません。</div>`;
+      } else {
+        filtered.forEach(s => {
+          html += `
+            <div class="search-item" onclick="showStoreDetail('${s.id}')">
+              <b>${s.name}</b>
+              <div style="font-size:10px; color:#666;">${s.genre} / ${s.budget}</div>
+            </div>
+          `;
+        });
+      }
+      
+      resultsContainer.innerHTML = html;
+    }
+
+    /* ==================== 共有・バックアップ ==================== */
+    function exportCode() {
+      const curMap = getCurrentMap();
+      prompt('マップ共有コード (11文字のマップID):', curMap.id);
+    }
+
+    function importCodePrompt() {
+      const code = prompt('11文字の共有コードを入力してください (例: ABCDE-12345):');
+      if (!code) return;
+      const cleanCode = code.trim().toUpperCase();
+      
+      const targetMap = maps.find(m => m.id === cleanCode);
+      if (targetMap) {
+        switchMap(targetMap.id);
+        alert(`マップ「${targetMap.name}」へ切り替えました。`);
+      } else {
+        alert('指定された共有コードのマップが見つかりませんでした。');
+      }
+    }
+
+    function backupData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(maps));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `gourmet_map_backup_${Date.now()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function restoreDataPrompt() {
+      if (checkGuestRestriction()) return;
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/json';
+      input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = event => {
+          try {
+            maps = JSON.parse(event.target.result);
+            maps.forEach(m => { if (!m.lists) m.lists = []; });
+            switchMap(maps[0].id);
+            alert('復元が完了しました。');
+          } catch(err) {
+            alert('ファイルの読み込みに失敗しました。');
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    /* ==================== UI補助 ==================== */
+    function toggleMenu() {
+      const menu = document.getElementById('menu-dropdown');
+      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function changeTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+
+    function closeModal() {
+      document.getElementById('modal-overlay').style.display = 'none';
+    }
+
+    function openMapListModal() {
+      const content = document.getElementById('modal-content');
+      document.getElementById('modal-overlay').style.display = 'flex';
+      content.innerHTML = `
+        <h3>マップ管理</h3>
+        <ul>
+          ${maps.map(m => `
+            <li style="margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+              <span><b>${m.name}</b> (${m.stores.length}件) <small style="color:#888;">[${m.id}]</small> ${m.id === currentMapId ? '🚩(選択中)' : ''}</span>
+              <div>
+                <button onclick="switchMap('${m.id}')">切替</button>
+                <button onclick="renameMap('${m.id}')" style="background:#6c757d;">変更</button>
+              </div>
+            </li>
+          `).join('')}
+        </ul>
+        <button onclick="closeModal()" style="background:#dc3545; margin-top:8px;">閉じる</button>
+      `;
+    }
+
+    function switchMap(id) {
+      currentMapId = id;
+      tempPinLocation = null;
+      if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+
+      document.getElementById('search-name').value = '';
+      document.getElementById('search-list').value = '';
+      document.getElementById('search-form').value = '';
+      document.getElementById('search-genre').value = '';
+      document.getElementById('search-budget').value = '';
+      document.getElementById('feat-charter').checked = false;
+      document.getElementById('feat-course').checked = false;
+      document.getElementById('feat-drink').checked = false;
+      document.getElementById('feat-eat').checked = false;
+      
+      const resultsContainer = document.getElementById('search-results-container');
+      resultsContainer.style.display = 'none';
+      resultsContainer.innerHTML = '';
+
+      document.getElementById('right-panel').innerHTML = '<p style="color:#888;">マップを切り替えました。</p>';
+
+      saveStorage();
+      renderCurrentMap();
+      closeModal();
+    }
+
+    function renameMap(id) {
+      if (checkGuestRestriction()) return;
+      const m = maps.find(item => item.id === id);
+      const name = prompt('新しいマップ名を入力してください:', m.name);
+      if (name) {
+        m.name = name;
+        saveStorage();
+        openMapListModal();
+      }
+    }
+
+    function createNewMapPrompt() {
+      if (checkGuestRestriction()) return;
+      if (maps.length >= 20) {
+        alert('マップ登録数が上限(20件)に達しています。');
+        return;
+      }
+      const name = prompt('新規マップ名を入力してください:');
+      if (!name) return;
+      const newMap = createDefaultMap(generate11CharShareCode(), name);
+      maps.push(newMap);
+      switchMap(newMap.id);
+    }
   </script>
 </body>
 </html>
