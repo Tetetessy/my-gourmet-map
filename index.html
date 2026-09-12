@@ -81,7 +81,7 @@
       position: absolute; top: 50px; right: 10px; z-index: 999; background: var(--panel-bg); backdrop-filter: blur(8px); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 250px; max-height: 60vh; overflow-y: auto; display: none;
     }
 
-    .bottom-center-area { position: absolute; top: 50px; right: 270px; z-index: 1000; width: 200px; display: none; }
+    .bottom-center-area { position: absolute; top: 50px; right: 270px; z-index: 1000; width: 220px; display: none; }
     .detail-panel { background: var(--panel-bg); backdrop-filter: blur(10px); padding: 12px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 6px 20px rgba(0,0,0,0.2); max-height: 60vh; overflow-y: auto; }
 
     @media (max-width: 768px) {
@@ -125,12 +125,15 @@
     .success-msg { color: #2a9d8f; font-size: 11px; margin-top: 4px; display: none; font-weight: 600; background: rgba(42, 157, 143, 0.08); padding: 5px 8px; border-radius: 6px; border-left: 3px solid #2a9d8f; }
 
     .image-preview-box { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
-    .preview-thumb { position: relative; width: 45px; height: 45px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+    .preview-thumb { position: relative; width: 50px; height: 50px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
     .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
     .preview-thumb .del-btn { position: absolute; top: 0; right: 0; background: rgba(220,53,69,0.85); color: #fff; border: none; font-size: 10px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
     .color-picker-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
     .color-btn { height: 30px; border-radius: 6px; border: 2px solid #fff; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    
+    .fav-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; font-weight: bold; font-size: 12px; }
+    .fav-toggle input { cursor: pointer; width: 16px; height: 16px; }
   </style>
 </head>
 <body>
@@ -159,6 +162,10 @@
         <input type="text" id="search-name" placeholder="店舗名検索" oninput="filterStores()" style="width:100%;">
         <select id="search-list" onchange="filterStores()" style="width:100%;">
           <option value="">全てのリスト</option>
+        </select>
+        <select id="search-fav" onchange="filterStores()" style="width:100%;">
+          <option value="">全てのお気に入り</option>
+          <option value="fav">⭐ お気に入りのみ</option>
         </select>
         <select id="search-form" onchange="filterStores()" style="width:100%;">
           <option value="">全ての形式</option>
@@ -217,7 +224,7 @@
     <div id="search-results-container"></div>
   </div>
 
-  <!-- 検索結果の横：店舗・ピン詳細パネル -->
+  <!-- 店舗・ピン詳細パネル -->
   <div class="bottom-center-area" id="detail-area">
     <div class="detail-panel">
       <div style="display:flex; justify-content:flex-end; margin-bottom: 4px;">
@@ -456,6 +463,7 @@
       if (area) map.setView([area.lat, area.lng], 15);
     }
 
+    /* 元のレイアウト（写真添付上部・お気に入り・URL入力欄あり）にリスト選択を追加 */
     function openStoreRegisterModalFromPin(storeToEdit = null) {
       if (!storeToEdit && !tempPinLocation) {
         alert('先に地図上の登録したい場所をタップしてピンを立ててください。');
@@ -471,7 +479,7 @@
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
 
-      let listOptions = '<option value="">なし</option>';
+      let listOptions = '<option value="">なし（未分類）</option>';
       (curMap.lists || []).forEach(l => {
         const sel = (storeToEdit && storeToEdit.listId === l.id) ? 'selected' : '';
         listOptions += `<option value="${l.id}" ${sel}>${l.name}</option>`;
@@ -480,25 +488,45 @@
       const isEdit = !!storeToEdit;
 
       content.innerHTML = `
-        <div class="modal-header"><h3>${isEdit ? '✏️ 店舗情報の編集' : '📍 新規店舗登録'}</h3></div>
-        <div class="form-group"><label>店舗名*</label><input type="text" id="reg-store-name" class="stylish-input" value="${isEdit ? storeToEdit.name : ''}" placeholder="例: 美味しい和食 さくら"></div>
-        <div class="form-group"><label>形式</label>
-          <select id="reg-store-form" class="stylish-input">
-            ${['レストラン','ダイニング','カフェ','居酒屋','バー','定食屋','料亭','その他'].map(f => `<option ${isEdit && storeToEdit.form === f ? 'selected':''}>${f}</option>`).join('')}
-          </select>
-        </div>
-        <div class="form-group"><label>ジャンル</label>
-          <select id="reg-store-genre" class="stylish-input">
-            ${['和食','洋食','中華','韓国','アジアン','寿司','焼肉','ラーメン','その他'].map(g => `<option ${isEdit && storeToEdit.genre === g ? 'selected':''}>${g}</option>`).join('')}
-          </select>
-        </div>
-        <div class="form-group"><label>所属リスト</label><select id="reg-store-list" class="stylish-input">${listOptions}</select></div>
-        <div class="form-group"><label>メモ</label><textarea id="reg-store-memo" class="stylish-input" rows="2" placeholder="おすすめメニューやメモ">${isEdit ? (storeToEdit.memo || '') : ''}</textarea></div>
+        <div class="modal-header"><h3>${isEdit ? '✏️ 店舗情報の編集' : '📍 店舗情報の登録'}</h3></div>
+        
+        <!-- 上部：写真添付エリア -->
         <div class="form-group">
           <label>写真添付 (最大3枚)</label>
           <input type="file" id="reg-store-file" accept="image/*" onchange="handleImageUpload(event)">
           <div id="image-preview-container" class="image-preview-box"></div>
         </div>
+
+        <div class="form-group"><label>店舗名*</label><input type="text" id="reg-store-name" class="stylish-input" value="${isEdit ? storeToEdit.name : ''}" placeholder="例: 博多かねふく ふく竹 東京駅店"></div>
+        
+        <div class="form-group"><label>形式</label>
+          <select id="reg-store-form" class="stylish-input">
+            ${['レストラン','ダイニング','カフェ','居酒屋','バー','定食屋','料亭','その他'].map(f => `<option ${isEdit && storeToEdit.form === f ? 'selected':''}>${f}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="form-group"><label>ジャンル</label>
+          <select id="reg-store-genre" class="stylish-input">
+            ${['和食','洋食','中華','韓国','アジアン','寿司','焼肉','ラーメン','その他'].map(g => `<option ${isEdit && storeToEdit.genre === g ? 'selected':''}>${g}</option>`).join('')}
+          </select>
+        </div>
+
+        <!-- 所属リスト項目 -->
+        <div class="form-group"><label>所属リスト</label><select id="reg-store-list" class="stylish-input">${listOptions}</select></div>
+
+        <!-- URL（食べログや公式HP） -->
+        <div class="form-group"><label>URL (食べログ・公式HP等)</label><input type="url" id="reg-store-url" class="stylish-input" value="${isEdit ? (storeToEdit.url || '') : ''}" placeholder="https://..."></div>
+
+        <!-- お気に入り機能 -->
+        <div class="form-group" style="margin-top: 4px;">
+          <label class="fav-toggle">
+            <input type="checkbox" id="reg-store-fav" ${isEdit && storeToEdit.isFavorite ? 'checked' : ''}>
+            ⭐ お気に入りに登録する
+          </label>
+        </div>
+
+        <div class="form-group"><label>メモ</label><textarea id="reg-store-memo" class="stylish-input" rows="3" placeholder="明太子で有名な福岡の店である...">${isEdit ? (storeToEdit.memo || '') : ''}</textarea></div>
+
         <div class="btn-group">
           <button onclick="saveStoreData('${isEdit ? storeToEdit.id : ''}')">${isEdit ? '更新保存' : '登録保存'}</button>
           <button onclick="closeModal()" class="btn-secondary">キャンセル</button>
@@ -553,6 +581,8 @@
           target.form = document.getElementById('reg-store-form').value;
           target.genre = document.getElementById('reg-store-genre').value;
           target.listId = document.getElementById('reg-store-list').value;
+          target.url = document.getElementById('reg-store-url').value.trim();
+          target.isFavorite = document.getElementById('reg-store-fav').checked;
           target.memo = document.getElementById('reg-store-memo').value;
           target.images = [...currentEditingImages];
         }
@@ -566,6 +596,8 @@
           form: document.getElementById('reg-store-form').value,
           genre: document.getElementById('reg-store-genre').value,
           listId: document.getElementById('reg-store-list').value,
+          url: document.getElementById('reg-store-url').value.trim(),
+          isFavorite: document.getElementById('reg-store-fav').checked,
           memo: document.getElementById('reg-store-memo').value,
           images: [...currentEditingImages],
           lat: tempPinLocation.lat,
@@ -683,6 +715,8 @@
 
       const listObj = curMap.lists.find(l => l.id === store.listId);
       const listName = listObj ? listObj.name : '未分類';
+      const favBadge = store.isFavorite ? '⭐ お気に入り' : '';
+      const urlLink = store.url ? `<a href="${store.url}" target="_blank" style="color:var(--primary-color); font-size:11px; text-decoration:underline;">🔗 店舗リンク・Webサイト</a>` : '';
 
       const detailPanel = document.getElementById('detail-area');
       const detailContent = document.getElementById('detail-content');
@@ -691,7 +725,7 @@
       detailContent.innerHTML = `
         <div style="display:flex; flex-direction:column; gap:4px;">
           <div>
-            <h3 style="margin:0; color:var(--primary-color); font-size:13px;">${store.name}</h3>
+            <h3 style="margin:0; color:var(--primary-color); font-size:13px;">${store.isFavorite ? '⭐ ' : ''}${store.name}</h3>
             <p style="font-size:10.5px; color:#666; margin-top:2px;"><b>形式:</b> ${store.form || '-'}<br><b>ジャンル:</b> ${store.genre || '-'}</p>
           </div>
           <div style="display:flex; gap:4px;">
@@ -700,6 +734,7 @@
           </div>
         </div>
         ${imgHtml}
+        ${urlLink ? `<div style="margin-top:4px;">${urlLink}</div>` : ''}
         <p style="font-size:11px; margin-top:4px; background:rgba(0,0,0,0.03); padding:6px; border-radius:6px; border-left:3px solid var(--accent-color);">
           ${store.memo || 'メモなし'}
         </p>
@@ -766,6 +801,7 @@
     function filterStores() {
       const nameVal = document.getElementById('search-name').value.toLowerCase();
       const listVal = document.getElementById('search-list').value;
+      const favVal = document.getElementById('search-fav').value;
       const formVal = document.getElementById('search-form').value;
       const genreVal = document.getElementById('search-genre').value;
 
@@ -773,6 +809,7 @@
       const filtered = (curMap.stores || []).filter(s => {
         if (nameVal && !s.name.toLowerCase().includes(nameVal)) return false;
         if (listVal && s.listId !== listVal) return false;
+        if (favVal === 'fav' && !s.isFavorite) return false;
         if (formVal && s.form !== formVal) return false;
         if (genreVal && s.genre !== genreVal) return false;
         return true;
@@ -790,7 +827,7 @@
 
       container.innerHTML = filtered.map(s => `
         <div style="padding:6px 8px; margin-top:4px; background:rgba(0,0,0,0.03); border-radius:6px; cursor:pointer; border-left:3px solid var(--primary-color);" onclick="showStoreDetail('${s.id}')">
-          <b style="font-size:12px;">${s.name}</b>
+          <b style="font-size:12px;">${s.isFavorite ? '⭐ ' : ''}${s.name}</b>
           <div style="font-size:10px; color:#666; margin-top:2px;">${s.form || '-'} / ${s.genre || '-'}</div>
         </div>
       `).join('');
@@ -965,7 +1002,7 @@
 
       let listHtml = (curMap.stores || []).map(s => `
         <div style="padding:6px; border-bottom:1px solid var(--border-color); cursor:pointer;" onclick="closeModal(); showStoreDetail('${s.id}');">
-          <b>${s.name}</b> <small>(${s.genre || '-'})</small>
+          <b>${s.isFavorite ? '⭐ ' : ''}${s.name}</b> <small>(${s.genre || '-'})</small>
         </div>
       `).join('');
 
