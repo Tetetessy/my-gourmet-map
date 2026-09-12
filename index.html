@@ -68,18 +68,26 @@
     .top-left { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 4px; }
     .top-right { position: absolute; top: 10px; right: 10px; z-index: 1000; }
     
-    /* 下部パネル制御 */
-    .bottom-container {
-      position: absolute; bottom: 10px; left: 10px; right: 10px; z-index: 1000;
-      display: flex; gap: 8px; pointer-events: none; max-height: 45vh;
-    }
-    .bottom-panel {
-      pointer-events: auto; background: var(--panel-bg); backdrop-filter: blur(8px);
-      padding: 8px 10px; border-radius: var(--radius); border: 1px solid var(--border-color);
-      overflow-y: auto; box-shadow: 0 4px 14px rgba(0,0,0,0.15); flex: 1; max-height: 100%; display: none;
-    }
-    .panel-toggle-btn {
+    /* 左下：絞り込みボタン & 絞り込みパネル */
+    .bottom-left-area {
       position: absolute; bottom: 10px; left: 10px; z-index: 1000;
+      display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+    }
+    .search-panel {
+      background: var(--panel-bg); backdrop-filter: blur(8px);
+      padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 240px; max-height: 40vh; overflow-y: auto; display: none;
+    }
+
+    /* 右下：詳細パネル */
+    .bottom-right-area {
+      position: absolute; bottom: 10px; right: 10px; z-index: 1000;
+      width: 280px; max-height: 45vh; display: none;
+    }
+    .detail-panel {
+      background: var(--panel-bg); backdrop-filter: blur(8px);
+      padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15); max-height: 100%; overflow-y: auto;
     }
 
     @media (max-width: 768px) {
@@ -88,13 +96,9 @@
       .top-bar { top: 6px; left: 6px; transform: none; right: 55px; justify-content: space-between; padding: 2px 6px; }
       .top-left { top: 40px; left: 6px; flex-direction: row; gap: 4px; }
       .top-right { top: 6px; right: 6px; }
-      .bottom-container { flex-direction: column-reverse; max-height: 40vh; gap: 4px; bottom: 6px; left: 6px; right: 6px; }
-      .bottom-panel { width: 100%; max-height: 25vh; padding: 6px; }
+      .search-panel { width: 85vw; max-height: 35vh; }
+      .bottom-right-area { width: 85vw; left: 10px; right: auto; }
     }
-
-    .color-picker-container { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
-    .color-option { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-    .color-option.selected { border-color: #333; transform: scale(1.15); box-shadow: 0 0 0 2px var(--primary-color); }
 
     /* 操作ドロップダウン（スクロール化） */
     .menu-dropdown {
@@ -195,15 +199,11 @@
     </div>
   </div>
 
-  <!-- 下部検索パネル起動ボタン -->
-  <div class="panel-toggle-btn">
-    <button onclick="toggleSearchPanel()">🔍 店舗絞り込み</button>
-  </div>
-
-  <!-- 下部表示エリア -->
-  <div class="bottom-container">
-    <div class="bottom-panel" id="left-panel">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
+  <!-- 左下：絞り込みボタン & ウィンドウ -->
+  <div class="bottom-left-area">
+    <button onclick="toggleSearchPanel()">🔍 絞り込み</button>
+    <div class="search-panel" id="search-panel">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
         <h4 style="margin: 0;">🔍 店舗絞り込み</h4>
         <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
       </div>
@@ -223,8 +223,11 @@
       </select>
       <div id="search-results-container" style="margin-top:6px; border-top:1px dashed var(--border-color); padding-top:4px;"></div>
     </div>
+  </div>
 
-    <div class="bottom-panel" id="right-panel">
+  <!-- 右下：詳細表示エリア -->
+  <div class="bottom-right-area" id="detail-area">
+    <div class="detail-panel">
       <div style="display:flex; justify-content:flex-end;">
         <button onclick="closeDetailPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
       </div>
@@ -252,9 +255,6 @@
     let mapStoreMarkers = [];
     let mapAreaMarkers = [];
     let currentEditingImages = [];
-    let selectedColorTemp = '#ff6b6b';
-
-    const COLOR_PALETTE = ['#ff6b6b', '#ff922b', '#fcc419', '#51cf66', '#22b8cf', '#339af0', '#cc5de8', '#845ef7'];
 
     function toggleMenu() {
       const dropdown = document.getElementById('menu-dropdown');
@@ -262,12 +262,12 @@
     }
 
     function toggleSearchPanel() {
-      const panel = document.getElementById('left-panel');
+      const panel = document.getElementById('search-panel');
       panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
     }
 
     function closeDetailPanel() {
-      document.getElementById('right-panel').style.display = 'none';
+      document.getElementById('detail-area').style.display = 'none';
     }
 
     function closeModal() {
@@ -361,7 +361,7 @@
         if (tempMarker) map.removeLayer(tempMarker);
         tempMarker = L.marker(e.latlng, { opacity: 0.9 }).addTo(map);
         
-        const detailPanel = document.getElementById('right-panel');
+        const detailPanel = document.getElementById('detail-area');
         const detailContent = document.getElementById('detail-content');
         detailPanel.style.display = 'block';
         detailContent.innerHTML = `
@@ -385,17 +385,14 @@
 
       const curMap = getCurrentMap();
 
+      /* エリアをピン（マーカー）として表示 */
       (curMap.areas || []).forEach(area => {
-        const circle = L.circle([area.lat, area.lng], {
-          color: area.color || '#ff6b6b',
-          fillColor: area.color || '#ff6b6b',
-          fillOpacity: 0.15,
-          radius: area.radius || 300
-        }).addTo(map);
-        circle.bindPopup(`<b>🚩 ${area.name}</b>`);
-        mapAreaMarkers.push(circle);
+        const marker = L.marker([area.lat, area.lng]).addTo(map);
+        marker.bindPopup(`<b>🚩 ${area.name}</b>`);
+        mapAreaMarkers.push(marker);
       });
 
+      /* 店舗をピン（マーカー）として表示 */
       (curMap.stores || []).forEach(store => {
         const marker = L.marker([store.lat, store.lng]).addTo(map);
         marker.on('click', () => showStoreDetail(store.id));
@@ -557,17 +554,10 @@
       }
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
-      selectedColorTemp = COLOR_PALETTE[0];
-
-      const paletteHtml = COLOR_PALETTE.map((c, i) => `
-        <div class="color-option ${i===0?'selected':''}" style="background:${c}" onclick="selectColor('${c}', this)"></div>
-      `).join('');
 
       content.innerHTML = `
         <div class="modal-header"><h3>🚩 新規エリア登録</h3></div>
         <div class="form-group"><label>エリア名*</label><input type="text" id="reg-area-name" class="stylish-input" placeholder="例: 横浜駅周辺エリア"></div>
-        <div class="form-group"><label>範囲半径 (メートル)</label><input type="number" id="reg-area-radius" class="stylish-input" value="300" min="50" max="3000"></div>
-        <div class="form-group"><label>テーマカラー</label><div class="color-picker-container">${paletteHtml}</div></div>
         <div class="btn-group">
           <button onclick="saveNewArea()">エリア登録</button>
           <button onclick="closeModal()" class="btn-secondary">キャンセル</button>
@@ -575,15 +565,8 @@
       `;
     }
 
-    function selectColor(color, elem) {
-      selectedColorTemp = color;
-      document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
-      elem.classList.add('selected');
-    }
-
     function saveNewArea() {
       const name = document.getElementById('reg-area-name').value.trim();
-      const radius = parseInt(document.getElementById('reg-area-radius').value) || 300;
       if (!name) {
         alert('エリア名を入力してください。');
         return;
@@ -594,8 +577,6 @@
       curMap.areas.push({
         id: 'area_' + Date.now(),
         name: name,
-        radius: radius,
-        color: selectedColorTemp,
         lat: tempPinLocation.lat,
         lng: tempPinLocation.lng
       });
@@ -620,7 +601,7 @@
           `</div>`;
       }
 
-      const detailPanel = document.getElementById('right-panel');
+      const detailPanel = document.getElementById('detail-area');
       const detailContent = document.getElementById('detail-content');
       detailPanel.style.display = 'block';
 
