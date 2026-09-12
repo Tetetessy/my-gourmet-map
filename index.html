@@ -70,7 +70,6 @@
     
     /* エリアピン用カスタムCSSアイコンスタイル */
     .area-custom-pin {
-      background: linear-gradient(135deg, #4ecdc4, #2ab7ca);
       color: #ffffff;
       border: 2px solid #ffffff;
       border-radius: 20px;
@@ -83,9 +82,10 @@
       align-items: center;
       justify-content: center;
       gap: 3px;
+      cursor: pointer;
     }
 
-    /* 左下：絞り込みボタン & 絞り込みパネル */
+    /* 左下：絞り込み条件入力パネル */
     .bottom-left-area {
       position: absolute; bottom: 10px; left: 10px; z-index: 1000;
       display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
@@ -93,18 +93,26 @@
     .search-panel {
       background: var(--panel-bg); backdrop-filter: blur(8px);
       padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color);
-      box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 240px; max-height: 40vh; overflow-y: auto; display: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 220px; max-height: 40vh; overflow-y: auto; display: none;
     }
 
-    /* 右下：詳細パネル */
-    .bottom-right-area {
-      position: absolute; bottom: 10px; right: 10px; z-index: 1000;
-      width: 280px; max-height: 45vh; display: none;
-    }
-    .detail-panel {
+    /* 右側：絞り込み結果パネル（別枠） */
+    .search-results-panel {
+      position: absolute; top: 50px; right: 10px; z-index: 999;
       background: var(--panel-bg); backdrop-filter: blur(8px);
       padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color);
-      box-shadow: 0 4px 14px rgba(0,0,0,0.15); max-height: 100%; overflow-y: auto;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 250px; max-height: 60vh; overflow-y: auto; display: none;
+    }
+
+    /* 下部中央：店舗・ピン詳細パネル（操作を邪魔しない位置とサイズ） */
+    .bottom-center-area {
+      position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 1000;
+      width: 90%; max-width: 480px; display: none;
+    }
+    .detail-panel {
+      background: var(--panel-bg); backdrop-filter: blur(10px);
+      padding: 12px; border-radius: var(--radius); border: 1px solid var(--border-color);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2); max-height: 40vh; overflow-y: auto;
     }
 
     @media (max-width: 768px) {
@@ -113,8 +121,9 @@
       .top-bar { top: 6px; left: 6px; transform: none; right: 55px; justify-content: space-between; padding: 2px 6px; }
       .top-left { top: 40px; left: 6px; flex-direction: row; gap: 4px; }
       .top-right { top: 6px; right: 6px; }
-      .search-panel { width: 85vw; max-height: 35vh; }
-      .bottom-right-area { width: 85vw; left: 10px; right: auto; }
+      .search-panel { width: 80vw; max-height: 35vh; }
+      .search-results-panel { width: 80vw; top: 80px; right: 10px; max-height: 40vh; }
+      .bottom-center-area { width: 95vw; bottom: 8px; }
     }
 
     /* 操作ドロップダウン（スクロール化） */
@@ -162,6 +171,10 @@
     .preview-thumb { position: relative; width: 45px; height: 45px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
     .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
     .preview-thumb .del-btn { position: absolute; top: 0; right: 0; background: rgba(220,53,69,0.85); color: #fff; border: none; font-size: 10px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+    /* カラーパレット */
+    .color-picker-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
+    .color-btn { height: 30px; border-radius: 6px; border: 2px solid #fff; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
   </style>
 </head>
 <body>
@@ -216,12 +229,12 @@
     </div>
   </div>
 
-  <!-- 左下：絞り込みボタン & ウィンドウ -->
+  <!-- 左下：絞り込み検索条件入力 -->
   <div class="bottom-left-area">
     <button onclick="toggleSearchPanel()">🔍 絞り込み</button>
     <div class="search-panel" id="search-panel">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-        <h4 style="margin: 0;">🔍 店舗絞り込み</h4>
+        <h4 style="margin: 0;">🔍 条件検索</h4>
         <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
       </div>
       <input type="text" id="search-name" placeholder="店舗名検索" oninput="filterStores()" style="width:100%;">
@@ -238,15 +251,23 @@
         <option>和食</option><option>洋食</option><option>中華</option><option>韓国</option>
         <option>アジアン</option><option>寿司</option><option>焼肉</option><option>ラーメン</option><option>その他</option>
       </select>
-      <div id="search-results-container" style="margin-top:6px; border-top:1px dashed var(--border-color); padding-top:4px;"></div>
     </div>
   </div>
 
-  <!-- 右下：詳細表示エリア -->
-  <div class="bottom-right-area" id="detail-area">
+  <!-- 右側別枠：絞り込み結果表示パネル -->
+  <div class="search-results-panel" id="search-results-panel">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; border-bottom:1px solid var(--border-color); padding-bottom:4px;">
+      <h4 style="margin:0; font-size:12px;">📋 検索結果一覧</h4>
+      <button onclick="closeSearchResultsPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
+    </div>
+    <div id="search-results-container"></div>
+  </div>
+
+  <!-- 下部中央：店舗・ピン詳細パネル（視認性の高い位置） -->
+  <div class="bottom-center-area" id="detail-area">
     <div class="detail-panel">
-      <div style="display:flex; justify-content:flex-end;">
-        <button onclick="closeDetailPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
+      <div style="display:flex; justify-content:flex-end; margin-bottom: 4px;">
+        <button onclick="closeDetailPanel()" style="background:#6c757d; font-size:10px; padding:2px 6px;">閉じる ✕</button>
       </div>
       <div id="detail-content"></div>
     </div>
@@ -258,6 +279,18 @@
   </div>
 
   <script>
+    /* ==================== 8色のエリアピン定義 ==================== */
+    const AREA_COLORS = [
+      { id: 'teal', label: 'エメラルド', bg: 'linear-gradient(135deg, #4ecdc4, #2ab7ca)' },
+      { id: 'rose', label: 'ローズ', bg: 'linear-gradient(135deg, #ff6b6b, #ee5253)' },
+      { id: 'amber', label: 'アンバー', bg: 'linear-gradient(135deg, #ff9f43, #f39c12)' },
+      { id: 'ocean', label: 'オーシャン', bg: 'linear-gradient(135deg, #54a0ff, #2e86de)' },
+      { id: 'purple', label: 'パープル', bg: 'linear-gradient(135deg, #a55eea, #8e44ad)' },
+      { id: 'mint', label: 'ティール', bg: 'linear-gradient(135deg, #1dd1a1, #10ac84)' },
+      { id: 'dark', label: 'ダーク', bg: 'linear-gradient(135deg, #576574, #222f3e)' },
+      { id: 'gold', label: 'ゴールド', bg: 'linear-gradient(135deg, #f1c40f, #d35400)' }
+    ];
+
     /* ==================== グローバルデータ ==================== */
     let map;
     let currentUser = JSON.parse(localStorage.getItem('gourmet_current_user')) || { loggedIn: false, email: '', name: '' };
@@ -280,7 +313,15 @@
 
     function toggleSearchPanel() {
       const panel = document.getElementById('search-panel');
-      panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+      const isVisible = panel.style.display === 'block';
+      panel.style.display = isVisible ? 'none' : 'block';
+      if (!isVisible) {
+        filterStores();
+      }
+    }
+
+    function closeSearchResultsPanel() {
+      document.getElementById('search-results-panel').style.display = 'none';
     }
 
     function closeDetailPanel() {
@@ -382,8 +423,10 @@
         const detailContent = document.getElementById('detail-content');
         detailPanel.style.display = 'block';
         detailContent.innerHTML = `
-          <p style="color:var(--primary-color); font-weight:bold;">📍 ピンを置きました</p>
-          <p style="font-size:11px; color:#666; margin-top:2px;">左上の「📍 ピンを店舗登録」または「🚩 エリア登録」を押して情報を登録してください。</p>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <p style="color:var(--primary-color); font-weight:bold; margin:0;">📍 ピンを置きました</p>
+          </div>
+          <p style="font-size:11.5px; color:#666; margin-top:4px;">左上の「📍 ピンを店舗登録」または「🚩 エリア登録」を押して情報を登録できます。</p>
         `;
       });
 
@@ -402,27 +445,32 @@
 
       const curMap = getCurrentMap();
 
-      /* エリアピン：店舗ピンと形状・見た目を明確に区別したカスタムバッジアイコン */
+      /* エリアピン：カスタマイズされた色で描画 */
       (curMap.areas || []).forEach(area => {
+        const colorObj = AREA_COLORS.find(c => c.id === area.color) || AREA_COLORS[0];
         const areaIcon = L.divIcon({
           className: '',
-          html: `<div class="area-custom-pin">🚩 ${area.name}</div>`,
+          html: `<div class="area-custom-pin" style="background: ${colorObj.bg};">🚩 ${area.name}</div>`,
           iconSize: [null, null],
           iconAnchor: [30, 15]
         });
         const marker = L.marker([area.lat, area.lng], { icon: areaIcon }).addTo(map);
-        marker.bindPopup(`<b>🚩 エリア: ${area.name}</b>`);
+        marker.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          showAreaDetail(area.id);
+        });
         mapAreaMarkers.push(marker);
       });
 
-      /* 店舗ピン：通常の赤い標準マーカー */
+      /* 店舗ピン：通常の標準マーカー */
       (curMap.stores || []).forEach(store => {
         const marker = L.marker([store.lat, store.lng]).addTo(map);
-        marker.on('click', () => showStoreDetail(store.id));
+        marker.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          showStoreDetail(store.id);
+        });
         mapStoreMarkers.push(marker);
       });
-
-      filterStores();
     }
 
     function updateIndicator() {
@@ -463,52 +511,56 @@
       }
     }
 
-    /* ==================== 店舗＆エリア登録操作 ==================== */
-    function openStoreRegisterModalFromPin() {
-      if (!tempPinLocation) {
+    /* ==================== 店舗・エリア登録/編集モーダル ==================== */
+    function openStoreRegisterModalFromPin(storeToEdit = null) {
+      if (!storeToEdit && !tempPinLocation) {
         alert('先に地図上の登録したい場所をタップしてピンを立ててください。');
         return;
       }
       const curMap = getCurrentMap();
-      if (curMap.stores.length >= 50) {
+      if (!storeToEdit && curMap.stores.length >= 50) {
         alert('⚠️ 1つのマップに登録できる店舗は上限50件までです。');
         return;
       }
 
-      currentEditingImages = [];
+      currentEditingImages = storeToEdit ? [...(storeToEdit.images || [])] : [];
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
 
       let listOptions = '<option value="">なし</option>';
-      (curMap.lists || []).forEach(l => { listOptions += `<option value="${l.id}">${l.name}</option>`; });
+      (curMap.lists || []).forEach(l => {
+        const sel = (storeToEdit && storeToEdit.listId === l.id) ? 'selected' : '';
+        listOptions += `<option value="${l.id}" ${sel}>${l.name}</option>`;
+      });
+
+      const isEdit = !!storeToEdit;
 
       content.innerHTML = `
-        <div class="modal-header"><h3>📍 新規店舗登録</h3></div>
-        <div class="form-group"><label>店舗名*</label><input type="text" id="reg-store-name" class="stylish-input" placeholder="例: 美味しい和食 さくら"></div>
+        <div class="modal-header"><h3>${isEdit ? '✏️ 店舗情報の編集' : '📍 新規店舗登録'}</h3></div>
+        <div class="form-group"><label>店舗名*</label><input type="text" id="reg-store-name" class="stylish-input" value="${isEdit ? storeToEdit.name : ''}" placeholder="例: 美味しい和食 さくら"></div>
         <div class="form-group"><label>形式</label>
           <select id="reg-store-form" class="stylish-input">
-            <option>レストラン</option><option>ダイニング</option><option>カフェ</option><option>居酒屋</option>
-            <option>バー</option><option>定食屋</option><option>料亭</option><option>その他</option>
+            ${['レストラン','ダイニング','カフェ','居酒屋','バー','定食屋','料亭','その他'].map(f => `<option ${isEdit && storeToEdit.form === f ? 'selected':''}>${f}</option>`).join('')}
           </select>
         </div>
         <div class="form-group"><label>ジャンル</label>
           <select id="reg-store-genre" class="stylish-input">
-            <option>和食</option><option>洋食</option><option>中華</option><option>韓国</option>
-            <option>アジアン</option><option>寿司</option><option>焼肉</option><option>ラーメン</option><option>その他</option>
+            ${['和食','洋食','中華','韓国','アジアン','寿司','焼肉','ラーメン','その他'].map(g => `<option ${isEdit && storeToEdit.genre === g ? 'selected':''}>${g}</option>`).join('')}
           </select>
         </div>
         <div class="form-group"><label>所属リスト</label><select id="reg-store-list" class="stylish-input">${listOptions}</select></div>
-        <div class="form-group"><label>メモ</label><textarea id="reg-store-memo" class="stylish-input" rows="2" placeholder="おすすめメニューやメモ"></textarea></div>
+        <div class="form-group"><label>メモ</label><textarea id="reg-store-memo" class="stylish-input" rows="2" placeholder="おすすめメニューやメモ">${isEdit ? (storeToEdit.memo || '') : ''}</textarea></div>
         <div class="form-group">
           <label>写真添付 (最大3枚)</label>
           <input type="file" id="reg-store-file" accept="image/*" onchange="handleImageUpload(event)">
           <div id="image-preview-container" class="image-preview-box"></div>
         </div>
         <div class="btn-group">
-          <button onclick="saveNewStore()">登録保存</button>
+          <button onclick="saveStoreData('${isEdit ? storeToEdit.id : ''}')">${isEdit ? '更新保存' : '登録保存'}</button>
           <button onclick="closeModal()" class="btn-secondary">キャンセル</button>
         </div>
       `;
+      renderImagePreviews();
     }
 
     function handleImageUpload(e) {
@@ -542,32 +594,48 @@
       renderImagePreviews();
     }
 
-    function saveNewStore() {
+    function saveStoreData(editStoreId = '') {
       const name = document.getElementById('reg-store-name').value.trim();
       if (!name) {
         alert('店舗名を入力してください。');
         return;
       }
       const curMap = getCurrentMap();
-      const newStore = {
-        id: 'str_' + Date.now(),
-        name: name,
-        form: document.getElementById('reg-store-form').value,
-        genre: document.getElementById('reg-store-genre').value,
-        listId: document.getElementById('reg-store-list').value,
-        memo: document.getElementById('reg-store-memo').value,
-        images: [...currentEditingImages],
-        lat: tempPinLocation.lat,
-        lng: tempPinLocation.lng
-      };
 
-      curMap.stores.push(newStore);
-      if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
-      tempPinLocation = null;
+      if (editStoreId) {
+        const target = curMap.stores.find(s => s.id === editStoreId);
+        if (target) {
+          target.name = name;
+          target.form = document.getElementById('reg-store-form').value;
+          target.genre = document.getElementById('reg-store-genre').value;
+          target.listId = document.getElementById('reg-store-list').value;
+          target.memo = document.getElementById('reg-store-memo').value;
+          target.images = [...currentEditingImages];
+        }
+        saveStorage();
+        closeModal();
+        showStoreDetail(editStoreId);
+      } else {
+        const newStore = {
+          id: 'str_' + Date.now(),
+          name: name,
+          form: document.getElementById('reg-store-form').value,
+          genre: document.getElementById('reg-store-genre').value,
+          listId: document.getElementById('reg-store-list').value,
+          memo: document.getElementById('reg-store-memo').value,
+          images: [...currentEditingImages],
+          lat: tempPinLocation.lat,
+          lng: tempPinLocation.lng
+        };
 
-      saveStorage();
-      closeModal();
-      showStoreDetail(newStore.id);
+        curMap.stores.push(newStore);
+        if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+        tempPinLocation = null;
+
+        saveStorage();
+        closeModal();
+        showStoreDetail(newStore.id);
+      }
     }
 
     function openAreaRegisterModalFromPin() {
@@ -600,6 +668,7 @@
       curMap.areas.push({
         id: 'area_' + Date.now(),
         name: name,
+        color: 'teal',
         lat: tempPinLocation.lat,
         lng: tempPinLocation.lng
       });
@@ -611,7 +680,53 @@
       closeModal();
     }
 
-    /* ==================== 詳細表示 & 絞り込み ==================== */
+    /* ==================== エリアピンの色変更 & 詳細表示 ==================== */
+    function showAreaDetail(areaId) {
+      const curMap = getCurrentMap();
+      const area = curMap.areas.find(a => a.id === areaId);
+      if (!area) return;
+
+      const detailPanel = document.getElementById('detail-area');
+      const detailContent = document.getElementById('detail-content');
+      detailPanel.style.display = 'block';
+
+      const colorBtnsHtml = AREA_COLORS.map(c => `
+        <div class="color-btn" style="background:${c.bg}; border: ${area.color === c.id ? '3px solid #000' : '2px solid #fff'};" 
+             onclick="changeAreaColor('${area.id}', '${c.id}')" title="${c.label}"></div>
+      `).join('');
+
+      detailContent.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="margin:0; color:var(--primary-color);">🚩 ${area.name}</h3>
+          <button onclick="deleteArea('${area.id}')" style="background:#dc3545; font-size:10px; padding:2px 6px;">削除</button>
+        </div>
+        <p style="font-size:11px; margin-top:6px; font-weight:bold;">🎨 ピンのカラーを選択 (8段階):</p>
+        <div class="color-picker-grid">
+          ${colorBtnsHtml}
+        </div>
+      `;
+      map.setView([area.lat, area.lng], 15);
+    }
+
+    function changeAreaColor(areaId, colorId) {
+      const curMap = getCurrentMap();
+      const area = curMap.areas.find(a => a.id === areaId);
+      if (area) {
+        area.color = colorId;
+        saveStorage();
+        showAreaDetail(areaId);
+      }
+    }
+
+    function deleteArea(areaId) {
+      if (!confirm('このエリアピンを削除しますか？')) return;
+      const curMap = getCurrentMap();
+      curMap.areas = curMap.areas.filter(a => a.id !== areaId);
+      saveStorage();
+      closeDetailPanel();
+    }
+
+    /* ==================== 店舗詳細表示 & リスト追加機能 ==================== */
     function showStoreDetail(storeId) {
       const curMap = getCurrentMap();
       const store = curMap.stores.find(s => s.id === storeId);
@@ -620,24 +735,82 @@
       let imgHtml = '';
       if (store.images && store.images.length > 0) {
         imgHtml = `<div style="display:flex; gap:4px; overflow-x:auto; margin:6px 0;">` + 
-          store.images.map(img => `<img src="${img}" style="height:80px; border-radius:6px; object-fit:cover;">`).join('') +
+          store.images.map(img => `<img src="${img}" style="height:70px; border-radius:6px; object-fit:cover;">`).join('') +
           `</div>`;
       }
+
+      const listObj = curMap.lists.find(l => l.id === store.listId);
+      const listName = listObj ? listObj.name : '未分類';
 
       const detailPanel = document.getElementById('detail-area');
       const detailContent = document.getElementById('detail-content');
       detailPanel.style.display = 'block';
 
       detailContent.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-          <h3 style="margin-bottom:2px; color:var(--primary-color);">${store.name}</h3>
-          <button onclick="deleteStore('${store.id}')" style="background:#dc3545; font-size:10px; padding:2px 6px;">削除</button>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:4px;">
+          <div>
+            <h3 style="margin:0; color:var(--primary-color); font-size:14px;">${store.name}</h3>
+            <p style="font-size:11px; color:#666; margin-top:2px;"><b>形式:</b> ${store.form || '-'} | <b>ジャンル:</b> ${store.genre || '-'}</p>
+          </div>
+          <div style="display:flex; gap:4px; flex-shrink:0;">
+            <button onclick="openEditStoreModal('${store.id}')" style="background:#ff9f43; font-size:10px; padding:2px 6px;">✏️ 編集</button>
+            <button onclick="deleteStore('${store.id}')" style="background:#dc3545; font-size:10px; padding:2px 6px;">削除</button>
+          </div>
         </div>
-        <p style="font-size:11px; color:#666;"><b>形式:</b> ${store.form || '-'} | <b>ジャンル:</b> ${store.genre || '-'}</p>
         ${imgHtml}
-        <p style="font-size:12px; margin-top:4px; background:rgba(0,0,0,0.03); padding:6px; border-radius:6px;">${store.memo || 'メモなし'}</p>
+        <p style="font-size:11.5px; margin-top:4px; background:rgba(0,0,0,0.03); padding:6px; border-radius:6px; border-left:3px solid var(--accent-color);">
+          ${store.memo || 'メモなし'}
+        </p>
+        <div style="margin-top:6px; display:flex; align-items:center; justify-content:space-between; border-top:1px dashed var(--border-color); padding-top:4px;">
+          <span style="font-size:11px; color:#555;">📋 所属リスト: <b>${listName}</b></span>
+          <button onclick="openAssignListModal('${store.id}')" style="font-size:10px; padding:2px 6px; background:var(--accent-color); color:#fff;">📋 所属リスト変更</button>
+        </div>
       `;
       map.setView([store.lat, store.lng], 16);
+    }
+
+    function openEditStoreModal(storeId) {
+      const curMap = getCurrentMap();
+      const store = curMap.stores.find(s => s.id === storeId);
+      if (store) openStoreRegisterModalFromPin(store);
+    }
+
+    function openAssignListModal(storeId) {
+      const curMap = getCurrentMap();
+      const store = curMap.stores.find(s => s.id === storeId);
+      if (!store) return;
+
+      const content = document.getElementById('modal-content');
+      document.getElementById('modal-overlay').style.display = 'flex';
+
+      let listOptions = '<option value="">なし（未分類）</option>';
+      (curMap.lists || []).forEach(l => {
+        const sel = (store.listId === l.id) ? 'selected' : '';
+        listOptions += `<option value="${l.id}" ${sel}>${l.name}</option>`;
+      });
+
+      content.innerHTML = `
+        <div class="modal-header"><h3>📋 所属リストの追加・変更</h3></div>
+        <p style="font-size:12px; margin-bottom:8px;">「<b>${store.name}</b>」を登録するリストを選択してください。</p>
+        <div class="form-group">
+          <select id="assign-list-select" class="stylish-input">${listOptions}</select>
+        </div>
+        <div class="btn-group">
+          <button onclick="saveAssignList('${store.id}')">設定を保存</button>
+          <button onclick="closeModal()" class="btn-secondary">キャンセル</button>
+        </div>
+      `;
+    }
+
+    function saveAssignList(storeId) {
+      const curMap = getCurrentMap();
+      const store = curMap.stores.find(s => s.id === storeId);
+      if (store) {
+        store.listId = document.getElementById('assign-list-select').value;
+        saveStorage();
+        closeModal();
+        showStoreDetail(storeId);
+      }
     }
 
     function deleteStore(storeId) {
@@ -648,6 +821,7 @@
       closeDetailPanel();
     }
 
+    /* ==================== 絞り込み検索 (右側別枠表示) ==================== */
     function filterStores() {
       const nameVal = document.getElementById('search-name').value.toLowerCase();
       const listVal = document.getElementById('search-list').value;
@@ -663,15 +837,20 @@
         return true;
       });
 
+      const resultsPanel = document.getElementById('search-results-panel');
       const container = document.getElementById('search-results-container');
+      
+      resultsPanel.style.display = 'block';
+
       if (filtered.length === 0) {
-        container.innerHTML = `<p style="font-size:11px; color:#888; text-align:center; margin-top:6px;">一致する店舗がありません</p>`;
+        container.innerHTML = `<p style="font-size:11px; color:#888; text-align:center; padding:10px 0;">該当する店舗が見つかりません</p>`;
         return;
       }
 
       container.innerHTML = filtered.map(s => `
-        <div style="padding:6px; margin-top:4px; background:rgba(0,0,0,0.03); border-radius:6px; cursor:pointer;" onclick="showStoreDetail('${s.id}')">
-          <b>${s.name}</b> <small style="color:#666;">(${s.genre||'-'})</small>
+        <div style="padding:6px 8px; margin-top:4px; background:rgba(0,0,0,0.03); border-radius:6px; cursor:pointer; border-left:3px solid var(--primary-color);" onclick="showStoreDetail('${s.id}')">
+          <b style="font-size:12px;">${s.name}</b>
+          <div style="font-size:10px; color:#666; margin-top:2px;">${s.form || '-'} / ${s.genre || '-'}</div>
         </div>
       `).join('');
     }
