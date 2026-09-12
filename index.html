@@ -117,6 +117,18 @@
     .stylish-input { width: 100%; padding: 8px 10px; font-size: 13px; border: 1px solid var(--border-color); border-radius: var(--radius); background: rgba(255, 255, 255, 0.9); }
     .stylish-input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.2); }
 
+    /* スライダー（コスパ・キャパ・雰囲気）レイアウトの統一 */
+    .range-control-row {
+      display: grid;
+      grid-template-columns: 75px 1fr 75px;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+    }
+    .range-label-left { text-align: right; font-size: 11px; color: #666; white-space: nowrap; }
+    .range-label-right { text-align: left; font-size: 11px; color: #666; white-space: nowrap; }
+    .range-slider { width: 100%; cursor: pointer; margin: 0; }
+
     .btn-group { display: flex; gap: 6px; margin-top: 14px; }
     .btn-group button { flex: 1; padding: 8px; font-size: 12px; }
     .btn-secondary { background: #6c757d; }
@@ -481,7 +493,7 @@
       if (area) map.setView([area.lat, area.lng], 15);
     }
 
-    /* <1> 店舗登録モーダル（全16項目順序指定通り） */
+    /* <1> 店舗登録モーダル（全16項目仕様完全準拠 ＆ リスト追加・新規行追加機能 ＆ バーレイアウト整列） */
     function openStoreRegisterModalFromPin(storeToEdit = null) {
       if (!storeToEdit && !tempPinLocation) {
         alert('先に地図上の登録したい場所をタップしてピンを立ててください。');
@@ -502,6 +514,10 @@
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
 
+      // 既存リスト用の最初の選択状態生成
+      const firstSelectedId = selectedListIds.length > 0 ? selectedListIds[0] : '';
+      const additionalSelectedIds = selectedListIds.slice(1);
+
       content.innerHTML = `
         <div class="modal-header"><h3>${isEdit ? '✏️ 店舗情報の編集' : '📍 店舗情報の登録'}</h3></div>
         
@@ -513,20 +529,34 @@
           <input type="hidden" id="reg-store-fav" value="${isFav}">
         </div>
 
-        <!-- 2番目：リスト登録（複数選択＆新規作成） -->
+        <!-- 2番目：リスト登録（既存リスト選択プルダウン ＆ 新規リスト作成欄 / 追加用＋ボタン付き） -->
         <div class="form-group">
-          <label>リスト登録 (複数選択可)</label>
-          <div id="list-checkboxes" style="max-height:100px; overflow-y:auto; border:1px solid var(--border-color); padding:6px; border-radius:var(--radius); background:rgba(255,255,255,0.8);">
-            ${(curMap.lists || []).map(l => `
-              <label style="display:block; font-size:12px; cursor:pointer; margin-bottom:2px;">
-                <input type="checkbox" name="store-lists" value="${l.id}" ${selectedListIds.includes(l.id) ? 'checked' : ''}> ${l.name}
-              </label>
+          <label>リスト登録 (既存リストから追加)</label>
+          <div id="existing-list-container">
+            <div class="existing-list-row" style="display:flex; gap:4px; margin-bottom:4px;">
+              <select class="stylish-input existing-list-select" style="flex:1;">
+                ${generateListOptionsHtml(firstSelectedId)}
+              </select>
+              <button type="button" onclick="addExistingListRow()" style="padding:4px 10px; font-weight:bold;">＋</button>
+            </div>
+            ${additionalSelectedIds.map(id => `
+              <div class="existing-list-row" style="display:flex; gap:4px; margin-bottom:4px;">
+                <select class="stylish-input existing-list-select" style="flex:1;">
+                  ${generateListOptionsHtml(id)}
+                </select>
+                <button type="button" onclick="this.parentElement.remove()" style="padding:4px 8px; background:#dc3545; color:#fff;">✕</button>
+              </div>
             `).join('')}
-            ${(!curMap.lists || curMap.lists.length === 0) ? '<span style="font-size:11px; color:#888;">リストがありません</span>' : ''}
           </div>
-          <div style="display:flex; gap:4px; margin-top:4px;">
-            <input type="text" id="new-list-inline" placeholder="新規リスト名" style="flex:1; padding:4px 8px; font-size:11px;">
-            <button type="button" onclick="addNewListInline()" style="font-size:10px; padding:4px 8px;">＋ 作成</button>
+        </div>
+
+        <div class="form-group">
+          <label>新規リストを作成して追加</label>
+          <div id="new-list-container">
+            <div class="new-list-row" style="display:flex; gap:4px; margin-bottom:4px;">
+              <input type="text" class="stylish-input new-list-input" placeholder="新規リスト名を入力" style="flex:1;">
+              <button type="button" onclick="addNewListRow()" style="padding:4px 10px; font-weight:bold;">＋</button>
+            </div>
           </div>
         </div>
 
@@ -559,33 +589,33 @@
           </select>
         </div>
 
-        <!-- 7番目：コスパ -->
+        <!-- 7番目：コスパ (レイアウト整列) -->
         <div class="form-group">
           <label>コスパ</label>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span style="font-size:11px; color:#666;">[低]</span>
-            <input type="range" id="reg-store-cospa" min="1" max="5" step="1" value="${isEdit && storeToEdit.cospa ? storeToEdit.cospa : 3}" style="flex:1;">
-            <span style="font-size:11px; color:#666;">[高&lt;良&gt;]</span>
+          <div class="range-control-row">
+            <span class="range-label-left">[低]</span>
+            <input type="range" id="reg-store-cospa" class="range-slider" min="1" max="5" step="1" value="${isEdit && storeToEdit.cospa ? storeToEdit.cospa : 3}">
+            <span class="range-label-right">[高&lt;良&gt;]</span>
           </div>
         </div>
 
-        <!-- 8番目：キャパ -->
+        <!-- 8番目：キャパ (レイアウト整列) -->
         <div class="form-group">
           <label>キャパ</label>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span style="font-size:11px; color:#666;">[少人数]</span>
-            <input type="range" id="reg-store-capa" min="1" max="5" step="1" value="${isEdit && storeToEdit.capa ? storeToEdit.capa : 3}" style="flex:1;">
-            <span style="font-size:11px; color:#666;">[大人数向け]</span>
+          <div class="range-control-row">
+            <span class="range-label-left">[少人数]</span>
+            <input type="range" id="reg-store-capa" class="range-slider" min="1" max="5" step="1" value="${isEdit && storeToEdit.capa ? storeToEdit.capa : 3}">
+            <span class="range-label-right">[大人数向け]</span>
           </div>
         </div>
 
-        <!-- 9番目：雰囲気 -->
+        <!-- 9番目：雰囲気 (レイアウト整列) -->
         <div class="form-group">
           <label>雰囲気</label>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span style="font-size:11px; color:#666;">[落ち着いた]</span>
-            <input type="range" id="reg-store-mood" min="1" max="5" step="1" value="${isEdit && storeToEdit.mood ? storeToEdit.mood : 3}" style="flex:1;">
-            <span style="font-size:11px; color:#666;">[にぎやか]</span>
+          <div class="range-control-row">
+            <span class="range-label-left">[落ち着いた]</span>
+            <input type="range" id="reg-store-mood" class="range-slider" min="1" max="5" step="1" value="${isEdit && storeToEdit.mood ? storeToEdit.mood : 3}">
+            <span class="range-label-right">[にぎやか]</span>
           </div>
         </div>
 
@@ -639,6 +669,45 @@
       renderImagePreviews();
     }
 
+    /* 既存リスト用の<option>群生成 */
+    function generateListOptionsHtml(selectedId = '') {
+      const curMap = getCurrentMap();
+      let html = '<option value="">(選択なし)</option>';
+      (curMap.lists || []).forEach(l => {
+        const sel = (l.id === selectedId) ? 'selected' : '';
+        html += `<option value="${l.id}" ${sel}>${l.name}</option>`;
+      });
+      return html;
+    }
+
+    /* 既存リスト選択用の行を追加 */
+    function addExistingListRow() {
+      const container = document.getElementById('existing-list-container');
+      const div = document.createElement('div');
+      div.className = 'existing-list-row';
+      div.style.cssText = 'display:flex; gap:4px; margin-bottom:4px;';
+      div.innerHTML = `
+        <select class="stylish-input existing-list-select" style="flex:1;">
+          ${generateListOptionsHtml()}
+        </select>
+        <button type="button" onclick="this.parentElement.remove()" style="padding:4px 8px; background:#dc3545; color:#fff;">✕</button>
+      `;
+      container.appendChild(div);
+    }
+
+    /* 新規リスト作成用の行を追加 */
+    function addNewListRow() {
+      const container = document.getElementById('new-list-container');
+      const div = document.createElement('div');
+      div.className = 'new-list-row';
+      div.style.cssText = 'display:flex; gap:4px; margin-bottom:4px;';
+      div.innerHTML = `
+        <input type="text" class="stylish-input new-list-input" placeholder="新規リスト名を入力" style="flex:1;">
+        <button type="button" onclick="this.parentElement.remove()" style="padding:4px 8px; background:#dc3545; color:#fff;">✕</button>
+      `;
+      container.appendChild(div);
+    }
+
     function toggleFavBtn() {
       const hiddenInput = document.getElementById('reg-store-fav');
       const btn = document.getElementById('reg-fav-btn');
@@ -646,27 +715,6 @@
       hiddenInput.value = (!current).toString();
       btn.style.background = !current ? '#ff6b6b' : '#6c757d';
       btn.innerText = !current ? '⭐ お気に入り（登録済み）' : '☆ お気に入りに追加';
-    }
-
-    function addNewListInline() {
-      const input = document.getElementById('new-list-inline');
-      const name = input.value.trim();
-      if (!name) return;
-
-      const curMap = getCurrentMap();
-      if (!curMap.lists) curMap.lists = [];
-      if (curMap.lists.length >= 20) { alert('⚠️ リストは上限20個までです。'); return; }
-
-      const newList = { id: 'lst_' + Date.now(), name: name };
-      curMap.lists.push(newList);
-      saveStorage();
-
-      const container = document.getElementById('list-checkboxes');
-      const label = document.createElement('label');
-      label.style.cssText = 'display:block; font-size:12px; cursor:pointer; margin-bottom:2px;';
-      label.innerHTML = `<input type="checkbox" name="store-lists" value="${newList.id}" checked> ${newList.name}`;
-      container.appendChild(label);
-      input.value = '';
     }
 
     function handleImageUploadStrict(e) {
@@ -707,6 +755,7 @@
       renderImagePreviews();
     }
 
+    /* 保存ボタン押下時にリストを反映・新規生成 */
     function saveStoreData(editStoreId = '') {
       const name = document.getElementById('reg-store-name').value.trim();
       if (!name) {
@@ -714,9 +763,29 @@
         return;
       }
       const curMap = getCurrentMap();
+      if (!curMap.lists) curMap.lists = [];
 
-      const selectedListElements = document.querySelectorAll('input[name="store-lists"]:checked');
-      const selectedListIds = Array.from(selectedListElements).map(el => el.value);
+      // 既存リスト選択の収集
+      const selectedListSelects = document.querySelectorAll('.existing-list-select');
+      const selectedListIds = [];
+      selectedListSelects.forEach(sel => {
+        if (sel.value && !selectedListIds.includes(sel.value)) {
+          selectedListIds.push(sel.value);
+        }
+      });
+
+      // 新規リスト入力の収集と保存ボタン押下時の動的生成
+      const newListInputs = document.querySelectorAll('.new-list-input');
+      newListInputs.forEach(input => {
+        const val = input.value.trim();
+        if (val) {
+          if (curMap.lists.length < 20) {
+            const newList = { id: 'lst_' + Date.now() + '_' + Math.floor(Math.random()*1000), name: val };
+            curMap.lists.push(newList);
+            selectedListIds.push(newList.id);
+          }
+        }
+      });
 
       const storeData = {
         name: name,
@@ -862,7 +931,6 @@
           `</div>`;
       }
 
-      // 11〜14番目のURLアコーディオン用データ抽出（"-" のものは除外）
       const urls = [
         { label: '11. 予約対応', val: store.reserve },
         { label: '12. 公式サイト', val: store.official },
