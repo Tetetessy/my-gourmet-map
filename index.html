@@ -68,6 +68,23 @@
     .top-left { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 4px; }
     .top-right { position: absolute; top: 10px; right: 10px; z-index: 1000; }
     
+    /* エリアピン用カスタムCSSアイコンスタイル */
+    .area-custom-pin {
+      background: linear-gradient(135deg, #4ecdc4, #2ab7ca);
+      color: #ffffff;
+      border: 2px solid #ffffff;
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-weight: bold;
+      font-size: 11px;
+      white-space: nowrap;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+    }
+
     /* 左下：絞り込みボタン & 絞り込みパネル */
     .bottom-left-area {
       position: absolute; bottom: 10px; left: 10px; z-index: 1000;
@@ -385,14 +402,20 @@
 
       const curMap = getCurrentMap();
 
-      /* エリアをピン（マーカー）として表示 */
+      /* エリアピン：店舗ピンと形状・見た目を明確に区別したカスタムバッジアイコン */
       (curMap.areas || []).forEach(area => {
-        const marker = L.marker([area.lat, area.lng]).addTo(map);
-        marker.bindPopup(`<b>🚩 ${area.name}</b>`);
+        const areaIcon = L.divIcon({
+          className: '',
+          html: `<div class="area-custom-pin">🚩 ${area.name}</div>`,
+          iconSize: [null, null],
+          iconAnchor: [30, 15]
+        });
+        const marker = L.marker([area.lat, area.lng], { icon: areaIcon }).addTo(map);
+        marker.bindPopup(`<b>🚩 エリア: ${area.name}</b>`);
         mapAreaMarkers.push(marker);
       });
 
-      /* 店舗をピン（マーカー）として表示 */
+      /* 店舗ピン：通常の赤い標準マーカー */
       (curMap.stores || []).forEach(store => {
         const marker = L.marker([store.lat, store.lng]).addTo(map);
         marker.on('click', () => showStoreDetail(store.id));
