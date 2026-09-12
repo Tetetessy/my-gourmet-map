@@ -68,51 +68,21 @@
     .top-left { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
     .top-right { position: absolute; top: 10px; right: 10px; z-index: 1000; }
     
-    /* エリアピン用カスタムCSSアイコンスタイル */
     .area-custom-pin {
-      color: #ffffff;
-      border: 2px solid #ffffff;
-      border-radius: 20px;
-      padding: 4px 10px;
-      font-weight: bold;
-      font-size: 11px;
-      white-space: nowrap;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 3px;
-      cursor: pointer;
+      color: #ffffff; border: 2px solid #ffffff; border-radius: 20px; padding: 4px 10px; font-weight: bold; font-size: 11px; white-space: nowrap; box-shadow: 0 3px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; gap: 3px; cursor: pointer;
     }
 
-    /* 左上：絞り込み条件入力パネル */
-    .bottom-left-area {
-      display: flex; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%;
-    }
+    .bottom-left-area { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; }
     .search-panel {
-      background: var(--panel-bg); backdrop-filter: blur(8px);
-      padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color);
-      box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 220px; max-height: 40vh; overflow-y: auto; display: none;
+      background: var(--panel-bg); backdrop-filter: blur(8px); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 220px; max-height: 40vh; overflow-y: auto; display: none;
     }
 
-    /* 右側：絞り込み結果パネル（別枠） */
     .search-results-panel {
-      position: absolute; top: 50px; right: 10px; z-index: 999;
-      background: var(--panel-bg); backdrop-filter: blur(8px);
-      padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color);
-      box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 250px; max-height: 60vh; overflow-y: auto; display: none;
+      position: absolute; top: 50px; right: 10px; z-index: 999; background: var(--panel-bg); backdrop-filter: blur(8px); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 250px; max-height: 60vh; overflow-y: auto; display: none;
     }
 
-    /* 検索結果の横：店舗・ピン詳細パネル（検索結果一覧と同じ高さを指定） */
-    .bottom-center-area {
-      position: absolute; top: 50px; right: 270px; z-index: 1000;
-      width: 200px; display: none;
-    }
-    .detail-panel {
-      background: var(--panel-bg); backdrop-filter: blur(10px);
-      padding: 12px; border-radius: var(--radius); border: 1px solid var(--border-color);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.2); max-height: 60vh; overflow-y: auto;
-    }
+    .bottom-center-area { position: absolute; top: 50px; right: 270px; z-index: 1000; width: 200px; display: none; }
+    .detail-panel { background: var(--panel-bg); backdrop-filter: blur(10px); padding: 12px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 6px 20px rgba(0,0,0,0.2); max-height: 60vh; overflow-y: auto; }
 
     @media (max-width: 768px) {
       :root { --font-size: 11px; }
@@ -125,30 +95,18 @@
       .bottom-center-area { width: 80vw; top: 130px; right: 10px; }
     }
 
-    /* 操作ドロップダウン（スクロール化） */
     .menu-dropdown {
-      display: none; position: absolute; right: 0; top: 36px;
-      background: var(--panel-bg); backdrop-filter: blur(10px);
-      border: 1px solid var(--border-color); border-radius: var(--radius);
-      padding: 8px; width: 210px; max-height: 80vh; overflow-y: auto;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 1001;
+      display: none; position: absolute; right: 0; top: 36px; background: var(--panel-bg); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 8px; width: 210px; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 1001;
     }
     .menu-dropdown button { display: block; width: 100%; text-align: left; margin: 2px 0; }
 
-    /* モーダル */
     .modal-overlay {
-      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(4px);
-      z-index: 2000; display: none; justify-content: center; align-items: center;
-      animation: fadeIn 0.2s ease-out;
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(4px); z-index: 2000; display: none; justify-content: center; align-items: center; animation: fadeIn 0.2s ease-out;
     }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
     .modal-content {
-      background: var(--panel-bg); color: var(--text-color);
-      border-radius: calc(var(--radius) * 1.2); padding: 18px;
-      max-width: 440px; width: 92%; max-height: 85vh; overflow-y: auto;
-      border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+      background: var(--panel-bg); color: var(--text-color); border-radius: calc(var(--radius) * 1.2); padding: 18px; max-width: 440px; width: 92%; max-height: 85vh; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
     }
 
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid var(--border-color); }
@@ -171,7 +129,6 @@
     .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
     .preview-thumb .del-btn { position: absolute; top: 0; right: 0; background: rgba(220,53,69,0.85); color: #fff; border: none; font-size: 10px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
-    /* カラーパレット */
     .color-picker-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
     .color-btn { height: 30px; border-radius: 6px; border: 2px solid #fff; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
   </style>
@@ -260,7 +217,7 @@
     <div id="search-results-container"></div>
   </div>
 
-  <!-- 検索結果の横：店舗・ピン詳細パネル（縦長） -->
+  <!-- 検索結果の横：店舗・ピン詳細パネル -->
   <div class="bottom-center-area" id="detail-area">
     <div class="detail-panel">
       <div style="display:flex; justify-content:flex-end; margin-bottom: 4px;">
@@ -276,7 +233,6 @@
   </div>
 
   <script>
-    /* ==================== 8色のエリアピン定義 ==================== */
     const AREA_COLORS = [
       { id: 'teal', label: 'エメラルド', bg: 'linear-gradient(135deg, #4ecdc4, #2ab7ca)' },
       { id: 'rose', label: 'ローズ', bg: 'linear-gradient(135deg, #ff6b6b, #ee5253)' },
@@ -288,7 +244,6 @@
       { id: 'gold', label: 'ゴールド', bg: 'linear-gradient(135deg, #f1c40f, #d35400)' }
     ];
 
-    /* ==================== グローバルデータ ==================== */
     let map;
     let currentUser = JSON.parse(localStorage.getItem('gourmet_current_user')) || { loggedIn: false, email: '', name: '' };
     let users = JSON.parse(localStorage.getItem('gourmet_users')) || {};
@@ -312,9 +267,7 @@
       const panel = document.getElementById('search-panel');
       const isVisible = panel.style.display === 'block';
       panel.style.display = isVisible ? 'none' : 'block';
-      if (!isVisible) {
-        filterStores();
-      }
+      if (!isVisible) filterStores();
     }
 
     function closeSearchResultsPanel() {
@@ -400,7 +353,6 @@
       return maps.find(m => m.id === currentMapId) || maps[0];
     }
 
-    /* ==================== 地図 & マーカー描画 ==================== */
     window.onload = function() {
       loadCurrentUserData();
       updateAuthUI();
@@ -442,7 +394,6 @@
 
       const curMap = getCurrentMap();
 
-      /* エリアピン：カスタマイズされた色で描画 */
       (curMap.areas || []).forEach(area => {
         const colorObj = AREA_COLORS.find(c => c.id === area.color) || AREA_COLORS[0];
         const areaIcon = L.divIcon({
@@ -459,7 +410,6 @@
         mapAreaMarkers.push(marker);
       });
 
-      /* 店舗ピン：通常の標準マーカー */
       (curMap.stores || []).forEach(store => {
         const marker = L.marker([store.lat, store.lng]).addTo(map);
         marker.on('click', (e) => {
@@ -503,12 +453,9 @@
       if (index === "") return;
       const cur = getCurrentMap();
       const area = cur.areas[index];
-      if (area) {
-        map.setView([area.lat, area.lng], 15);
-      }
+      if (area) map.setView([area.lat, area.lng], 15);
     }
 
-    /* ==================== 店舗・エリア登録/編集モーダル ==================== */
     function openStoreRegisterModalFromPin(storeToEdit = null) {
       if (!storeToEdit && !tempPinLocation) {
         alert('先に地図上の登録したい場所をタップしてピンを立ててください。');
@@ -677,7 +624,6 @@
       closeModal();
     }
 
-    /* ==================== エリアピンの色変更 & 詳細表示 ==================== */
     function showAreaDetail(areaId) {
       const curMap = getCurrentMap();
       const area = curMap.areas.find(a => a.id === areaId);
@@ -723,7 +669,6 @@
       closeDetailPanel();
     }
 
-    /* ==================== 店舗詳細表示 & リスト追加機能 ==================== */
     function showStoreDetail(storeId) {
       const curMap = getCurrentMap();
       const store = curMap.stores.find(s => s.id === storeId);
@@ -818,7 +763,6 @@
       closeDetailPanel();
     }
 
-    /* ==================== 絞り込み検索 (右側別枠表示) ==================== */
     function filterStores() {
       const nameVal = document.getElementById('search-name').value.toLowerCase();
       const listVal = document.getElementById('search-list').value;
@@ -852,7 +796,6 @@
       `).join('');
     }
 
-    /* ==================== 共有機能 ==================== */
     function exportCode() {
       toggleMenu();
       const curMap = getCurrentMap();
@@ -971,7 +914,6 @@
       }
     }
 
-    /* ==================== リスト・マップ・アカウント管理 ==================== */
     function openCustomListModal() {
       toggleMenu();
       const curMap = getCurrentMap();
