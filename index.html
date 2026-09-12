@@ -164,7 +164,8 @@
 
   <!-- 画面左上：登録ボタン群 ＆ 絞り込みボタン (統一サイズ＆色) -->
   <div class="top-left">
-    <button id="btn-register-store" class="action-btn" onclick="openStoreRegisterModalFromPin()">📍 ピンを店舗登録</button>
+    <!-- <1> ピンを店舗登録の表記に変更 -->
+    <button id="btn-register-store" class="action-btn" onclick="openStoreRegisterModalFromPin()">📍 店舗登録</button>
     <button id="btn-register-area" class="action-btn" onclick="openAreaRegisterModalPrompt()">🚩 エリア登録</button>
     <div class="bottom-left-area">
       <button class="action-btn" onclick="toggleSearchPanel()">🔍 絞り込み</button>
@@ -325,7 +326,7 @@
     }
 
     function createDefaultMap(id, name) {
-      return { id: id || generateDefaultShareCode(), name: name || 'マイグルメマップ', stores: [], areas: [], lists: [] };
+      return { id: id || generateDefaultShareCode(), name: name || 'マイグルメマップ', stores: [], areas: [], lists: [], isShared: false };
     }
 
     function loadCurrentUserData() {
@@ -352,8 +353,15 @@
     function saveStorage() {
       try {
         const curMap = getCurrentMap();
-        if (curMap) {
-          sharedStoreDB[curMap.id] = JSON.parse(JSON.stringify(curMap));
+        if (curMap && !curMap.isShared) {
+          // <2> 共有用DBには対象のマップ情報（店舗・エリア・リスト等）のみ保存（他マップやアカウント情報は除外）
+          sharedStoreDB[curMap.id] = {
+            id: curMap.id,
+            name: curMap.name,
+            stores: JSON.parse(JSON.stringify(curMap.stores || [])),
+            areas: JSON.parse(JSON.stringify(curMap.areas || [])),
+            lists: JSON.parse(JSON.stringify(curMap.lists || []))
+          };
           localStorage.setItem('gourmet_shared_maps', JSON.stringify(sharedStoreDB));
         }
 
@@ -391,6 +399,12 @@
       }).addTo(map);
 
       map.on('click', function(e) {
+        const curMap = getCurrentMap();
+        if (curMap.isShared) {
+          alert('🔒 共有されたマップのため、ピンの作成はできません。');
+          return;
+        }
+
         tempPinLocation = e.latlng;
         if (tempMarker) map.removeLayer(tempMarker);
         tempMarker = L.marker(e.latlng, { opacity: 0.9 }).addTo(map);
@@ -398,11 +412,13 @@
         const detailPanel = document.getElementById('detail-area');
         const detailContent = document.getElementById('detail-content');
         detailPanel.style.display = 'block';
+
+        // <1> ピンを置きましたウィンドウの表記を変更
         detailContent.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <p style="color:var(--primary-color); font-weight:bold; margin:0;">📍 ピンを置きました</p>
           </div>
-          <p style="font-size:11.5px; color:#666; margin-top:4px;">左上の「📍 ピンを店舗登録」または「🚩 エリア登録」を押して情報を登録できます。</p>
+          <p style="font-size:11.5px; color:#666; margin-top:4px;">左上の「📍 店舗登録」または「🚩 エリア登録」を押して情報を登録できます。</p>
         `;
       });
 
@@ -461,7 +477,8 @@
 
     function updateIndicator() {
       const cur = getCurrentMap();
-      document.getElementById('map-indicator').innerText = `店舗: ${cur ? cur.stores.length : 0}/200 📋`;
+      const sharedTag = cur.isShared ? ' [共有閲覧]' : '';
+      document.getElementById('map-indicator').innerText = `店舗: ${cur ? cur.stores.length : 0}/200 📋${sharedTag}`;
     }
 
     function updateSearchListDropdown() {
@@ -497,11 +514,18 @@
 
     /* 店舗登録モーダル */
     function openStoreRegisterModalFromPin(storeToEdit = null) {
+      const curMap = getCurrentMap();
+
+      // <3> 共有されたマップは編集等の操作を禁止
+      if (curMap.isShared) {
+        alert('🔒 共有されたマップのため、編集・登録操作は禁止されています。');
+        return;
+      }
+
       if (!storeToEdit && !tempPinLocation) {
         alert('先に地図上の登録したい場所をタップしてピンを立ててください。');
         return;
       }
-      const curMap = getCurrentMap();
       if (!storeToEdit && curMap.stores.length >= 200) {
         alert('⚠️ 1つのマップに登録できる店舗は上限200件までです。');
         return;
@@ -738,12 +762,17 @@
     }
 
     function saveStoreData(editStoreId = '') {
+      const curMap = getCurrentMap();
+      if (curMap.isShared) {
+        alert('🔒 共有されたマップのため保存できません。');
+        return;
+      }
+
       const name = document.getElementById('reg-store-name').value.trim();
       if (!name) {
         alert('店舗名を入力してください。');
         return;
       }
-      const curMap = getCurrentMap();
       if (!curMap.lists) curMap.lists = [];
 
       const selectedListSelects = document.querySelectorAll('.existing-list-select');
@@ -807,9 +836,16 @@
       }
     }
 
-    /* <4> エリア登録・一覧・編集モーダル */
+    /* エリア登録・一覧・編集モーダル */
     function openAreaRegisterModalPrompt() {
       const curMap = getCurrentMap();
+
+      // <3> 共有されたマップは操作禁止
+      if (curMap.isShared) {
+        alert('🔒 共有されたマップのため、エリア編集・登録操作は禁止されています。');
+        return;
+      }
+
       if (!curMap.areas) curMap.areas = [];
       
       const content = document.getElementById('modal-content');
@@ -849,6 +885,12 @@
     }
 
     function saveNewArea() {
+      const curMap = getCurrentMap();
+      if (curMap.isShared) {
+        alert('🔒 共有されたマップのため操作できません。');
+        return;
+      }
+
       if (!tempPinLocation) {
         alert('先に地図上でエリアの中心となる場所をタップしてください。');
         return;
@@ -859,7 +901,6 @@
         return;
       }
 
-      const curMap = getCurrentMap();
       if (!curMap.areas) curMap.areas = [];
       if (curMap.areas.length >= 100) {
         alert('⚠️ エリアの登録上限数（100件）に達しています。');
@@ -883,6 +924,7 @@
 
     function editAreaName(areaId) {
       const curMap = getCurrentMap();
+      if (curMap.isShared) { alert('🔒 共有されたマップのため操作できません。'); return; }
       const area = curMap.areas.find(a => a.id === areaId);
       if (!area) return;
       const newName = prompt('エリア名を変更:', area.name);
@@ -895,6 +937,7 @@
 
     function moveAreaOrder(index, direction) {
       const curMap = getCurrentMap();
+      if (curMap.isShared) return;
       const targetIndex = index + direction;
       if (targetIndex < 0 || targetIndex >= curMap.areas.length) return;
       const temp = curMap.areas[index];
@@ -904,7 +947,7 @@
       openAreaRegisterModalPrompt();
     }
 
-    /* <2> エリアピンの詳細情報（編集、削除、閉じる） */
+    /* エリアピンの詳細情報 */
     function showAreaDetail(areaId) {
       const curMap = getCurrentMap();
       const area = curMap.areas.find(a => a.id === areaId);
@@ -919,17 +962,24 @@
              onclick="changeAreaColor('${area.id}', '${c.id}')" title="${c.label}"></div>
       `).join('');
 
+      // <3> 共有されたマップの場合は編集・削除ボタンを非表示
+      const actionButtons = curMap.isShared ? '' : `
+        <button onclick="editAreaNameFromDetail('${area.id}')" style="background:#ff9f43; font-size:11px; padding:6px; width:100%;">✏️ 編集</button>
+        <button onclick="deleteArea('${area.id}')" style="background:#dc3545; font-size:11px; padding:6px; width:100%;">削除</button>
+      `;
+
       detailContent.innerHTML = `
         <h3 style="margin:0 0 8px 0; color:var(--primary-color); font-size:13px;">🚩 ${area.name}</h3>
         
-        <p style="font-size:11px; margin-top:6px; font-weight:bold;">🎨 ピンのカラーを選択 (8段階):</p>
-        <div class="color-picker-grid" style="margin-bottom:12px;">
-          ${colorBtnsHtml}
-        </div>
+        ${!curMap.isShared ? `
+          <p style="font-size:11px; margin-top:6px; font-weight:bold;">🎨 ピンのカラーを選択 (8段階):</p>
+          <div class="color-picker-grid" style="margin-bottom:12px;">
+            ${colorBtnsHtml}
+          </div>
+        ` : ''}
 
         <div style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
-          <button onclick="editAreaNameFromDetail('${area.id}')" style="background:#ff9f43; font-size:11px; padding:6px; width:100%;">✏️ 編集</button>
-          <button onclick="deleteArea('${area.id}')" style="background:#dc3545; font-size:11px; padding:6px; width:100%;">削除</button>
+          ${actionButtons}
           <button onclick="closeDetailPanel()" class="btn-secondary" style="font-size:11px; padding:6px; width:100%;">閉じる</button>
         </div>
       `;
@@ -938,6 +988,7 @@
 
     function editAreaNameFromDetail(areaId) {
       const curMap = getCurrentMap();
+      if (curMap.isShared) return;
       const area = curMap.areas.find(a => a.id === areaId);
       if (!area) return;
       const newName = prompt('エリア名を編集:', area.name);
@@ -950,6 +1001,7 @@
 
     function changeAreaColor(areaId, colorId) {
       const curMap = getCurrentMap();
+      if (curMap.isShared) return;
       const area = curMap.areas.find(a => a.id === areaId);
       if (area) {
         area.color = colorId;
@@ -959,20 +1011,21 @@
     }
 
     function deleteArea(areaId) {
-      if (!confirm('このエリアピンを削除しますか？')) return;
       const curMap = getCurrentMap();
+      if (curMap.isShared) return;
+      if (!confirm('このエリアピンを削除しますか？')) return;
       curMap.areas = curMap.areas.filter(a => a.id !== areaId);
       saveStorage();
       closeDetailPanel();
     }
 
-    /* 【3】 登録店舗ピン表示と共有機能 */
+    /* 登録店舗ピン表示と共有機能 */
     function showStoreDetail(storeId) {
       const curMap = getCurrentMap();
       const store = curMap.stores.find(s => s.id === storeId);
       if (!store) return;
 
-      const assignedLists = (curMap.lists || []).filter(l => (store.listIds || []).includes(l.id)).map(l => l.name);
+      const assignedLists = (curMap.lists || []).filter(l => (store.listIds || []).includes(l.id) || store.listId === l.id).map(l => l.name);
       const listDisp = assignedLists.length > 0 ? assignedLists.join(', ') : '未登録';
 
       let imgHtml = '';
@@ -1014,6 +1067,15 @@
       const detailContent = document.getElementById('detail-content');
       detailPanel.style.display = 'block';
 
+      // <3> 共有されたマップの場合は編集・削除を隠し、自身のマップへの反映機能を提供
+      const actionButtons = curMap.isShared ? `
+        <button onclick="reflectStoreToMyMap('${store.id}')" style="background:#4ecdc4; font-size:10px; padding:2px 6px;">📥 マイマップへ反映</button>
+      ` : `
+        <button onclick="openShareStoreModal('${store.id}')" style="background:#4ecdc4; font-size:10px; padding:2px 6px;">🔗 共有</button>
+        <button onclick="openEditStoreModal('${store.id}')" style="background:#ff9f43; font-size:10px; padding:2px 6px;">✏️ 編集</button>
+        <button onclick="deleteStore('${store.id}')" style="background:#dc3545; font-size:10px; padding:2px 6px;">削除</button>
+      `;
+
       detailContent.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
           <div>
@@ -1021,9 +1083,7 @@
             <h3 style="margin:2px 0 0 0; color:var(--primary-color); font-size:14px;">${store.name}</h3>
           </div>
           <div style="display:flex; gap:4px;">
-            <button onclick="openShareStoreModal('${store.id}')" style="background:#4ecdc4; font-size:10px; padding:2px 6px;">🔗 共有</button>
-            <button onclick="openEditStoreModal('${store.id}')" style="background:#ff9f43; font-size:10px; padding:2px 6px;">✏️ 編集</button>
-            <button onclick="deleteStore('${store.id}')" style="background:#dc3545; font-size:10px; padding:2px 6px;">削除</button>
+            ${actionButtons}
           </div>
         </div>
 
@@ -1055,6 +1115,41 @@
       map.setView([store.lat, store.lng], 16);
     }
 
+    // <3> 共有マップから自身のマイマップへ店舗を個別反映
+    function reflectStoreToMyMap(storeId) {
+      const curMap = getCurrentMap();
+      const store = curMap.stores.find(s => s.id === storeId);
+      if (!store) return;
+
+      const myMaps = maps.filter(m => !m.isShared);
+      if (myMaps.length === 0) {
+        alert('⚠️ 自作のマップが見つかりません。新規マップを作成してください。');
+        return;
+      }
+
+      const optionsHtml = myMaps.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+      const targetMapId = prompt(`店舗「${store.name}」をどの自作マップに反映しますか？\n(対象のマップIDを入力してください)\n\n利用可能なマップ:\n` + myMaps.map(m => `${m.name} [ID: ${m.id}]`).join('\n'), myMaps[0].id);
+
+      if (!targetMapId) return;
+      const targetMap = myMaps.find(m => m.id === targetMapId.trim());
+      if (!targetMap) {
+        alert('⚠️ 指定されたマップが見つかりません。');
+        return;
+      }
+
+      if (!targetMap.stores) targetMap.stores = [];
+      if (targetMap.stores.length >= 200) {
+        alert('⚠️ 対象のマップが店舗上限数（200件）に達しています。');
+        return;
+      }
+
+      const copiedStore = JSON.parse(JSON.stringify(store));
+      copiedStore.id = 'str_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+      targetMap.stores.push(copiedStore);
+      saveStorage();
+      alert(`🎉 マップ「${targetMap.name}」に店舗情報を反映しました！`);
+    }
+
     function openShareStoreModal(storeId) {
       const curMap = getCurrentMap();
       const store = curMap.stores.find(s => s.id === storeId);
@@ -1063,12 +1158,12 @@
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
 
-      const otherMaps = maps.filter(m => m.id !== curMap.id);
+      const otherMaps = maps.filter(m => m.id !== curMap.id && !m.isShared);
 
       if (otherMaps.length === 0) {
         content.innerHTML = `
           <div class="modal-header"><h3>🔗 他のマップへ共有</h3></div>
-          <p style="font-size:11.5px; color:#666;">他に登録されているマップがありません。新規マップを作成後にご利用ください。</p>
+          <p style="font-size:11.5px; color:#666;">他に登録されているマイマップがありません。新規マップを作成後にご利用ください。</p>
           <button onclick="closeModal()" class="btn-secondary" style="width:100%; margin-top:10px;">閉じる</button>
         `;
         return;
@@ -1131,13 +1226,15 @@
 
     function openEditStoreModal(storeId) {
       const curMap = getCurrentMap();
+      if (curMap.isShared) return;
       const store = curMap.stores.find(s => s.id === storeId);
       if (store) openStoreRegisterModalFromPin(store);
     }
 
     function deleteStore(storeId) {
-      if (!confirm('この店舗を削除しますか？')) return;
       const curMap = getCurrentMap();
+      if (curMap.isShared) return;
+      if (!confirm('この店舗を削除しますか？')) return;
       curMap.stores = curMap.stores.filter(s => s.id !== storeId);
       saveStorage();
       closeDetailPanel();
@@ -1181,6 +1278,11 @@
     function exportCode() {
       toggleMenu();
       const curMap = getCurrentMap();
+      if (curMap.isShared) {
+        alert('🔒 共有されたマップのコード変更はできません。');
+        return;
+      }
+
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
 
@@ -1207,6 +1309,8 @@
 
     function saveCustomShareCode() {
       const curMap = getCurrentMap();
+      if (curMap.isShared) return;
+
       const input = document.getElementById('custom-share-code');
       const errorEl = document.getElementById('share-code-error');
       const successEl = document.getElementById('share-code-success');
@@ -1246,6 +1350,7 @@
       successEl.style.display = 'block';
     }
 
+    /* <3> 共有コード読み込みと自動切り替え機能 */
     function importCodePrompt() {
       toggleMenu();
       const code = prompt('読み込む共有コードを入力してください:');
@@ -1269,18 +1374,32 @@
         return;
       }
 
+      // 読み込んだマップを再現し、閲覧用(isShared = true)としてマップ管理に追加
+      const sharedMap = {
+        id: targetMapData.id,
+        name: `${targetMapData.name} (共有)`,
+        stores: JSON.parse(JSON.stringify(targetMapData.stores || [])),
+        areas: JSON.parse(JSON.stringify(targetMapData.areas || [])),
+        lists: JSON.parse(JSON.stringify(targetMapData.lists || [])),
+        isShared: true
+      };
+
       const existingIndex = maps.findIndex(m => m.id === trimmed);
       if (existingIndex >= 0) {
-        maps[existingIndex] = JSON.parse(JSON.stringify(targetMapData));
+        maps[existingIndex] = sharedMap;
       } else {
-        maps.push(JSON.parse(JSON.stringify(targetMapData)));
+        maps.push(sharedMap);
       }
 
+      // 自動的に読み込んだ共有マップに切り替え
       currentMapId = trimmed;
       saveStorage();
-      alert(`🎉 共有コード「${trimmed}」の最新マップ情報を読み込みました！`);
+      closeDetailPanel();
+      closeSearchResultsPanel();
+      alert(`🎉 共有コード「${trimmed}」のマップを自動読み込みして切り替えました！\n（閲覧専用としてマップ管理に保存されました）`);
     }
 
+    /* <4> 共有されたマップ情報の更新ボタン機能 */
     function refreshSharedMap() {
       toggleMenu();
       const curMap = getCurrentMap();
@@ -1288,22 +1407,26 @@
       const latestData = sharedStoreDB[curMap.id];
 
       if (latestData) {
-        Object.assign(curMap, JSON.parse(JSON.stringify(latestData)));
+        curMap.stores = JSON.parse(JSON.stringify(latestData.stores || []));
+        curMap.areas = JSON.parse(JSON.stringify(latestData.areas || []));
+        curMap.lists = JSON.parse(JSON.stringify(latestData.lists || []));
         saveStorage();
-        alert('🔄 最新の共有マップデータに更新されました！');
+        closeDetailPanel();
+        closeSearchResultsPanel();
+        alert('🔄 共有元の最新データに合わせてマップ情報を更新しました！');
       } else {
         alert('ℹ️ 最新の共有データが見つかりませんでした。元データで更新・保存が行われているかご確認ください。');
       }
     }
 
-    /* 【1】 マップ切替・編集機能 */
+    /* マップ切替・編集機能 */
     function openMapSwitchModal() {
       toggleMenu();
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
 
       const mapOptions = maps.map(m => `
-        <option value="${m.id}" ${m.id === currentMapId ? 'selected' : ''}>${m.name}</option>
+        <option value="${m.id}" ${m.id === currentMapId ? 'selected' : ''}>${m.name}${m.isShared ? ' [共有]' : ''}</option>
       `).join('');
 
       const mapListItems = maps.map((m, index) => `
@@ -1346,6 +1469,7 @@
       closeSearchResultsPanel();
     }
 
+    // <3> 名前変更は可能だが共有元には反映されない（ローカルの表示名のみ変更）
     function editMapName(mapId) {
       const targetMap = maps.find(m => m.id === mapId);
       if (!targetMap) return;
@@ -1372,7 +1496,7 @@
         alert('⚠️ マップは最低1つ必要なため削除できません。');
         return;
       }
-      if (!confirm('このマップとその中の店舗データを削除しますか？')) return;
+      if (!confirm('このマップをリストから削除しますか？')) return;
       
       maps = maps.filter(m => m.id !== mapId);
       if (currentMapId === mapId) {
@@ -1383,7 +1507,7 @@
       closeDetailPanel();
     }
 
-    /* 【2】 新規マップ作成モーダル */
+    /* 新規マップ作成モーダル */
     function openNewMapModal() {
       toggleMenu();
       if (maps.length >= 30) {
@@ -1440,11 +1564,13 @@
         const storesHtml = assignedStores.map((s, sIndex) => `
           <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.7); padding:3px 6px; margin-top:2px; border-radius:4px; font-size:11px;">
             <span>🍽️ ${s.name}</span>
-            <div>
-              <button onclick="moveStoreInList('${l.id}', ${sIndex}, -1)" class="btn-sm-icon">▲</button>
-              <button onclick="moveStoreInList('${l.id}', ${sIndex}, 1)" class="btn-sm-icon">▼</button>
-              <button onclick="removeStoreFromList('${l.id}', '${s.id}')" class="btn-sm-icon" style="background:#dc3545; color:#fff;">削除</button>
-            </div>
+            ${!curMap.isShared ? `
+              <div>
+                <button onclick="moveStoreInList('${l.id}', ${sIndex}, -1)" class="btn-sm-icon">▲</button>
+                <button onclick="moveStoreInList('${l.id}', ${sIndex}, 1)" class="btn-sm-icon">▼</button>
+                <button onclick="removeStoreFromList('${l.id}', '${s.id}')" class="btn-sm-icon" style="background:#dc3545; color:#fff;">削除</button>
+              </div>
+            ` : ''}
           </div>
         `).join('');
 
@@ -1454,13 +1580,16 @@
               <span style="font-size:12px; cursor:pointer;" onclick="toggleListAccordion('list-stores-${l.id}')">
                 ▶ 📌 <b>${l.name}</b> <small>(${assignedStores.length}件)</small>
               </span>
-              <div>
-                <button onclick="moveCustomList(${index}, -1)" class="btn-sm-icon">▲</button>
-                <button onclick="moveCustomList(${index}, 1)" class="btn-sm-icon">▼</button>
-                <button onclick="editCustomListName('${l.id}')" style="background:#ff9f43; padding:2px 6px; font-size:10px;">✏️ 編集</button>
-                <button onclick="deleteCustomList('${l.id}')" style="background:#dc3545; padding:2px 6px; font-size:10px;">削除</button>
-              </div>
+              ${!curMap.isShared ? `
+                <div>
+                  <button onclick="moveCustomList(${index}, -1)" class="btn-sm-icon">▲</button>
+                  <button onclick="moveCustomList(${index}, 1)" class="btn-sm-icon">▼</button>
+                  <button onclick="editCustomListName('${l.id}')" style="background:#ff9f43; padding:2px 6px; font-size:10px;">✏️ 編集</button>
+                  <button onclick="deleteCustomList('${l.id}')" style="background:#dc3545; padding:2px 6px; font-size:10px;">削除</button>
+                </div>
+              ` : ''}
             </div>
+            <!-- 基本は閉じられており(display:none)、展開して表示 -->
             <div id="list-stores-${l.id}" style="display:none; margin-top:6px; padding-left:6px; border-left:2px solid var(--primary-color);">
               ${storesHtml || '<p style="color:#888; font-size:10px; margin-top:2px;">店舗は登録されていません</p>'}
             </div>
@@ -1471,12 +1600,13 @@
       content.innerHTML = `
         <div class="modal-header"><h3>📋 リスト管理</h3></div>
         <p style="font-size:11px; color:#666; margin-bottom:8px;">リスト登録上限数: ${curMap.lists ? curMap.lists.length : 0}/50</p>
-        <button onclick="createCustomListPrompt()" style="width:100%; margin-bottom:10px;">＋ 新しいリストを追加</button>
+        ${!curMap.isShared ? `<button onclick="createCustomListPrompt()" style="width:100%; margin-bottom:10px;">＋ 新しいリストを追加</button>` : ''}
         <ul style="list-style:none; padding:0; max-height:50vh; overflow-y:auto;">${listsHtml.length > 0 ? listsHtml : '<p style="color:#888; font-size:11px;">リストが登録されていません。</p>'}</ul>
         <button onclick="closeModal()" class="btn-secondary" style="width:100%; margin-top:10px;">閉じる</button>
       `;
     }
 
+    /* アコーディオン開閉用関数 */
     function toggleListAccordion(elemId) {
       const el = document.getElementById(elemId);
       if (el) {
@@ -1486,6 +1616,7 @@
 
     function moveCustomList(index, direction) {
       const curMap = getCurrentMap();
+      if (curMap.isShared) return;
       const targetIndex = index + direction;
       if (targetIndex < 0 || targetIndex >= curMap.lists.length) return;
       const temp = curMap.lists[index];
@@ -1497,6 +1628,7 @@
 
     function editCustomListName(listId) {
       const curMap = getCurrentMap();
+      if (curMap.isShared) return;
       const list = curMap.lists.find(l => l.id === listId);
       if (!list) return;
       const newName = prompt('リスト名を編集:', list.name);
@@ -1509,6 +1641,7 @@
 
     function moveStoreInList(listId, storeIndex, direction) {
       const curMap = getCurrentMap();
+      if (curMap.isShared) return;
       const assignedStores = (curMap.stores || []).filter(s => (s.listIds || []).includes(listId) || s.listId === listId);
       const targetIndex = storeIndex + direction;
       if (targetIndex < 0 || targetIndex >= assignedStores.length) return;
@@ -1531,6 +1664,7 @@
 
     function removeStoreFromList(listId, storeId) {
       const curMap = getCurrentMap();
+      if (curMap.isShared) return;
       const store = curMap.stores.find(s => s.id === storeId);
       if (store) {
         if (store.listIds) store.listIds = store.listIds.filter(id => id !== listId);
@@ -1543,6 +1677,7 @@
 
     function createCustomListPrompt() {
       const curMap = getCurrentMap();
+      if (curMap.isShared) return;
       if (!curMap.lists) curMap.lists = [];
       if (curMap.lists.length >= 50) { alert('⚠️ リスト上限数（50個）に達しています。'); return; }
       const name = prompt('新しいリスト名:');
@@ -1553,8 +1688,9 @@
     }
 
     function deleteCustomList(listId) {
-      if (!confirm('このリストを削除しますか？')) return;
       const curMap = getCurrentMap();
+      if (curMap.isShared) return;
+      if (!confirm('このリストを削除しますか？')) return;
       curMap.lists = curMap.lists.filter(l => l.id !== listId);
       curMap.stores.forEach(s => {
         if (s.listIds) s.listIds = s.listIds.filter(id => id !== listId);
