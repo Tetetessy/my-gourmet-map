@@ -1,0 +1,17 @@
+# ① Gitを使い始める宣言
+git init
+
+# ② 作ったファイルを全部まとめる
+git add .
+
+# ③ 「ここまでの作業を保存！」というメモをつける
+git commit -m "グルメマップ完成！"
+
+# ④ メインの作業場所に名前をつける
+git branch -M main
+
+# ⑤ GitHubの保管庫と繋げる（※URL部分は自分のGitHubの画面に出ているものに変えてね）
+git remote add origin https://github.com/Tetetessy/my-gourmet-map.git
+
+# ⑥ ネットの保管庫に送信する！
+git push -u origin main

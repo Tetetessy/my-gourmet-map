@@ -58,7 +58,6 @@
       display: flex; gap: 6px; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); white-space: nowrap;
     }
     
-    /* 店舗数インジケーターのボタン風スタイル */
     .indicator-btn {
       cursor: pointer;
       padding: 2px 6px;
@@ -110,7 +109,7 @@
       box-shadow: 0 0 0 2px var(--primary-color);
     }
 
-    /* スマホ・タブレット用コンパクト最適化（調整版） */
+    /* レスポンシブ最適化 */
     @media (max-width: 768px) {
       :root { --font-size: 11px; }
       button, input, select, textarea { padding: 3px 5px; font-size: 11px; }
@@ -233,6 +232,7 @@
       <small>【マップ管理】</small>
       <button onclick="openMapListModal()">マップ切替・編集</button>
       <button onclick="createNewMapPrompt()">新規マップ作成</button>
+      <button onclick="openCustomListModal()">📋 リスト管理</button>
       <hr style="margin:6px 0;">
       <small>【共有・バックアップ】</small>
       <button onclick="exportCode()">共有コード発行</button>
@@ -257,6 +257,9 @@
     <div class="bottom-left" id="left-panel">
       <h4 style="margin-bottom: 4px;">🔍 店舗絞り込み</h4>
       <input type="text" id="search-name" placeholder="店舗名検索" oninput="filterStores()" style="width:100%;">
+      <select id="search-list" onchange="filterStores()" style="width:100%;">
+        <option value="">全てのリスト</option>
+      </select>
       <select id="search-form" onchange="filterStores()" style="width:100%;">
         <option value="">全ての形式</option>
         <option>レストラン</option><option>ダイニング</option><option>ビュッフェ</option><option>カフェ</option>
@@ -302,7 +305,7 @@
     let users = JSON.parse(localStorage.getItem('gourmet_users')) || {};
 
     let maps = [];
-    let currentMapId = 'default';
+    let currentMapId = '';
 
     let tempPinLocation = null; 
     let tempMarker = null;
@@ -325,19 +328,50 @@
     ];
     let selectedColorTemp = COLOR_PALETTE[0];
 
+    // 11文字（前半5文字 - 後半5文字）のランダム共有コード生成
+    function generate11CharShareCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 誤読しやすい文字を除外
+      let part1 = '', part2 = '';
+      for (let i = 0; i < 5; i++) {
+        part1 += chars.charAt(Math.floor(Math.random() * chars.length));
+        part2 += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return `${part1}-${part2}`;
+    }
+
+    function createDefaultMap(id, name) {
+      return {
+        id: id || generate11CharShareCode(),
+        name: name || 'マイグルメマップ',
+        stores: [],
+        areas: [],
+        lists: [] // マップ固有のリストデータ
+      };
+    }
+
     function loadCurrentUserData() {
       if (currentUser.loggedIn && users[currentUser.email]) {
         currentUser.name = users[currentUser.email].name || currentUser.name || 'ユーザー';
         maps = users[currentUser.email].maps || [];
-        currentMapId = users[currentUser.email].currentMapId || (maps[0] ? maps[0].id : 'default');
+        currentMapId = users[currentUser.email].currentMapId || (maps[0] ? maps[0].id : '');
       } else {
-        maps = JSON.parse(localStorage.getItem('gourmet_guest_maps')) || [{ id: 'default', name: 'マイグルメマップ', stores: [], areas: [] }];
-        currentMapId = localStorage.getItem('gourmet_guest_map_id') || 'default';
+        maps = JSON.parse(localStorage.getItem('gourmet_guest_maps')) || [];
+        currentMapId = localStorage.getItem('gourmet_guest_map_id') || '';
       }
+      
       if (!maps || maps.length === 0) {
-        maps = [{ id: 'default', name: 'マイグルメマップ', stores: [], areas: [] }];
-        currentMapId = 'default';
+        const defaultMap = createDefaultMap();
+        maps = [defaultMap];
+        currentMapId = defaultMap.id;
       }
+      if (!currentMapId || !maps.find(m => m.id === currentMapId)) {
+        currentMapId = maps[0].id;
+      }
+
+      // 既存データの構造互換担保
+      maps.forEach(m => {
+        if (!m.lists) m.lists = [];
+      });
     }
 
     function saveStorage() {
@@ -356,6 +390,7 @@
           localStorage.setItem('gourmet_guest_map_id', currentMapId);
         }
         updateIndicator();
+        updateSearchListDropdown();
       } catch (e) {
         alert('ストレージ容量の上限に達しました。不要な画像や店舗を削除してください。');
       }
@@ -392,6 +427,21 @@
       document.getElementById('map-indicator').innerText = `店舗: ${cur ? cur.stores.length : 0}/50 📋`;
     }
 
+    function updateSearchListDropdown() {
+      const cur = getCurrentMap();
+      const select = document.getElementById('search-list');
+      if (!select) return;
+      const currentVal = select.value;
+      let html = '<option value="">全てのリスト</option>';
+      if (cur && cur.lists) {
+        cur.lists.forEach(l => {
+          html += `<option value="${l.id}">${l.name}</option>`;
+        });
+      }
+      select.innerHTML = html;
+      select.value = currentVal;
+    }
+
     function checkGuestRestriction() {
       if (!currentUser.loggedIn) {
         alert('この操作を行うにはログインが必要です。ログインまたは新規登録してください。');
@@ -399,6 +449,86 @@
         return true;
       }
       return false;
+    }
+
+    /* ==================== リスト管理機能 ==================== */
+    function openCustomListModal() {
+      if (checkGuestRestriction()) return;
+      const curMap = getCurrentMap();
+      const content = document.getElementById('modal-content');
+      document.getElementById('modal-overlay').style.display = 'flex';
+
+      const listsHtml = (curMap.lists || []).map((l, i) => `
+        <li style="margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+          <span>📌 <b>${l.name}</b></span>
+          <div>
+            <button onclick="renameCustomList('${l.id}')" style="background:#6c757d; padding:2px 6px;">変更</button>
+            <button onclick="deleteCustomList('${l.id}')" style="background:#dc3545; padding:2px 6px;">削除</button>
+          </div>
+        </li>
+      `).join('');
+
+      content.innerHTML = `
+        <h3>リスト管理 (現在のマップ)</h3>
+        <p style="font-size:11px; color:#666; margin-bottom:8px;">作成可能上限: ${curMap.lists ? curMap.lists.length : 0}/20 個</p>
+        <button onclick="createCustomListPrompt()" style="width:100%; margin-bottom:10px;">＋ 新しいリストを作成</button>
+        <ul style="list-style:none; padding:0;">
+          ${listsHtml.length > 0 ? listsHtml : '<p style="color:#888; font-size:11px;">登録されているリストはありません。</p>'}
+        </ul>
+        <button onclick="closeModal()" style="background:#6c757d; width:100%; margin-top:12px;">閉じる</button>
+      `;
+    }
+
+    function createCustomListPrompt() {
+      if (checkGuestRestriction()) return;
+      const curMap = getCurrentMap();
+      if (!curMap.lists) curMap.lists = [];
+
+      if (curMap.lists.length >= 20) {
+        alert('⚠️ リストは1アカウント（1マップ）につき20個までしか作成できません。');
+        return;
+      }
+
+      const listName = prompt('新規リスト名を入力してください:');
+      if (!listName || !listName.trim()) return;
+
+      curMap.lists.push({
+        id: 'lst_' + Date.now(),
+        name: listName.trim()
+      });
+
+      saveStorage();
+      openCustomListModal();
+    }
+
+    function renameCustomList(listId) {
+      if (checkGuestRestriction()) return;
+      const curMap = getCurrentMap();
+      const target = curMap.lists.find(l => l.id === listId);
+      if (!target) return;
+
+      const newName = prompt('新しいリスト名を入力してください:', target.name);
+      if (!newName || !newName.trim()) return;
+
+      target.name = newName.trim();
+      saveStorage();
+      openCustomListModal();
+    }
+
+    function deleteCustomList(listId) {
+      if (checkGuestRestriction()) return;
+      if (!confirm('このリストを削除しますか？ (店舗の割り当ては解除されます)')) return;
+
+      const curMap = getCurrentMap();
+      curMap.lists = curMap.lists.filter(l => l.id !== listId);
+
+      // 店舗側のリスト指定解除
+      curMap.stores.forEach(s => {
+        if (s.listId === listId) s.listId = '';
+      });
+
+      saveStorage();
+      openCustomListModal();
     }
 
     /* ==================== 登録店舗リスト（ポップアップ） ==================== */
@@ -416,13 +546,16 @@
         return;
       }
 
-      let listHtml = curMap.stores.map((s, index) => {
+      let listHtml = curMap.stores.map((s) => {
         const features = [s.charter?'貸切':null, s.course?'コース':null, s.drink?'飲み放題':null, s.eat?'食べ放題':null].filter(Boolean).join('・');
         const links = [];
         if (isValidUrl(s.site)) links.push(`<a href="${s.site}" target="_blank" rel="noopener noreferrer">公式サイト</a>`);
         if (isValidUrl(s.tabelog)) links.push(`<a href="${s.tabelog}" target="_blank" rel="noopener noreferrer">食べログ</a>`);
         if (isValidUrl(s.hotpepper)) links.push(`<a href="${s.hotpepper}" target="_blank" rel="noopener noreferrer">ホットペッパー</a>`);
         if (isValidUrl(s.othersite)) links.push(`<a href="${s.othersite}" target="_blank" rel="noopener noreferrer">他サイト</a>`);
+
+        const listObj = curMap.lists ? curMap.lists.find(l => l.id === s.listId) : null;
+        const listNameStr = listObj ? listObj.name : '未指定';
 
         return `
           <details class="modal-store-item" ontoggle="if(this.open) onStoreItemOpen('${s.id}', ${s.lat}, ${s.lng})">
@@ -431,6 +564,7 @@
               <small style="font-size:10px; color:#888;">${s.genre}</small>
             </summary>
             <div class="modal-store-details">
+              <p><b>所属リスト:</b> 📌 ${listNameStr}</p>
               <p><b>形式:</b> ${s.form} | <b>ジャンル:</b> ${s.genre}</p>
               <p><b>予算:</b> ${s.budget}</p>
               <p><b>特徴:</b> ${features || 'なし'}</p>
@@ -621,6 +755,14 @@
               if (existMap) {
                 existMap.stores = [...existMap.stores, ...gMap.stores].slice(0, 50);
                 existMap.areas = [...existMap.areas, ...gMap.areas].slice(0, 20);
+                if (gMap.lists) {
+                  const mergedLists = [...(existMap.lists || []), ...gMap.lists];
+                  const uniqueLists = [];
+                  mergedLists.forEach(l => {
+                    if (!uniqueLists.find(ul => ul.id === l.id)) uniqueLists.push(l);
+                  });
+                  existMap.lists = uniqueLists.slice(0, 20);
+                }
               } else {
                 users[email].maps.push(gMap);
               }
@@ -718,6 +860,7 @@
       const content = document.getElementById('modal-content');
       modal.style.display = 'flex';
 
+      const curMap = getCurrentMap();
       const d = existingData || {};
       currentEditingImages = d.images ? [...d.images] : [];
       selectedColorTemp = d.color || COLOR_PALETTE[0];
@@ -729,9 +872,20 @@
              onclick="selectColor('${c}')"></div>
       `).join('');
 
+      const listSelectOptions = (curMap.lists || []).map(l => 
+        `<option value="${l.id}" ${d.listId === l.id ? 'selected' : ''}>${l.name}</option>`
+      ).join('');
+
       content.innerHTML = `
         <h3 style="font-size:14px; margin-bottom:8px;">${existingData ? '店舗情報の編集' : '店舗登録'}</h3>
         <div class="form-group"><label>お気に入り</label><button type="button" id="fav-btn" onclick="toggleFavModal()">${d.fav ? '★ 登録済み' : '☆ お気に入りに追加'}</button></div>
+        <div class="form-group">
+          <label>所属リスト</label>
+          <select id="store-list-id">
+            <option value="">(指定なし)</option>
+            ${listSelectOptions}
+          </select>
+        </div>
         <div class="form-group">
           <label>画像 (最大5枚: .png, .jpg対応)</label>
           <input type="file" id="store-imgs" multiple accept="image/png, image/jpeg" onchange="handleImageUpload(event)">
@@ -854,6 +1008,7 @@
         lat: lat, lng: lng,
         isTemp: isTemp,
         fav: window.isFavTemp,
+        listId: document.getElementById('store-list-id').value || '',
         images: currentEditingImages,
         name: document.getElementById('store-name').value || '名称未設定',
         form: document.getElementById('store-form').value,
@@ -949,6 +1104,7 @@
       });
 
       updateIndicator();
+      updateSearchListDropdown();
     }
 
     function moveToArea(coords) {
@@ -1001,6 +1157,9 @@
         ? `<details class="links-details"><summary>🔗 関連リンク</summary><div class="link-list">${links.join(' | ')}</div></details>`
         : `<p><b>リンク:</b> なし</p>`;
 
+      const listObj = curMap.lists ? curMap.lists.find(l => l.id === s.listId) : null;
+      const listNameStr = listObj ? listObj.name : '未指定';
+
       panel.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
           <h4 style="font-size:13px;">${s.name} ${s.fav ? '★' : ''}</h4>
@@ -1010,6 +1169,7 @@
           </div>
         </div>
         ${imageHtml}
+        <p><b>所属リスト:</b> 📌 ${listNameStr}</p>
         <p><b>形式:</b> ${s.form} | <b>ジャンル:</b> ${s.genre}</p>
         <p><b>予算:</b> ${s.budget}</p>
         <p><b>特徴:</b> ${[s.charter?'貸切':null, s.course?'コース':null, s.drink?'飲み放題':null, s.eat?'食べ放題':null].filter(Boolean).join('・') || 'なし'}</p>
@@ -1021,7 +1181,6 @@
         <div style="display:flex; gap:4px; flex-wrap:wrap;">
           <button onclick="openStoreRegisterForm({lat:${s.lat}, lng:${s.lng}}, ${s.isTemp}, ${JSON.stringify(s).replace(/"/g, '&quot;')})">編集</button>
           <button onclick="deleteStore('${s.id}')" style="background:#dc3545;">削除</button>
-          <button onclick="copySingleStoreCode('${s.id}')" style="background:var(--accent-color); color:#1a3a2a;">共有</button>
         </div>
       `;
 
@@ -1057,6 +1216,7 @@
     /* ==================== 検索 ==================== */
     function filterStores() {
       const name = document.getElementById('search-name').value.toLowerCase();
+      const listId = document.getElementById('search-list').value;
       const form = document.getElementById('search-form').value;
       const genre = document.getElementById('search-genre').value;
       const budget = document.getElementById('search-budget').value;
@@ -1066,7 +1226,7 @@
       const eat = document.getElementById('feat-eat').checked;
 
       const resultsContainer = document.getElementById('search-results-container');
-      const isFilterActive = name || form || genre || budget || charter || course || drink || eat;
+      const isFilterActive = name || listId || form || genre || budget || charter || course || drink || eat;
       
       if (!isFilterActive) {
         resultsContainer.style.display = 'none';
@@ -1077,6 +1237,7 @@
       const curMap = getCurrentMap();
       const filtered = curMap.stores.filter(s => {
         if (name && !s.name.toLowerCase().includes(name)) return false;
+        if (listId && s.listId !== listId) return false;
         if (form && s.form !== form) return false;
         if (genre && s.genre !== genre) return false;
         if (budget && s.budget !== budget) return false;
@@ -1109,43 +1270,20 @@
     /* ==================== 共有・バックアップ ==================== */
     function exportCode() {
       const curMap = getCurrentMap();
-      const code = btoa(encodeURIComponent(JSON.stringify(curMap)));
-      prompt('マップ共有コードを発行しました:', code);
-    }
-
-    function copySingleStoreCode(storeId) {
-      const curMap = getCurrentMap();
-      const store = curMap.stores.find(s => s.id === storeId);
-      const code = btoa(encodeURIComponent(JSON.stringify({ type: 'single_store', data: store })));
-      prompt('店舗共有コードを発行しました:', code);
+      prompt('マップ共有コード (11文字のマップID):', curMap.id);
     }
 
     function importCodePrompt() {
-      const code = prompt('共有コードを入力してください:');
+      const code = prompt('11文字の共有コードを入力してください (例: ABCDE-12345):');
       if (!code) return;
-      try {
-        const decoded = JSON.parse(decodeURIComponent(atob(code)));
-        if (decoded.type === 'single_store') {
-          const curMap = getCurrentMap();
-          if (curMap.stores.length >= 50) {
-            if (!confirm('店舗上限(50件)です。最古の店舗を削除して追加しますか？')) return;
-            curMap.stores.shift();
-          }
-          curMap.stores.push(decoded.data);
-          alert('店舗を追加しました。');
-        } else {
-          decoded.id = 'map_' + Date.now();
-          decoded.name += ' (共有取込)';
-          maps.push(decoded);
-          switchMap(decoded.id);
-          alert('新しいマップとして登録しました。');
-          return;
-        }
-        saveStorage();
-        renderCurrentMap();
-        filterStores();
-      } catch(e) {
-        alert('無効なコードです。');
+      const cleanCode = code.trim().toUpperCase();
+      
+      const targetMap = maps.find(m => m.id === cleanCode);
+      if (targetMap) {
+        switchMap(targetMap.id);
+        alert(`マップ「${targetMap.name}」へ切り替えました。`);
+      } else {
+        alert('指定された共有コードのマップが見つかりませんでした。');
       }
     }
 
@@ -1170,6 +1308,7 @@
         reader.onload = event => {
           try {
             maps = JSON.parse(event.target.result);
+            maps.forEach(m => { if (!m.lists) m.lists = []; });
             switchMap(maps[0].id);
             alert('復元が完了しました。');
           } catch(err) {
@@ -1203,7 +1342,7 @@
         <ul>
           ${maps.map(m => `
             <li style="margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-              <span><b>${m.name}</b> (${m.stores.length}件) ${m.id === currentMapId ? '🚩(選択中)' : ''}</span>
+              <span><b>${m.name}</b> (${m.stores.length}件) <small style="color:#888;">[${m.id}]</small> ${m.id === currentMapId ? '🚩(選択中)' : ''}</span>
               <div>
                 <button onclick="switchMap('${m.id}')">切替</button>
                 <button onclick="renameMap('${m.id}')" style="background:#6c757d;">変更</button>
@@ -1221,6 +1360,7 @@
       if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
 
       document.getElementById('search-name').value = '';
+      document.getElementById('search-list').value = '';
       document.getElementById('search-form').value = '';
       document.getElementById('search-genre').value = '';
       document.getElementById('search-budget').value = '';
@@ -1259,7 +1399,7 @@
       }
       const name = prompt('新規マップ名を入力してください:');
       if (!name) return;
-      const newMap = { id: 'm_' + Date.now(), name: name, stores: [], areas: [] };
+      const newMap = createDefaultMap(generate11CharShareCode(), name);
       maps.push(newMap);
       switchMap(newMap.id);
     }
