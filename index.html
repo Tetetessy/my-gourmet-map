@@ -81,8 +81,8 @@
       position: absolute; top: 50px; right: 10px; z-index: 999; background: var(--panel-bg); backdrop-filter: blur(8px); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 250px; max-height: 60vh; overflow-y: auto; display: none;
     }
 
-    .bottom-center-area { position: absolute; top: 50px; right: 270px; z-index: 1000; width: 220px; display: none; }
-    .detail-panel { background: var(--panel-bg); backdrop-filter: blur(10px); padding: 12px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 6px 20px rgba(0,0,0,0.2); max-height: 60vh; overflow-y: auto; }
+    .bottom-center-area { position: absolute; top: 50px; right: 270px; z-index: 1000; width: 260px; display: none; }
+    .detail-panel { background: var(--panel-bg); backdrop-filter: blur(10px); padding: 12px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 6px 20px rgba(0,0,0,0.2); max-height: 70vh; overflow-y: auto; }
 
     @media (max-width: 768px) {
       :root { --font-size: 11px; }
@@ -106,7 +106,7 @@
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
     .modal-content {
-      background: var(--panel-bg); color: var(--text-color); border-radius: calc(var(--radius) * 1.2); padding: 18px; max-width: 440px; width: 92%; max-height: 85vh; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+      background: var(--panel-bg); color: var(--text-color); border-radius: calc(var(--radius) * 1.2); padding: 18px; max-width: 460px; width: 92%; max-height: 85vh; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
     }
 
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid var(--border-color); }
@@ -131,9 +131,6 @@
 
     .color-picker-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
     .color-btn { height: 30px; border-radius: 6px; border: 2px solid #fff; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-    
-    .fav-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; font-weight: bold; font-size: 12px; }
-    .fav-toggle input { cursor: pointer; width: 16px; height: 16px; }
   </style>
 </head>
 <body>
@@ -169,13 +166,9 @@
         </select>
         <select id="search-form" onchange="filterStores()" style="width:100%;">
           <option value="">全ての形式</option>
-          <option>レストラン</option><option>ダイニング</option><option>カフェ</option><option>居酒屋</option>
-          <option>バー</option><option>定食屋</option><option>料亭</option><option>その他</option>
         </select>
         <select id="search-genre" onchange="filterStores()" style="width:100%;">
           <option value="">全てのジャンル</option>
-          <option>和食</option><option>洋食</option><option>中華</option><option>韓国</option>
-          <option>アジアン</option><option>寿司</option><option>焼肉</option><option>ラーメン</option><option>その他</option>
         </select>
       </div>
     </div>
@@ -249,6 +242,19 @@
       { id: 'mint', label: 'ティール', bg: 'linear-gradient(135deg, #1dd1a1, #10ac84)' },
       { id: 'dark', label: 'ダーク', bg: 'linear-gradient(135deg, #576574, #222f3e)' },
       { id: 'gold', label: 'ゴールド', bg: 'linear-gradient(135deg, #f1c40f, #d35400)' }
+    ];
+
+    const FORM_OPTIONS = [
+      'レストラン', 'ビアレストラン', 'ブッフェ', 'ダイニング', 'カフェ', 
+      'カフェダイニング', 'カレー屋', 'ケーキ屋', 'パン屋', 'スイーツ', 
+      '料亭', '郷土料理屋', '小料理屋', 'ラーメン屋', '焼肉屋', 
+      '居酒屋', 'バー', '屋台', 'キッチンカー', '野外', 'ビアガーデン', 'その他'
+    ];
+
+    const GENRE_OPTIONS = [
+      '和食', '洋食', '中華', '韓国', 'アジアン', 'エスニック', '他国料理', 
+      '郷土料理', 'ジビエ', '寿司', '焼肉', 'ラーメン', 'カレー', '魚系', 
+      '肉系', '野菜系', 'スイーツ系', 'カフェ', '居酒屋', 'ビーガン', 'ゲテモノ', 'その他'
     ];
 
     let map;
@@ -386,8 +392,20 @@
         `;
       });
 
+      initSearchOptions();
       renderCurrentMap();
     };
+
+    function initSearchOptions() {
+      const formSel = document.getElementById('search-form');
+      const genreSel = document.getElementById('search-genre');
+      if (formSel) {
+        formSel.innerHTML = '<option value="">全ての形式</option>' + FORM_OPTIONS.map(f => `<option>${f}</option>`).join('');
+      }
+      if (genreSel) {
+        genreSel.innerHTML = '<option value="">全てのジャンル</option>' + GENRE_OPTIONS.map(g => `<option>${g}</option>`).join('');
+      }
+    }
 
     function renderCurrentMap() {
       updateIndicator();
@@ -463,7 +481,7 @@
       if (area) map.setView([area.lat, area.lng], 15);
     }
 
-    /* 元のレイアウト（写真添付上部・お気に入り・URL入力欄あり）にリスト選択を追加 */
+    /* <1> 店舗登録モーダル（全16項目順序指定通り） */
     function openStoreRegisterModalFromPin(storeToEdit = null) {
       if (!storeToEdit && !tempPinLocation) {
         alert('先に地図上の登録したい場所をタップしてピンを立ててください。');
@@ -476,56 +494,142 @@
       }
 
       currentEditingImages = storeToEdit ? [...(storeToEdit.images || [])] : [];
+      const isEdit = !!storeToEdit;
+      const isFav = isEdit ? !!storeToEdit.isFavorite : false;
+      
+      let selectedListIds = isEdit ? (storeToEdit.listIds || (storeToEdit.listId ? [storeToEdit.listId] : [])) : [];
+
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
-
-      let listOptions = '<option value="">なし（未分類）</option>';
-      (curMap.lists || []).forEach(l => {
-        const sel = (storeToEdit && storeToEdit.listId === l.id) ? 'selected' : '';
-        listOptions += `<option value="${l.id}" ${sel}>${l.name}</option>`;
-      });
-
-      const isEdit = !!storeToEdit;
 
       content.innerHTML = `
         <div class="modal-header"><h3>${isEdit ? '✏️ 店舗情報の編集' : '📍 店舗情報の登録'}</h3></div>
         
-        <!-- 上部：写真添付エリア -->
+        <!-- 1番目：お気に入り登録 -->
+        <div class="form-group" style="margin-bottom: 10px;">
+          <button type="button" id="reg-fav-btn" onclick="toggleFavBtn()" style="background:${isFav ? '#ff6b6b' : '#6c757d'}; color:#fff; padding:6px 12px; border:none; border-radius:var(--radius); font-weight:bold; cursor:pointer;">
+            ${isFav ? '⭐ お気に入り（登録済み）' : '☆ お気に入りに追加'}
+          </button>
+          <input type="hidden" id="reg-store-fav" value="${isFav}">
+        </div>
+
+        <!-- 2番目：リスト登録（複数選択＆新規作成） -->
         <div class="form-group">
-          <label>写真添付 (最大3枚)</label>
-          <input type="file" id="reg-store-file" accept="image/*" onchange="handleImageUpload(event)">
+          <label>リスト登録 (複数選択可)</label>
+          <div id="list-checkboxes" style="max-height:100px; overflow-y:auto; border:1px solid var(--border-color); padding:6px; border-radius:var(--radius); background:rgba(255,255,255,0.8);">
+            ${(curMap.lists || []).map(l => `
+              <label style="display:block; font-size:12px; cursor:pointer; margin-bottom:2px;">
+                <input type="checkbox" name="store-lists" value="${l.id}" ${selectedListIds.includes(l.id) ? 'checked' : ''}> ${l.name}
+              </label>
+            `).join('')}
+            ${(!curMap.lists || curMap.lists.length === 0) ? '<span style="font-size:11px; color:#888;">リストがありません</span>' : ''}
+          </div>
+          <div style="display:flex; gap:4px; margin-top:4px;">
+            <input type="text" id="new-list-inline" placeholder="新規リスト名" style="flex:1; padding:4px 8px; font-size:11px;">
+            <button type="button" onclick="addNewListInline()" style="font-size:10px; padding:4px 8px;">＋ 作成</button>
+          </div>
+        </div>
+
+        <!-- 3番目：画像 (最大5枚 / .jpg, .png) -->
+        <div class="form-group">
+          <label>画像添付 (最大5枚 / .jpg, .png)</label>
+          <input type="file" id="reg-store-file" accept="image/jpeg, image/png" multiple onchange="handleImageUploadStrict(event)">
           <div id="image-preview-container" class="image-preview-box"></div>
         </div>
 
-        <div class="form-group"><label>店舗名*</label><input type="text" id="reg-store-name" class="stylish-input" value="${isEdit ? storeToEdit.name : ''}" placeholder="例: 博多かねふく ふく竹 東京駅店"></div>
-        
-        <div class="form-group"><label>形式</label>
+        <!-- 4番目：店舗名 -->
+        <div class="form-group">
+          <label>店舗名*</label>
+          <input type="text" id="reg-store-name" class="stylish-input" value="${isEdit ? storeToEdit.name : ''}" placeholder="">
+        </div>
+
+        <!-- 5番目：形式 -->
+        <div class="form-group">
+          <label>形式</label>
           <select id="reg-store-form" class="stylish-input">
-            ${['レストラン','ダイニング','カフェ','居酒屋','バー','定食屋','料亭','その他'].map(f => `<option ${isEdit && storeToEdit.form === f ? 'selected':''}>${f}</option>`).join('')}
+            ${FORM_OPTIONS.map(f => `<option ${isEdit && storeToEdit.form === f ? 'selected' : ''}>${f}</option>`).join('')}
           </select>
         </div>
 
-        <div class="form-group"><label>ジャンル</label>
+        <!-- 6番目：ジャンル -->
+        <div class="form-group">
+          <label>ジャンル</label>
           <select id="reg-store-genre" class="stylish-input">
-            ${['和食','洋食','中華','韓国','アジアン','寿司','焼肉','ラーメン','その他'].map(g => `<option ${isEdit && storeToEdit.genre === g ? 'selected':''}>${g}</option>`).join('')}
+            ${GENRE_OPTIONS.map(g => `<option ${isEdit && storeToEdit.genre === g ? 'selected' : ''}>${g}</option>`).join('')}
           </select>
         </div>
 
-        <!-- 所属リスト項目 -->
-        <div class="form-group"><label>所属リスト</label><select id="reg-store-list" class="stylish-input">${listOptions}</select></div>
-
-        <!-- URL（食べログや公式HP） -->
-        <div class="form-group"><label>URL (食べログ・公式HP等)</label><input type="url" id="reg-store-url" class="stylish-input" value="${isEdit ? (storeToEdit.url || '') : ''}" placeholder="https://..."></div>
-
-        <!-- お気に入り機能 -->
-        <div class="form-group" style="margin-top: 4px;">
-          <label class="fav-toggle">
-            <input type="checkbox" id="reg-store-fav" ${isEdit && storeToEdit.isFavorite ? 'checked' : ''}>
-            ⭐ お気に入りに登録する
-          </label>
+        <!-- 7番目：コスパ -->
+        <div class="form-group">
+          <label>コスパ</label>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:11px; color:#666;">[低]</span>
+            <input type="range" id="reg-store-cospa" min="1" max="5" step="1" value="${isEdit && storeToEdit.cospa ? storeToEdit.cospa : 3}" style="flex:1;">
+            <span style="font-size:11px; color:#666;">[高&lt;良&gt;]</span>
+          </div>
         </div>
 
-        <div class="form-group"><label>メモ</label><textarea id="reg-store-memo" class="stylish-input" rows="3" placeholder="明太子で有名な福岡の店である...">${isEdit ? (storeToEdit.memo || '') : ''}</textarea></div>
+        <!-- 8番目：キャパ -->
+        <div class="form-group">
+          <label>キャパ</label>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:11px; color:#666;">[少人数]</span>
+            <input type="range" id="reg-store-capa" min="1" max="5" step="1" value="${isEdit && storeToEdit.capa ? storeToEdit.capa : 3}" style="flex:1;">
+            <span style="font-size:11px; color:#666;">[大人数向け]</span>
+          </div>
+        </div>
+
+        <!-- 9番目：雰囲気 -->
+        <div class="form-group">
+          <label>雰囲気</label>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:11px; color:#666;">[落ち着いた]</span>
+            <input type="range" id="reg-store-mood" min="1" max="5" step="1" value="${isEdit && storeToEdit.mood ? storeToEdit.mood : 3}" style="flex:1;">
+            <span style="font-size:11px; color:#666;">[にぎやか]</span>
+          </div>
+        </div>
+
+        <!-- 10番目：連絡先 -->
+        <div class="form-group">
+          <label>連絡先</label>
+          <input type="text" id="reg-store-contact" class="stylish-input" value="${isEdit ? (storeToEdit.contact || '-') : '-'}">
+        </div>
+
+        <!-- 11番目：予約対応 -->
+        <div class="form-group">
+          <label>予約対応</label>
+          <input type="text" id="reg-store-reserve" class="stylish-input" value="${isEdit ? (storeToEdit.reserve || '-') : '-'}">
+        </div>
+
+        <!-- 12番目：公式サイト -->
+        <div class="form-group">
+          <label>公式サイト</label>
+          <input type="text" id="reg-store-official" class="stylish-input" value="${isEdit ? (storeToEdit.official || '-') : '-'}">
+        </div>
+
+        <!-- 13番目：食べログ -->
+        <div class="form-group">
+          <label>食べログ</label>
+          <input type="text" id="reg-store-tabelog" class="stylish-input" value="${isEdit ? (storeToEdit.tabelog || '-') : '-'}">
+        </div>
+
+        <!-- 14番目：ホットペッパー -->
+        <div class="form-group">
+          <label>ホットペッパー</label>
+          <input type="text" id="reg-store-hotpepper" class="stylish-input" value="${isEdit ? (storeToEdit.hotpepper || '-') : '-'}">
+        </div>
+
+        <!-- 15番目：その他 -->
+        <div class="form-group">
+          <label>その他</label>
+          <input type="text" id="reg-store-other" class="stylish-input" value="${isEdit ? (storeToEdit.other || '-') : '-'}">
+        </div>
+
+        <!-- 16番目：備考 -->
+        <div class="form-group">
+          <label>備考</label>
+          <textarea id="reg-store-memo" class="stylish-input" rows="4" placeholder="">${isEdit ? (storeToEdit.memo || '') : ''}</textarea>
+        </div>
 
         <div class="btn-group">
           <button onclick="saveStoreData('${isEdit ? storeToEdit.id : ''}')">${isEdit ? '更新保存' : '登録保存'}</button>
@@ -535,19 +639,56 @@
       renderImagePreviews();
     }
 
-    function handleImageUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      if (currentEditingImages.length >= 3) {
-        alert('写真は最大3枚までです。');
-        return;
+    function toggleFavBtn() {
+      const hiddenInput = document.getElementById('reg-store-fav');
+      const btn = document.getElementById('reg-fav-btn');
+      const current = hiddenInput.value === 'true';
+      hiddenInput.value = (!current).toString();
+      btn.style.background = !current ? '#ff6b6b' : '#6c757d';
+      btn.innerText = !current ? '⭐ お気に入り（登録済み）' : '☆ お気に入りに追加';
+    }
+
+    function addNewListInline() {
+      const input = document.getElementById('new-list-inline');
+      const name = input.value.trim();
+      if (!name) return;
+
+      const curMap = getCurrentMap();
+      if (!curMap.lists) curMap.lists = [];
+      if (curMap.lists.length >= 20) { alert('⚠️ リストは上限20個までです。'); return; }
+
+      const newList = { id: 'lst_' + Date.now(), name: name };
+      curMap.lists.push(newList);
+      saveStorage();
+
+      const container = document.getElementById('list-checkboxes');
+      const label = document.createElement('label');
+      label.style.cssText = 'display:block; font-size:12px; cursor:pointer; margin-bottom:2px;';
+      label.innerHTML = `<input type="checkbox" name="store-lists" value="${newList.id}" checked> ${newList.name}`;
+      container.appendChild(label);
+      input.value = '';
+    }
+
+    function handleImageUploadStrict(e) {
+      const files = Array.from(e.target.files);
+      for (let file of files) {
+        if (currentEditingImages.length >= 5) {
+          alert('写真は最大5枚までです。');
+          break;
+        }
+        if (!['image/jpeg', 'image/png'].includes(file.type)) {
+          alert('JPGまたはPNG形式の画像のみアップロード可能です。');
+          continue;
+        }
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          if (currentEditingImages.length < 5) {
+            currentEditingImages.push(evt.target.result);
+            renderImagePreviews();
+          }
+        };
+        reader.readAsDataURL(file);
       }
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        currentEditingImages.push(evt.target.result);
-        renderImagePreviews();
-      };
-      reader.readAsDataURL(file);
     }
 
     function renderImagePreviews() {
@@ -574,40 +715,44 @@
       }
       const curMap = getCurrentMap();
 
+      const selectedListElements = document.querySelectorAll('input[name="store-lists"]:checked');
+      const selectedListIds = Array.from(selectedListElements).map(el => el.value);
+
+      const storeData = {
+        name: name,
+        isFavorite: document.getElementById('reg-store-fav').value === 'true',
+        listIds: selectedListIds,
+        images: [...currentEditingImages],
+        form: document.getElementById('reg-store-form').value,
+        genre: document.getElementById('reg-store-genre').value,
+        cospa: parseInt(document.getElementById('reg-store-cospa').value, 10),
+        capa: parseInt(document.getElementById('reg-store-capa').value, 10),
+        mood: parseInt(document.getElementById('reg-store-mood').value, 10),
+        contact: document.getElementById('reg-store-contact').value.trim(),
+        reserve: document.getElementById('reg-store-reserve').value.trim(),
+        official: document.getElementById('reg-store-official').value.trim(),
+        tabelog: document.getElementById('reg-store-tabelog').value.trim(),
+        hotpepper: document.getElementById('reg-store-hotpepper').value.trim(),
+        other: document.getElementById('reg-store-other').value.trim(),
+        memo: document.getElementById('reg-store-memo').value
+      };
+
       if (editStoreId) {
         const target = curMap.stores.find(s => s.id === editStoreId);
-        if (target) {
-          target.name = name;
-          target.form = document.getElementById('reg-store-form').value;
-          target.genre = document.getElementById('reg-store-genre').value;
-          target.listId = document.getElementById('reg-store-list').value;
-          target.url = document.getElementById('reg-store-url').value.trim();
-          target.isFavorite = document.getElementById('reg-store-fav').checked;
-          target.memo = document.getElementById('reg-store-memo').value;
-          target.images = [...currentEditingImages];
-        }
+        if (target) Object.assign(target, storeData);
         saveStorage();
         closeModal();
         showStoreDetail(editStoreId);
       } else {
         const newStore = {
           id: 'str_' + Date.now(),
-          name: name,
-          form: document.getElementById('reg-store-form').value,
-          genre: document.getElementById('reg-store-genre').value,
-          listId: document.getElementById('reg-store-list').value,
-          url: document.getElementById('reg-store-url').value.trim(),
-          isFavorite: document.getElementById('reg-store-fav').checked,
-          memo: document.getElementById('reg-store-memo').value,
-          images: [...currentEditingImages],
           lat: tempPinLocation.lat,
-          lng: tempPinLocation.lng
+          lng: tempPinLocation.lng,
+          ...storeData
         };
-
         curMap.stores.push(newStore);
         if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
         tempPinLocation = null;
-
         saveStorage();
         closeModal();
         showStoreDetail(newStore.id);
@@ -701,10 +846,14 @@
       closeDetailPanel();
     }
 
+    /* <2> 店舗ピン表示（全16項目表示・URL展開/折りたたみ機能） */
     function showStoreDetail(storeId) {
       const curMap = getCurrentMap();
       const store = curMap.stores.find(s => s.id === storeId);
       if (!store) return;
+
+      const assignedLists = (curMap.lists || []).filter(l => (store.listIds || []).includes(l.id)).map(l => l.name);
+      const listDisp = assignedLists.length > 0 ? assignedLists.join(', ') : '未登録';
 
       let imgHtml = '';
       if (store.images && store.images.length > 0) {
@@ -713,81 +862,99 @@
           `</div>`;
       }
 
-      const listObj = curMap.lists.find(l => l.id === store.listId);
-      const listName = listObj ? listObj.name : '未分類';
-      const favBadge = store.isFavorite ? '⭐ お気に入り' : '';
-      const urlLink = store.url ? `<a href="${store.url}" target="_blank" style="color:var(--primary-color); font-size:11px; text-decoration:underline;">🔗 店舗リンク・Webサイト</a>` : '';
+      // 11〜14番目のURLアコーディオン用データ抽出（"-" のものは除外）
+      const urls = [
+        { label: '11. 予約対応', val: store.reserve },
+        { label: '12. 公式サイト', val: store.official },
+        { label: '13. 食べログ', val: store.tabelog },
+        { label: '14. ホットペッパー', val: store.hotpepper }
+      ].filter(u => u.val && u.val !== '-');
+
+      let urlSectionHtml = '';
+      if (urls.length > 0) {
+        urlSectionHtml = `
+          <div style="margin-top:6px; border:1px solid var(--border-color); border-radius:6px; padding:4px;">
+            <button onclick="toggleUrlAccordion()" style="width:100%; text-align:left; background:none; color:var(--primary-color); border:none; padding:2px; font-weight:bold; font-size:11px; cursor:pointer;">
+              ▶ 関連URL・各種リンク (${urls.length}件)
+            </button>
+            <div id="url-accordion-content" style="display:none; margin-top:4px; padding-top:4px; border-top:1px dashed var(--border-color);">
+              ${urls.map(u => {
+                const isLink = u.val.startsWith('http://') || u.val.startsWith('https://');
+                return `<div style="font-size:11px; margin-bottom:2px;">
+                  <b>${u.label}:</b> ${isLink ? `<a href="${u.val}" target="_blank" style="color:var(--primary-color); text-decoration:underline;">${u.val}</a>` : u.val}
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      } else {
+        urlSectionHtml = `<div style="font-size:11px; margin-top:4px; color:#888;"><b>予約対応/各種URL:</b> -</div>`;
+      }
 
       const detailPanel = document.getElementById('detail-area');
       const detailContent = document.getElementById('detail-content');
       detailPanel.style.display = 'block';
 
       detailContent.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:4px;">
+        <!-- 1番目：お気に入り & 4番目：店舗名 -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
           <div>
-            <h3 style="margin:0; color:var(--primary-color); font-size:13px;">${store.isFavorite ? '⭐ ' : ''}${store.name}</h3>
-            <p style="font-size:10.5px; color:#666; margin-top:2px;"><b>形式:</b> ${store.form || '-'}<br><b>ジャンル:</b> ${store.genre || '-'}</p>
+            <span style="font-size:10px; color:#ff6b6b; font-weight:bold;">${store.isFavorite ? '⭐ お気に入り' : '☆ 通常'}</span>
+            <h3 style="margin:2px 0 0 0; color:var(--primary-color); font-size:14px;">${store.name}</h3>
           </div>
           <div style="display:flex; gap:4px;">
             <button onclick="openEditStoreModal('${store.id}')" style="background:#ff9f43; font-size:10px; padding:2px 6px;">✏️ 編集</button>
             <button onclick="deleteStore('${store.id}')" style="background:#dc3545; font-size:10px; padding:2px 6px;">削除</button>
           </div>
         </div>
+
+        <!-- 2番目：リスト登録 -->
+        <div style="font-size:11px; color:#555; margin-top:4px;"><b>2. リスト:</b> ${listDisp}</div>
+
+        <!-- 3番目：画像 -->
         ${imgHtml}
-        ${urlLink ? `<div style="margin-top:4px;">${urlLink}</div>` : ''}
-        <p style="font-size:11px; margin-top:4px; background:rgba(0,0,0,0.03); padding:6px; border-radius:6px; border-left:3px solid var(--accent-color);">
-          ${store.memo || 'メモなし'}
-        </p>
-        <div style="margin-top:6px; display:flex; flex-direction:column; gap:4px; border-top:1px dashed var(--border-color); padding-top:4px;">
-          <span style="font-size:10.5px; color:#555;">📋 所属: <b>${listName}</b></span>
-          <button onclick="openAssignListModal('${store.id}')" style="font-size:10px; padding:2px 6px; background:var(--accent-color); color:#fff;">📋 所属リスト変更</button>
+
+        <!-- 5番目：形式 / 6番目：ジャンル -->
+        <div style="font-size:11px; margin-top:4px; background:rgba(0,0,0,0.02); padding:4px; border-radius:4px;">
+          <b>5. 形式:</b> ${store.form || '-'} / <b>6. ジャンル:</b> ${store.genre || '-'}
+        </div>
+
+        <!-- 7番目：コスパ / 8番目：キャパ / 9番目：雰囲気 -->
+        <div style="font-size:11px; margin-top:4px; display:flex; flex-direction:column; gap:2px;">
+          <div><b>7. コスパ:</b> [低] ${'★'.repeat(store.cospa || 3)}${'☆'.repeat(5 - (store.cospa || 3))} [高&lt;良&gt;]</div>
+          <div><b>8. キャパ:</b> [少人数] ${'★'.repeat(store.capa || 3)}${'☆'.repeat(5 - (store.capa || 3))} [大人数向け]</div>
+          <div><b>9. 雰囲気:</b> [落ち着いた] ${'★'.repeat(store.mood || 3)}${'☆'.repeat(5 - (store.mood || 3))} [にぎやか]</div>
+        </div>
+
+        <!-- 10番目：連絡先 -->
+        <div style="font-size:11px; margin-top:4px;"><b>10. 連絡先:</b> ${store.contact || '-'}</div>
+
+        <!-- 11〜14番目：アコーディオン表示 -->
+        ${urlSectionHtml}
+
+        <!-- 15番目：その他 -->
+        <div style="font-size:11px; margin-top:4px;"><b>15. その他:</b> ${store.other || '-'}</div>
+
+        <!-- 16番目：備考 -->
+        <div style="font-size:11px; margin-top:6px; background:rgba(0,0,0,0.03); padding:6px; border-radius:6px; border-left:3px solid var(--accent-color);">
+          <b>16. 備考:</b><br>${store.memo ? store.memo.replace(/\n/g, '<br>') : 'なし'}
         </div>
       `;
+
       map.setView([store.lat, store.lng], 16);
+    }
+
+    function toggleUrlAccordion() {
+      const content = document.getElementById('url-accordion-content');
+      if (content) {
+        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+      }
     }
 
     function openEditStoreModal(storeId) {
       const curMap = getCurrentMap();
       const store = curMap.stores.find(s => s.id === storeId);
       if (store) openStoreRegisterModalFromPin(store);
-    }
-
-    function openAssignListModal(storeId) {
-      const curMap = getCurrentMap();
-      const store = curMap.stores.find(s => s.id === storeId);
-      if (!store) return;
-
-      const content = document.getElementById('modal-content');
-      document.getElementById('modal-overlay').style.display = 'flex';
-
-      let listOptions = '<option value="">なし（未分類）</option>';
-      (curMap.lists || []).forEach(l => {
-        const sel = (store.listId === l.id) ? 'selected' : '';
-        listOptions += `<option value="${l.id}" ${sel}>${l.name}</option>`;
-      });
-
-      content.innerHTML = `
-        <div class="modal-header"><h3>📋 所属リストの追加・変更</h3></div>
-        <p style="font-size:12px; margin-bottom:8px;">「<b>${store.name}</b>」を登録するリストを選択してください。</p>
-        <div class="form-group">
-          <select id="assign-list-select" class="stylish-input">${listOptions}</select>
-        </div>
-        <div class="btn-group">
-          <button onclick="saveAssignList('${store.id}')">設定を保存</button>
-          <button onclick="closeModal()" class="btn-secondary">キャンセル</button>
-        </div>
-      `;
-    }
-
-    function saveAssignList(storeId) {
-      const curMap = getCurrentMap();
-      const store = curMap.stores.find(s => s.id === storeId);
-      if (store) {
-        store.listId = document.getElementById('assign-list-select').value;
-        saveStorage();
-        closeModal();
-        showStoreDetail(storeId);
-      }
     }
 
     function deleteStore(storeId) {
@@ -808,7 +975,7 @@
       const curMap = getCurrentMap();
       const filtered = (curMap.stores || []).filter(s => {
         if (nameVal && !s.name.toLowerCase().includes(nameVal)) return false;
-        if (listVal && s.listId !== listVal) return false;
+        if (listVal && !(s.listIds || []).includes(listVal) && s.listId !== listVal) return false;
         if (favVal === 'fav' && !s.isFavorite) return false;
         if (formVal && s.form !== formVal) return false;
         if (genreVal && s.genre !== genreVal) return false;
@@ -990,7 +1157,10 @@
       if (!confirm('このリストを削除しますか？')) return;
       const curMap = getCurrentMap();
       curMap.lists = curMap.lists.filter(l => l.id !== listId);
-      curMap.stores.forEach(s => { if (s.listId === listId) s.listId = ''; });
+      curMap.stores.forEach(s => {
+        if (s.listIds) s.listIds = s.listIds.filter(id => id !== listId);
+        if (s.listId === listId) s.listId = '';
+      });
       saveStorage();
       openCustomListModal();
     }
