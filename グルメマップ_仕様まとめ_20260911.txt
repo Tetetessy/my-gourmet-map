@@ -1,6 +1,8 @@
 アドレス　：teteteshhie.ai.create@gmail.com
 パスワード：Teteteshhie78
 
+fix: 地図タイルの表示エラーを修正
+
 # 変更のあったすべてのファイルをステージングに追加
 git add .
 
