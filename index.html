@@ -7,6 +7,13 @@
   <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Firebase SDK (v9/v10 Compat Library for HTML Script Integration) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
+
   <style>
     /* ==================== テーマ定義 ==================== */
     :root {
@@ -65,7 +72,6 @@
     .indicator-btn { cursor: pointer; padding: 3px 6px; border-radius: 6px; user-select: none; font-weight: bold; }
     .indicator-btn:hover { background-color: rgba(0, 0, 0, 0.06); text-decoration: underline; }
 
-    /* 画面左上：3つのボタンのサイズとスタイルを全統一 */
     .top-left { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
     .top-left .action-btn { width: 130px; text-align: center; background: var(--primary-gradient); color: #fff; border: none; }
     .top-right { position: absolute; top: 10px; right: 10px; z-index: 1000; }
@@ -120,7 +126,6 @@
     .stylish-input { width: 100%; padding: 8px 10px; font-size: 13px; border: 1px solid var(--border-color); border-radius: var(--radius); background: rgba(255, 255, 255, 0.9); }
     .stylish-input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.2); }
 
-    /* スライダー（コスパ・キャパ・雰囲気）レイアウトの統一 */
     .range-control-row {
       display: grid;
       grid-template-columns: 75px 1fr 75px;
@@ -162,9 +167,8 @@
     </select>
   </div>
 
-  <!-- 画面左上：登録ボタン群 ＆ 絞り込みボタン (統一サイズ＆色) -->
+  <!-- 画面左上：登録ボタン群 ＆ 絞り込みボタン -->
   <div class="top-left">
-    <!-- <1> ピンを店舗登録の表記に変更 -->
     <button id="btn-register-store" class="action-btn" onclick="openStoreRegisterModalFromPin()">📍 店舗登録</button>
     <button id="btn-register-area" class="action-btn" onclick="openAreaRegisterModalPrompt()">🚩 エリア登録</button>
     <div class="bottom-left-area">
@@ -248,6 +252,24 @@
   </div>
 
   <script>
+    // ==================== Firebase 初期設定 ====================
+    const firebaseConfig = {
+      apiKey: "AIzaSyCwCvKcYkGdqsIf9srXHiX4RGKtEEi0Tj8",
+      authDomain: "my-gourmet-map-25508.firebaseapp.com",
+      databaseURL: "https://my-gourmet-map-25508-default-rtdb.firebaseio.com",
+      projectId: "my-gourmet-map-25508",
+      storageBucket: "my-gourmet-map-25508.firebasestorage.app",
+      messagingSenderId: "118013321716",
+      appId: "1:118013321716:web:33dd3ea5c2ce2aa50fd9a1",
+      measurementId: "G-RM3R988L24"
+    };
+
+    // Firebase 初期化
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
+    firebase.analytics();
+
     const AREA_COLORS = [
       { id: 'teal', label: 'エメラルド', bg: 'linear-gradient(135deg, #4ecdc4, #2ab7ca)' },
       { id: 'rose', label: 'ローズ', bg: 'linear-gradient(135deg, #ff6b6b, #ee5253)' },
@@ -273,7 +295,7 @@
     ];
 
     let map;
-    let currentUser = JSON.parse(localStorage.getItem('gourmet_current_user')) || { loggedIn: false, email: '', name: '' };
+    let currentUser = { loggedIn: false, email: '', name: '', uid: '' };
     let users = JSON.parse(localStorage.getItem('gourmet_users')) || {};
     let sharedStoreDB = JSON.parse(localStorage.getItem('gourmet_shared_maps')) || {};
 
@@ -285,6 +307,23 @@
     let mapStoreMarkers = [];
     let mapAreaMarkers = [];
     let currentEditingImages = [];
+
+    // Firebase Authentication 状態変化リスナー
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        currentUser = {
+          loggedIn: true,
+          email: user.email,
+          name: user.displayName || user.email.split('@')[0],
+          uid: user.uid
+        };
+      } else {
+        currentUser = { loggedIn: false, email: '', name: '', uid: '' };
+      }
+      loadCurrentUserData();
+      updateAuthUI();
+      renderCurrentMap();
+    });
 
     function toggleMenu() {
       const dropdown = document.getElementById('menu-dropdown');
@@ -330,10 +369,16 @@
     }
 
     function loadCurrentUserData() {
-      if (currentUser.loggedIn && users[currentUser.email]) {
-        currentUser.name = users[currentUser.email].name || currentUser.name || 'ユーザー';
-        maps = users[currentUser.email].maps || [];
-        currentMapId = users[currentUser.email].currentMapId || (maps[0] ? maps[0].id : '');
+      if (currentUser.loggedIn) {
+        const userKey = currentUser.uid || currentUser.email;
+        if (users[userKey]) {
+          currentUser.name = users[userKey].name || currentUser.name || 'ユーザー';
+          maps = users[userKey].maps || [];
+          currentMapId = users[userKey].currentMapId || (maps[0] ? maps[0].id : '');
+        } else {
+          maps = JSON.parse(localStorage.getItem(`gourmet_user_maps_${currentUser.uid}`)) || [];
+          currentMapId = localStorage.getItem(`gourmet_user_map_id_${currentUser.uid}`) || '';
+        }
       } else {
         maps = JSON.parse(localStorage.getItem('gourmet_guest_maps')) || [];
         currentMapId = localStorage.getItem('gourmet_guest_map_id') || '';
@@ -354,7 +399,6 @@
       try {
         const curMap = getCurrentMap();
         if (curMap && !curMap.isShared) {
-          // <2> 共有用DBには対象のマップ情報（店舗・エリア・リスト等）のみ保存（他マップやアカウント情報は除外）
           sharedStoreDB[curMap.id] = {
             id: curMap.id,
             name: curMap.name,
@@ -366,14 +410,16 @@
         }
 
         if (currentUser.loggedIn) {
-          users[currentUser.email] = {
+          const userKey = currentUser.uid || currentUser.email;
+          users[userKey] = {
             name: currentUser.name || 'ユーザー',
-            password: users[currentUser.email]?.password || '',
+            email: currentUser.email,
             maps: maps,
             currentMapId: currentMapId
           };
           localStorage.setItem('gourmet_users', JSON.stringify(users));
-          localStorage.setItem('gourmet_current_user', JSON.stringify(currentUser));
+          localStorage.setItem(`gourmet_user_maps_${currentUser.uid}`, JSON.stringify(maps));
+          localStorage.setItem(`gourmet_user_map_id_${currentUser.uid}`, currentMapId);
         } else {
           localStorage.setItem('gourmet_guest_maps', JSON.stringify(maps));
           localStorage.setItem('gourmet_guest_map_id', currentMapId);
@@ -413,7 +459,6 @@
         const detailContent = document.getElementById('detail-content');
         detailPanel.style.display = 'block';
 
-        // <1> ピンを置きましたウィンドウの表記を変更
         detailContent.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <p style="color:var(--primary-color); font-weight:bold; margin:0;">📍 ピンを置きました</p>
@@ -516,7 +561,6 @@
     function openStoreRegisterModalFromPin(storeToEdit = null) {
       const curMap = getCurrentMap();
 
-      // <3> 共有されたマップは編集等の操作を禁止
       if (curMap.isShared) {
         alert('🔒 共有されたマップのため、編集・登録操作は禁止されています。');
         return;
@@ -840,7 +884,6 @@
     function openAreaRegisterModalPrompt() {
       const curMap = getCurrentMap();
 
-      // <3> 共有されたマップは操作禁止
       if (curMap.isShared) {
         alert('🔒 共有されたマップのため、エリア編集・登録操作は禁止されています。');
         return;
@@ -962,7 +1005,6 @@
              onclick="changeAreaColor('${area.id}', '${c.id}')" title="${c.label}"></div>
       `).join('');
 
-      // <3> 共有されたマップの場合は編集・削除ボタンを非表示
       const actionButtons = curMap.isShared ? '' : `
         <button onclick="editAreaNameFromDetail('${area.id}')" style="background:#ff9f43; font-size:11px; padding:6px; width:100%;">✏️ 編集</button>
         <button onclick="deleteArea('${area.id}')" style="background:#dc3545; font-size:11px; padding:6px; width:100%;">削除</button>
@@ -1067,7 +1109,6 @@
       const detailContent = document.getElementById('detail-content');
       detailPanel.style.display = 'block';
 
-      // <3> 共有されたマップの場合は編集・削除を隠し、自身のマップへの反映機能を提供
       const actionButtons = curMap.isShared ? `
         <button onclick="reflectStoreToMyMap('${store.id}')" style="background:#4ecdc4; font-size:10px; padding:2px 6px;">📥 マイマップへ反映</button>
       ` : `
@@ -1115,7 +1156,6 @@
       map.setView([store.lat, store.lng], 16);
     }
 
-    // <3> 共有マップから自身のマイマップへ店舗を個別反映
     function reflectStoreToMyMap(storeId) {
       const curMap = getCurrentMap();
       const store = curMap.stores.find(s => s.id === storeId);
@@ -1127,7 +1167,6 @@
         return;
       }
 
-      const optionsHtml = myMaps.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
       const targetMapId = prompt(`店舗「${store.name}」をどの自作マップに反映しますか？\n(対象のマップIDを入力してください)\n\n利用可能なマップ:\n` + myMaps.map(m => `${m.name} [ID: ${m.id}]`).join('\n'), myMaps[0].id);
 
       if (!targetMapId) return;
@@ -1350,7 +1389,6 @@
       successEl.style.display = 'block';
     }
 
-    /* <3> 共有コード読み込みと自動切り替え機能 */
     function importCodePrompt() {
       toggleMenu();
       const code = prompt('読み込む共有コードを入力してください:');
@@ -1374,7 +1412,6 @@
         return;
       }
 
-      // 読み込んだマップを再現し、閲覧用(isShared = true)としてマップ管理に追加
       const sharedMap = {
         id: targetMapData.id,
         name: `${targetMapData.name} (共有)`,
@@ -1391,7 +1428,6 @@
         maps.push(sharedMap);
       }
 
-      // 自動的に読み込んだ共有マップに切り替え
       currentMapId = trimmed;
       saveStorage();
       closeDetailPanel();
@@ -1399,7 +1435,6 @@
       alert(`🎉 共有コード「${trimmed}」のマップを自動読み込みして切り替えました！\n（閲覧専用としてマップ管理に保存されました）`);
     }
 
-    /* <4> 共有されたマップ情報の更新ボタン機能 */
     function refreshSharedMap() {
       toggleMenu();
       const curMap = getCurrentMap();
@@ -1419,7 +1454,6 @@
       }
     }
 
-    /* マップ切替・編集機能 */
     function openMapSwitchModal() {
       toggleMenu();
       const content = document.getElementById('modal-content');
@@ -1469,7 +1503,6 @@
       closeSearchResultsPanel();
     }
 
-    // <3> 名前変更は可能だが共有元には反映されない（ローカルの表示名のみ変更）
     function editMapName(mapId) {
       const targetMap = maps.find(m => m.id === mapId);
       if (!targetMap) return;
@@ -1507,7 +1540,6 @@
       closeDetailPanel();
     }
 
-    /* 新規マップ作成モーダル */
     function openNewMapModal() {
       toggleMenu();
       if (maps.length >= 30) {
@@ -1552,7 +1584,6 @@
       alert(`🎉 新しいマップ「${name}」を作成して切り替えました！`);
     }
 
-    /* <5> リスト管理（店舗は基本閉じられており、展開して表示） */
     function openCustomListModal() {
       toggleMenu();
       const curMap = getCurrentMap();
@@ -1589,7 +1620,6 @@
                 </div>
               ` : ''}
             </div>
-            <!-- 基本は閉じられており(display:none)、展開して表示 -->
             <div id="list-stores-${l.id}" style="display:none; margin-top:6px; padding-left:6px; border-left:2px solid var(--primary-color);">
               ${storesHtml || '<p style="color:#888; font-size:10px; margin-top:2px;">店舗は登録されていません</p>'}
             </div>
@@ -1606,7 +1636,6 @@
       `;
     }
 
-    /* アコーディオン開閉用関数 */
     function toggleListAccordion(elemId) {
       const el = document.getElementById(elemId);
       if (el) {
@@ -1718,7 +1747,7 @@
       `;
     }
 
-    /* アカウント認証・プロファイル */
+    /* ==================== Firebase 連携アカウント認証・プロファイル ==================== */
     function updateAuthUI() {
       const statusElem = document.getElementById('auth-status');
       const btnElem = document.getElementById('auth-btn');
@@ -1760,19 +1789,22 @@
       `;
     }
 
+    // Firebase Auth: パスワード再設定メール送信
     function sendForgotOtp() {
-      const email = document.getElementById('auth-email').value.trim();
+      const emailInput = document.getElementById('auth-email');
+      const email = emailInput ? emailInput.value.trim() : '';
       if (!email) {
         alert('先にメールアドレスを入力してください。');
         return;
       }
-      if (!users[email]) {
-        alert('⚠️ このメールアドレスは登録されていません。');
-        return;
-      }
-      alert(`📩 ${email} 宛に日本語でワンタイムパスワードを送信しました。\nメール本文をご確認の上、パスワードの再設定を行ってください。`);
+      auth.sendPasswordResetEmail(email).then(() => {
+        alert(`📩 ${email} 宛にパスワード再設定用のメールを送信しました。\nメール本文をご確認の上、手続きを行ってください。`);
+      }).catch((error) => {
+        alert('⚠️ エラー: ' + error.message);
+      });
     }
 
+    // Firebase Auth: ログイン / 新規登録処理
     function handleAuth(isRegister) {
       const email = document.getElementById('auth-email').value.trim();
       const name = document.getElementById('auth-name').value.trim();
@@ -1784,38 +1816,40 @@
       }
 
       if (isRegister) {
-        if (users[email]) {
-          alert('⚠️ このメールアドレスは既に登録されています。ログインしてください。');
-          return;
-        }
-        const accountName = name || email.split('@')[0];
-        const defaultMap = createDefaultMap();
-        users[email] = {
-          name: accountName,
-          password: pass,
-          maps: [defaultMap],
-          currentMapId: defaultMap.id
-        };
-        currentUser = { loggedIn: true, email: email, name: accountName };
-        saveStorage();
-        updateAuthUI();
-        closeModal();
-        alert(`🎉 新規登録が完了しました！ようこそ、${accountName}さん。`);
+        // Firebase 新規アカウント作成
+        auth.createUserWithEmailAndPassword(email, pass)
+          .then((userCredential) => {
+            const user = userCredential.user;
+            const accountName = name || email.split('@')[0];
+            return user.updateProfile({ displayName: accountName }).then(() => {
+              currentUser = { loggedIn: true, email: user.email, name: accountName, uid: user.uid };
+              const defaultMap = createDefaultMap();
+              maps = [defaultMap];
+              currentMapId = defaultMap.id;
+              saveStorage();
+              updateAuthUI();
+              closeModal();
+              alert(`🎉 Firebaseでの新規登録が完了しました！ようこそ、${accountName}さん。`);
+            });
+          })
+          .catch((error) => {
+            alert('⚠️ 登録エラー: ' + error.message);
+          });
       } else {
-        if (!users[email]) {
-          alert('⚠️ アカウント情報が一致しないか登録されていません。正しい情報でログインするか新規登録を行ってください。');
-          return;
-        }
-        if (users[email].password !== pass) {
-          alert('⚠️ パスワードが間違っています。');
-          return;
-        }
-        currentUser = { loggedIn: true, email: email, name: users[email].name || email.split('@')[0] };
-        loadCurrentUserData();
-        updateAuthUI();
-        renderCurrentMap();
-        closeModal();
-        alert(`🎉 ログインしました！登録されていた全てのマップ情報を復元しました。`);
+        // Firebase ログイン
+        auth.signInWithEmailAndPassword(email, pass)
+          .then((userCredential) => {
+            const user = userCredential.user;
+            currentUser = { loggedIn: true, email: user.email, name: user.displayName || user.email.split('@')[0], uid: user.uid };
+            loadCurrentUserData();
+            updateAuthUI();
+            renderCurrentMap();
+            closeModal();
+            alert(`🎉 Firebaseログインに成功しました！`);
+          })
+          .catch((error) => {
+            alert('⚠️ ログインエラー: Emailまたはパスワードが正しくありません。');
+          });
       }
     }
 
@@ -1833,20 +1867,30 @@
       `;
     }
 
+    // Firebase Auth: プロフィール名更新
     function saveAccountName() {
       const newName = document.getElementById('new-account-name').value.trim();
       if (!newName) {
         alert('アカウント名を入力してください。');
         return;
       }
-      currentUser.name = newName;
-      if (users[currentUser.email]) {
-        users[currentUser.email].name = newName;
+      const user = auth.currentUser;
+      if (user) {
+        user.updateProfile({ displayName: newName }).then(() => {
+          currentUser.name = newName;
+          saveStorage();
+          updateAuthUI();
+          closeModal();
+          alert('アカウント名を更新しました。');
+        }).catch((error) => {
+          alert('⚠️ 更新エラー: ' + error.message);
+        });
+      } else {
+        currentUser.name = newName;
+        saveStorage();
+        updateAuthUI();
+        closeModal();
       }
-      saveStorage();
-      updateAuthUI();
-      closeModal();
-      alert('アカウント名を更新しました。');
     }
 
     function openChangePasswordModal() {
@@ -1855,7 +1899,6 @@
       document.getElementById('modal-overlay').style.display = 'flex';
       content.innerHTML = `
         <div class="modal-header"><h3>🔑 パスワードの変更</h3></div>
-        <div class="form-group"><label>現在のパスワード</label><input type="password" id="cur-pass" class="stylish-input"></div>
         <div class="form-group"><label>新しいパスワード (6文字以上)</label><input type="password" id="new-pass" class="stylish-input"></div>
         <div class="btn-group">
           <button onclick="saveNewPassword()">パスワード変更</button>
@@ -1864,31 +1907,37 @@
       `;
     }
 
+    // Firebase Auth: パスワード更新
     function saveNewPassword() {
-      const curPass = document.getElementById('cur-pass').value.trim();
       const newPass = document.getElementById('new-pass').value.trim();
 
-      if (users[currentUser.email].password !== curPass) {
-        alert('⚠️ 現在のパスワードが違います。');
-        return;
-      }
       if (newPass.length < 6) {
         alert('⚠️ 新しいパスワードは6文字以上で入力してください。');
         return;
       }
 
-      users[currentUser.email].password = newPass;
-      saveStorage();
-      closeModal();
-      alert('🔑 パスワードを正常に変更しました。');
+      const user = auth.currentUser;
+      if (user) {
+        user.updatePassword(newPass).then(() => {
+          saveStorage();
+          closeModal();
+          alert('🔑 パスワードを正常に変更しました。');
+        }).catch((error) => {
+          alert('⚠️ エラー: 再ログインが必要な場合があります。 (' + error.message + ')');
+        });
+      }
     }
 
+    // Firebase Auth: ログアウト
     function logout() {
-      currentUser = { loggedIn: false, email: '', name: '' };
-      localStorage.removeItem('gourmet_current_user');
-      loadCurrentUserData();
-      updateAuthUI();
-      renderCurrentMap();
+      auth.signOut().then(() => {
+        currentUser = { loggedIn: false, email: '', name: '', uid: '' };
+        localStorage.removeItem('gourmet_current_user');
+        loadCurrentUserData();
+        updateAuthUI();
+        renderCurrentMap();
+        alert('ログアウトしました。');
+      });
     }
   </script>
 </body>
