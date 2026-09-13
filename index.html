@@ -20,93 +20,139 @@
     <select id="area-select" onchange="moveToArea(this.value)">
       <option value="">エリア移動</option>
     </select>
+    <button id="main-op-btn" class="op-btn" onclick="toggleControlPanel()">≡ 操作</button>
   </div>
 
-  <!-- 画面左上：登録ボタン群 ＆ 絞り込みボタン (統一サイズ＆色) -->
-  <div class="top-left">
-    <button id="btn-register-store" class="action-btn" onclick="openStoreRegisterModalFromPin()">📍 店舗登録</button>
-    <button id="btn-register-area" class="action-btn" onclick="openAreaRegisterModalPrompt()">🚩 エリア登録</button>
-    <div class="bottom-left-area">
-      <button class="action-btn" onclick="toggleSearchPanel()">🔍 絞り込み</button>
-      <div class="search-panel" id="search-panel">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-          <h4 style="margin: 0;">🔍 条件検索</h4>
-          <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
-        </div>
-        <input type="text" id="search-name" placeholder="店舗名検索" oninput="filterStores()" style="width:100%;">
-        <select id="search-list" onchange="filterStores()" style="width:100%;">
-          <option value="">全てのリスト</option>
-        </select>
-        <select id="search-fav" onchange="filterStores()" style="width:100%;">
-          <option value="">全てのお気に入り</option>
-          <option value="fav">⭐ お気に入りのみ</option>
-        </select>
-        <select id="search-form" onchange="filterStores()" style="width:100%;">
-          <option value="">全ての形式</option>
-        </select>
-        <select id="search-genre" onchange="filterStores()" style="width:100%;">
-          <option value="">全てのジャンル</option>
-        </select>
+  <!-- 左側操作ボタン群 -->
+  <div class="left-controls">
+    <button class="ctrl-btn btn-store" onclick="openStoreModal()">📍 店舗登録</button>
+    <button class="ctrl-btn btn-area" onclick="openAreaModal()">🚩 エリア登録</button>
+    <button class="ctrl-btn btn-filter" onclick="openFilterModal()">🔍 絞り込み</button>
+  </div>
+
+  <!-- アカウント・データ管理パネル -->
+  <div id="control-panel" class="control-panel hidden">
+    <div class="panel-header">
+      <span>アカウント・データ管理</span>
+      <button onclick="toggleControlPanel()">✕</button>
+    </div>
+    <div class="panel-body">
+      <div id="auth-status-container">
+        <p id="user-status-text">ログインしていません</p>
+        <button id="login-btn" class="panel-action-btn" onclick="handleLogin()">ログイン / 新規登録</button>
+        <button id="logout-btn" class="panel-action-btn hidden" onclick="handleLogout()">ログアウト</button>
+      </div>
+      <hr>
+      <div class="data-actions">
+        <button class="panel-action-btn" onclick="exportData()">データバックアップ (JSON)</button>
+        <button class="panel-action-btn" onclick="importData()">データ復元 (JSON)</button>
+        <button class="panel-action-btn danger" onclick="clearAllData()">全データ初期化</button>
       </div>
     </div>
   </div>
 
-  <!-- 画面右上：操作メニュー -->
-  <div class="top-right">
-    <button onclick="toggleMenu()">☰ 操作</button>
-    <div id="menu-dropdown" class="menu-dropdown">
-      <small>【アカウント】</small>
-      <div id="auth-status" style="font-weight:bold; margin: 2px 0;">ゲスト利用中</div>
-      <button id="btn-edit-profile" onclick="openEditProfileModal()" style="display:none; background:#6c757d; font-size:10px;">✏️ アカウント名変更</button>
-      <button id="btn-change-pass" onclick="openChangePasswordModal()" style="display:none; background:#6c757d; font-size:10px;">🔑 パスワード変更</button>
-      <button id="auth-btn" onclick="openAuthModal()">ログイン / 登録</button>
-      <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
-      <small>【マップ管理】</small>
-      <button onclick="openMapSwitchModal()">マップ切替・編集</button>
-      <button onclick="openNewMapModal()">新規マップ作成</button>
-      <button onclick="openCustomListModal()">📋 リスト管理</button>
-      <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
-      <small>【共有】</small>
-      <button onclick="exportCode()">共有コード設定・表示</button>
-      <button onclick="importCodePrompt()">共有コード読み込み</button>
-      <button onclick="refreshSharedMap()">🔄 マップ情報を更新</button>
-      <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
-      <small>【設定】</small>
-      <select onchange="changeTheme(this.value)" style="width:100%;">
-        <option value="casual">カジュアル</option>
-        <option value="simple">シンプル</option>
-        <option value="pop">ポップ</option>
-        <option value="light">ライト</option>
-        <option value="dark">ダーク</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- 右側別枠：絞り込み結果表示パネル -->
-  <div class="search-results-panel" id="search-results-panel">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; border-bottom:1px solid var(--border-color); padding-bottom:4px;">
-      <h4 style="margin:0; font-size:12px;">📋 検索結果一覧</h4>
-      <button onclick="closeSearchResultsPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
-    </div>
-    <div id="search-results-container"></div>
-  </div>
-
-  <!-- 店舗・ピン詳細パネル -->
-  <div class="bottom-center-area" id="detail-area">
-    <div class="detail-panel">
-      <div style="display:flex; justify-content:flex-end; margin-bottom: 4px;">
-        <button onclick="closeDetailPanel()" style="background:#6c757d; font-size:10px; padding:2px 6px;">閉じる ✕</button>
+  <!-- 各種モーダル -->
+  <div id="store-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>店舗登録</h2>
+        <button onclick="closeStoreModal()">✕</button>
       </div>
-      <div id="detail-content"></div>
+      <div class="modal-body">
+        <label>店舗名 <span class="required">*</span></label>
+        <input type="text" id="store-name" placeholder="例: 美味しいラーメン屋">
+        
+        <label>ジャンル</label>
+        <input type="text" id="store-genre" placeholder="例: ラーメン、カフェ">
+
+        <label>エリア</label>
+        <select id="store-area-select">
+          <option value="">指定なし</option>
+        </select>
+
+        <label>評価</label>
+        <select id="store-rating">
+          <option value="5">★★★★★ (5)</option>
+          <option value="4">★★★★☆ (4)</option>
+          <option value="3" selected>★★★☆☆ (3)</option>
+          <option value="2">★★☆☆☆ (2)</option>
+          <option value="1">★☆☆☆☆ (1)</option>
+        </select>
+
+        <label>メモ</label>
+        <textarea id="store-memo" rows="3" placeholder="おすすめメニューなど"></textarea>
+
+        <p class="guide-text">※地図上をクリックしてピンの位置を指定してください。</p>
+        <input type="hidden" id="store-lat">
+        <input type="hidden" id="store-lng">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeStoreModal()">キャンセル</button>
+        <button class="btn-primary" onclick="saveStore()">保存する</button>
+      </div>
     </div>
   </div>
 
-  <!-- モーダル各種 -->
-  <div class="modal-overlay" id="modal-overlay" onclick="if(event.target === this) closeModal();">
-    <div class="modal-content" id="modal-content"></div>
+  <div id="area-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>エリア登録</h2>
+        <button onclick="closeAreaModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <label>エリア名 <span class="required">*</span></label>
+        <input type="text" id="area-name" placeholder="例: 横浜駅周辺">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeAreaModal()">キャンセル</button>
+        <button class="btn-primary" onclick="saveArea()">登録する</button>
+      </div>
+    </div>
   </div>
 
-  <!-- 分割したJavaScriptの読み込み（03_script.js に修正） -->
-  <script type="module" src="03_script.js"></script>
+  <div id="filter-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>絞り込み</h2>
+        <button onclick="closeFilterModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <label>ジャンルで絞り込み</label>
+        <input type="text" id="filter-genre" placeholder="キーワード入力">
+
+        <label>最低評価</label>
+        <select id="filter-rating">
+          <option value="0">すべて表示</option>
+          <option value="3">★3以上</option>
+          <option value="4">★4以上</option>
+          <option value="5">★5のみ</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="resetFilter()">リセット</button>
+        <button class="btn-primary" onclick="applyFilter()">適用</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="store-list-modal" class="modal hidden">
+    <div class="modal-content large">
+      <div class="modal-header">
+        <h2>登録店舗一覧</h2>
+        <button onclick="closeStoreListModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <ul id="store-list-container" class="store-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript読み込み（モジュール対応＋windowへのバインドで呼び出し可能化） -->
+  <script type="module">
+    import * as app from './03_script.js';
+    Object.keys(app).forEach(key => {
+      window[key] = app[key];
+    });
+  </script>
 </body>
 </html>
