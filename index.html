@@ -1,412 +1,153 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="casual">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>マイ グルメ＆スポット マップ</title>
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; }
-        header { background: #333; color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .header-controls { display: flex; gap: 10px; align-items: center; }
-        #main-container { display: flex; flex: 1; height: calc(100vh - 50px); }
-        #sidebar { width: 300px; background: #f4f4f4; padding: 10px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
-        #map { flex: 1; height: 100%; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 20px; border-radius: 5px; width: 300px; display: flex; flex-direction: column; gap: 10px; }
-        .spot-item { background: white; padding: 10px; border-radius: 3px; border: 1px solid #ccc; cursor: pointer; }
-        .spot-item:hover { background: #e0e0e0; }
-        button { cursor: pointer; padding: 5px 10px; }
-    </style>
-    <!-- Firebase SDK (v9+ compat mode) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>地区特化 グルメマップ</title>
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- 分割したcssの読み込み -->
+  <link rel="stylesheet" href="02_style.css">
 </head>
 <body>
 
-    <header>
-        <h2>グルメマップ</h2>
-        <div class="header-controls">
-            <span id="user-status">ゲスト表示中</span>
-            <button id="auth-btn" onclick="openModal('auth-modal')">ログイン / 新規登録</button>
-            <button id="logout-btn" onclick="handleLogout()" style="display:none;">ログアウト</button>
-            <button onclick="exportCode()">データ共有コード出力</button>
-            <button onclick="importCodePrompt()">共有コード読み込み</button>
-        </div>
-    </header>
+  <div id="map"></div>
 
-    <div id="main-container">
-        <div id="sidebar">
-            <label>マップ切替:
-                <select id="map-select" onchange="switchMap(this.value)"></select>
-            </label>
-            <button onclick="openModal('create-map-modal')">新しいマップを作成</button>
-            <hr>
-            <h3>スポット一覧</h3>
-            <div id="spot-list"></div>
-        </div>
-        <div id="map"></div>
+  <!-- 上部インジケーター & エリア切替 -->
+  <div class="top-bar">
+    <span id="map-indicator" class="indicator-btn" onclick="openStoreListModal()" title="登録店舗一覧を表示">店舗: 0/200 📋</span>
+    <select id="area-select" onchange="moveToArea(this.value)">
+      <option value="">エリア移動</option>
+    </select>
+    <button id="main-op-btn" class="op-btn" onclick="toggleControlPanel()">≡ 操作</button>
+  </div>
+
+  <!-- 左側操作ボタン群 -->
+  <div class="left-controls">
+    <button class="ctrl-btn btn-store" onclick="openStoreModal()">📍 店舗登録</button>
+    <button class="ctrl-btn btn-area" onclick="openAreaModal()">🚩 エリア登録</button>
+    <button class="ctrl-btn btn-filter" onclick="openFilterModal()">🔍 絞り込み</button>
+  </div>
+
+  <!-- アカウント・データ管理パネル -->
+  <div id="control-panel" class="control-panel hidden">
+    <div class="panel-header">
+      <span>アカウント・データ管理</span>
+      <button onclick="toggleControlPanel()">✕</button>
     </div>
-
-    <!-- 認証モーダル -->
-    <div id="auth-modal" class="modal">
-        <div class="modal-content">
-            <h3>ログイン / 新規登録</h3>
-            <input type="email" id="auth-email" placeholder="メールアドレス">
-            <input type="password" id="auth-pass" placeholder="パスワード (6文字以上)">
-            <input type="text" id="auth-name" placeholder="表示名 (新規登録時のみ)">
-            <button onclick="handleAuth(false)">ログイン</button>
-            <button onclick="handleAuth(true)">新規登録</button>
-            <button onclick="closeModal('auth-modal')">キャンセル</button>
-        </div>
+    <div class="panel-body">
+      <div id="auth-status-container">
+        <p id="user-status-text">ログインしていません</p>
+        <button id="login-btn" class="panel-action-btn" onclick="handleLogin()">ログイン / 新規登録</button>
+        <button id="logout-btn" class="panel-action-btn hidden" onclick="handleLogout()">ログアウト</button>
+      </div>
+      <hr>
+      <div class="data-actions">
+        <button class="panel-action-btn" onclick="exportData()">データバックアップ (JSON)</button>
+        <button class="panel-action-btn" onclick="importData()">データ復元 (JSON)</button>
+        <button class="panel-action-btn danger" onclick="clearAllData()">全データ初期化</button>
+      </div>
     </div>
+  </div>
 
-    <!-- マップ作成モーダル -->
-    <div id="create-map-modal" class="modal">
-        <div class="modal-content">
-            <h3>新しいマップを作成</h3>
-            <input type="text" id="new-map-name" placeholder="マップ名">
-            <button onclick="createMap()">作成</button>
-            <button onclick="closeModal('create-map-modal')">キャンセル</button>
-        </div>
+  <!-- 各種モーダル（店舗登録、エリア登録、絞り込み、店舗一覧） -->
+  <div id="store-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>店舗登録</h2>
+        <button onclick="closeStoreModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <label>店舗名 <span class="required">*</span></label>
+        <input type="text" id="store-name" placeholder="例: 美味しいラーメン屋">
+        
+        <label>ジャンル</label>
+        <input type="text" id="store-genre" placeholder="例: ラーメン、カフェ">
+
+        <label>エリア</label>
+        <select id="store-area-select">
+          <option value="">指定なし</option>
+        </select>
+
+        <label>評価</label>
+        <select id="store-rating">
+          <option value="5">★★★★★ (5)</option>
+          <option value="4">★★★★☆ (4)</option>
+          <option value="3" selected>★★★☆☆ (3)</option>
+          <option value="2">★★☆☆☆ (2)</option>
+          <option value="1">★☆☆☆☆ (1)</option>
+        </select>
+
+        <label>メモ</label>
+        <textarea id="store-memo" rows="3" placeholder="おすすめメニューなど"></textarea>
+
+        <p class="guide-text">※地図上をクリックしてピンの位置を指定してください。</p>
+        <input type="hidden" id="store-lat">
+        <input type="hidden" id="store-lng">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeStoreModal()">キャンセル</button>
+        <button class="btn-primary" onclick="saveStore()">保存する</button>
+      </div>
     </div>
+  </div>
 
-    <!-- スポット追加・編集モーダル -->
-    <div id="spot-modal" class="modal">
-        <div class="modal-content">
-            <h3 id="spot-modal-title">スポットを追加</h3>
-            <input type="text" id="spot-name" placeholder="店名・スポット名">
-            <textarea id="spot-memo" placeholder="メモ"></textarea>
-            <button onclick="saveSpot()">保存</button>
-            <button id="delete-spot-btn" onclick="deleteSpot()" style="display:none; background:red; color:white;">削除</button>
-            <button onclick="closeModal('spot-modal')">キャンセル</button>
-        </div>
+  <div id="area-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>エリア登録</h2>
+        <button onclick="closeAreaModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <label>エリア名 <span class="required">*</span></label>
+        <input type="text" id="area-name" placeholder="例: 横浜駅周辺">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeAreaModal()">キャンセル</button>
+        <button class="btn-primary" onclick="saveArea()">登録する</button>
+      </div>
     </div>
+  </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // ==========================================
-        // 1. Firebaseの設定（ご自身のAPIキーを貼り付けてください）
-        // ==========================================
-	const firebaseConfig = {
-  		apiKey: "AIzaSyCwCvKcYkGdqsIf9srXHiX4RGKtEEi0Tj8",
-  		authDomain: "my-gourmet-map-25508.firebaseapp.com",
-  		databaseURL: "https://my-gourmet-map-25508-default-rtdb.firebaseio.com",
-  		projectId: "my-gourmet-map-25508",
-  		storageBucket: "my-gourmet-map-25508.firebasestorage.app",
-  		messagingSenderId: "118013321716",
-  		appId: "1:118013321716:web:33dd3ea5c2ce2aa50fd9a1",
-  		measurementId: "G-RM3R988L24"
-};
+  <div id="filter-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>絞り込み</h2>
+        <button onclick="closeFilterModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <label>ジャンルで絞り込み</label>
+        <input type="text" id="filter-genre" placeholder="キーワード入力">
 
-        // Firebase 初期化
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const database = firebase.database();
+        <label>最低評価</label>
+        <select id="filter-rating">
+          <option value="0">すべて表示</option>
+          <option value="3">★3以上</option>
+          <option value="4">★4以上</option>
+          <option value="5">★5のみ</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="resetFilter()">リセット</button>
+        <button class="btn-primary" onclick="applyFilter()">適用</button>
+      </div>
+    </div>
+  </div>
 
-        // ==========================================
-        // 2. 変数宣言
-        // ==========================================
-        let map;
-        let markers = [];
-        let maps = [];
-        let currentMapId = null;
-        let selectedLat = null;
-        let selectedLng = null;
-        let editingSpotId = null;
-        let currentUser = { loggedIn: false, email: "", name: "" };
+  <div id="store-list-modal" class="modal hidden">
+    <div class="modal-content large">
+      <div class="modal-header">
+        <h2>登録店舗一覧</h2>
+        <button onclick="closeStoreListModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <ul id="store-list-container" class="store-list"></ul>
+      </div>
+    </div>
+  </div>
 
-        // ==========================================
-        // 3. 初期化とAuth監視
-        // ==========================================
-        window.onload = function() {
-            initMap();
-
-            // Firebase Authのログイン状態変更検知
-            auth.onAuthStateChanged((user) => {
-                if (user) {
-                    // ログイン時
-                    currentUser = {
-                        loggedIn: true,
-                        email: user.email,
-                        name: user.displayName || user.email.split('@')[0]
-                    };
-                    updateAuthUI();
-                    loadUserData(user.uid);
-                } else {
-                    // ログアウト / ゲスト時
-                    currentUser = { loggedIn: false, email: "", name: "" };
-                    updateAuthUI();
-                    loadGuestData();
-                }
-            });
-        };
-
-        function initMap() {
-            map = L.map('map').setView([35.681236, 139.767125], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap'
-            }).addTo(map);
-
-            map.on('click', function(e) {
-                selectedLat = e.latlng.lat;
-                selectedLng = e.latlng.lng;
-                editingSpotId = null;
-                document.getElementById('spot-modal-title').innerText = "スポットを追加";
-                document.getElementById('spot-name').value = "";
-                document.getElementById('spot-memo').value = "";
-                document.getElementById('delete-spot-btn').style.display = "none";
-                openModal('spot-modal');
-            });
-        }
-
-        // ==========================================
-        // 4. データ保存・読み込み処理
-        // ==========================================
-        function createDefaultMap() {
-            return {
-                id: 'map_' + Date.now(),
-                name: 'マイマップ',
-                spots: []
-            };
-        }
-
-        function loadUserData(uid) {
-            database.ref('users/' + uid).on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data && data.maps) {
-                    maps = data.maps;
-                    currentMapId = data.currentMapId || maps[0].id;
-                } else {
-                    const defaultMap = createDefaultMap();
-                    maps = [defaultMap];
-                    currentMapId = defaultMap.id;
-                    saveStorage();
-                }
-                updateMapSelect();
-                renderCurrentMap();
-            });
-        }
-
-        function loadGuestData() {
-            const guestMaps = localStorage.getItem('gourmet_guest_maps');
-            if (guestMaps) {
-                maps = JSON.parse(guestMaps);
-                currentMapId = localStorage.getItem('gourmet_guest_map_id') || maps[0].id;
-            } else {
-                const defaultMap = createDefaultMap();
-                maps = [defaultMap];
-                currentMapId = defaultMap.id;
-            }
-            updateMapSelect();
-            renderCurrentMap();
-        }
-
-        function saveStorage() {
-            const curUser = auth.currentUser;
-            if (currentUser.loggedIn && curUser) {
-                // クラウドDB（Firebase）に一括同期
-                database.ref('users/' + curUser.uid).set({
-                    name: currentUser.name,
-                    maps: maps,
-                    currentMapId: currentMapId
-                });
-            } else {
-                // ゲスト時のみローカルに保存
-                localStorage.setItem('gourmet_guest_maps', JSON.stringify(maps));
-                localStorage.setItem('gourmet_guest_map_id', currentMapId);
-                renderCurrentMap();
-            }
-        }
-
-        // ==========================================
-        // 5. UI・マッピング処理
-        // ==========================================
-        function updateAuthUI() {
-            const statusEl = document.getElementById('user-status');
-            const authBtn = document.getElementById('auth-btn');
-            const logoutBtn = document.getElementById('logout-btn');
-
-            if (currentUser.loggedIn) {
-                statusEl.innerText = `${currentUser.name} さん`;
-                authBtn.style.display = "none";
-                logoutBtn.style.display = "inline";
-            } else {
-                statusEl.innerText = "ゲスト表示中";
-                authBtn.style.display = "inline";
-                logoutBtn.style.display = "none";
-            }
-        }
-
-        function updateMapSelect() {
-            const select = document.getElementById('map-select');
-            select.innerHTML = "";
-            maps.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m.id;
-                opt.innerText = m.name;
-                if (m.id === currentMapId) opt.selected = true;
-                select.appendChild(opt);
-            });
-        }
-
-        function renderCurrentMap() {
-            markers.forEach(m => map.removeLayer(m));
-            markers = [];
-            const listEl = document.getElementById('spot-list');
-            listEl.innerHTML = "";
-
-            const curMap = maps.find(m => m.id === currentMapId);
-            if (!curMap || !curMap.spots) return;
-
-            curMap.spots.forEach(spot => {
-                const marker = L.marker([spot.lat, spot.lng]).addTo(map);
-                marker.bindPopup(`<b>${spot.name}</b><br>${spot.memo}`);
-                markers.push(marker);
-
-                const div = document.createElement('div');
-                div.className = 'spot-item';
-                div.innerHTML = `<strong>${spot.name}</strong><br><small>${spot.memo}</small>`;
-                div.onclick = () => {
-                    map.panTo([spot.lat, spot.lng]);
-                    marker.openPopup();
-                };
-                div.ondblclick = () => {
-                    editingSpotId = spot.id;
-                    document.getElementById('spot-modal-title').innerText = "スポットを編集";
-                    document.getElementById('spot-name').value = spot.name;
-                    document.getElementById('spot-memo').value = spot.memo;
-                    document.getElementById('delete-spot-btn').style.display = "inline";
-                    openModal('spot-modal');
-                };
-                listEl.appendChild(div);
-            });
-        }
-
-        function switchMap(id) {
-            currentMapId = id;
-            saveStorage();
-        }
-
-        function createMap() {
-            const name = document.getElementById('new-map-name').value.trim();
-            if (!name) return;
-            const newMap = { id: 'map_' + Date.now(), name: name, spots: [] };
-            maps.push(newMap);
-            currentMapId = newMap.id;
-            document.getElementById('new-map-name').value = "";
-            closeModal('create-map-modal');
-            saveStorage();
-            updateMapSelect();
-        }
-
-        function saveSpot() {
-            const name = document.getElementById('spot-name').value.trim();
-            const memo = document.getElementById('spot-memo').value.trim();
-            if (!name) return alert("名称を入力してください");
-
-            const curMap = maps.find(m => m.id === currentMapId);
-            if (!curMap) return;
-
-            if (editingSpotId) {
-                const s = curMap.spots.find(x => x.id === editingSpotId);
-                if (s) { s.name = name; s.memo = memo; }
-            } else {
-                curMap.spots.push({
-                    id: 'spot_' + Date.now(),
-                    name: name,
-                    memo: memo,
-                    lat: selectedLat,
-                    lng: selectedLng
-                });
-            }
-
-            closeModal('spot-modal');
-            saveStorage();
-        }
-
-        function deleteSpot() {
-            const curMap = maps.find(m => m.id === currentMapId);
-            if (!curMap || !editingSpotId) return;
-            curMap.spots = curMap.spots.filter(s => s.id !== editingSpotId);
-            closeModal('spot-modal');
-            saveStorage();
-        }
-
-        // ==========================================
-        // 6. 認証処理（Firebase Auth接続）
-        // ==========================================
-        function handleAuth(isRegister) {
-            const email = document.getElementById('auth-email').value.trim();
-            const pass = document.getElementById('auth-pass').value.trim();
-            const name = document.getElementById('auth-name').value.trim();
-
-            if (!email || pass.length < 6) {
-                alert("正しいメールアドレスと6文字以上のパスワードを入力してください");
-                return;
-            }
-
-            if (isRegister) {
-                auth.createUserWithEmailAndPassword(email, pass)
-                    .then((userCredential) => {
-                        const accountName = name || email.split('@')[0];
-                        return userCredential.user.updateProfile({ displayName: accountName });
-                    })
-                    .then(() => {
-                        closeModal('auth-modal');
-                        alert("登録が完了しました！");
-                    })
-                    .catch(err => alert("登録エラー: " + err.message));
-            } else {
-                auth.signInWithEmailAndPassword(email, pass)
-                    .then(() => {
-                        closeModal('auth-modal');
-                        alert("ログインしました！");
-                    })
-                    .catch(err => alert("ログインエラー: メールアドレスまたはパスワードが正しくありません"));
-            }
-        }
-
-        function handleLogout() {
-            auth.signOut().then(() => {
-                alert("ログアウトしました");
-            });
-        }
-
-        // ==========================================
-        // 7. 共有機能・モーダル基本操作
-        // ==========================================
-        function exportCode() {
-            const curMap = maps.find(m => m.id === currentMapId);
-            if (!curMap) return;
-            const code = btoa(unescape(encodeURIComponent(JSON.stringify(curMap))));
-            prompt("以下の共有コードをコピーしてください:", code);
-        }
-
-        function importCodePrompt() {
-            const code = prompt("共有コードを貼り付けてください:");
-            if (!code) return;
-            try {
-                const jsonStr = decodeURIComponent(escape(atob(code)));
-                const importedMap = JSON.parse(jsonStr);
-                importedMap.id = 'map_' + Date.now();
-                importedMap.name += " (インポート)";
-                maps.push(importedMap);
-                currentMapId = importedMap.id;
-                saveStorage();
-                updateMapSelect();
-                alert("マップを読み込みました！");
-            } catch(e) {
-                alert("無効なコードです");
-            }
-        }
-
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    </script>
+  <!-- 分割したjsの読み込み（モジュール対応） -->
+  <script type="module" src="03_script.js"></script>
 </body>
 </html>
