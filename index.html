@@ -18,65 +18,89 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      font-family: sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
 
-    /* ヘッダー操作エリア */
-    .header-bar {
+    /* 上部ヘッダー配置（元デザインの完全維持） */
+    .top-bar {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
+      top: 12px;
+      left: 12px;
+      right: 12px;
       z-index: 1000;
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
       align-items: center;
-      background: rgba(255, 255, 255, 0.95);
-      padding: 8px 12px;
-      border-radius: 20px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-    .badge {
-      font-size: 12px;
-      background: #fff0e6;
-      color: #d9534f;
-      padding: 4px 8px;
-      border-radius: 4px;
-      border: 1px solid #ffcca8;
-    }
-    .btn {
-      background: #ff7b6e;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 15px;
-      font-size: 12px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .btn-action {
-      margin-left: auto;
-      background: #ff5241;
+      gap: 8px;
     }
 
-    .side-menu {
+    .badge-count {
+      background: #fff5eb;
+      color: #333;
+      border: 1px solid #ffd8cc;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+      white-space: nowrap;
+    }
+
+    .select-area {
+      background: #ffffff;
+      color: #666;
+      border: 1px solid #e0e0e0;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+      margin-left: auto;
+      cursor: pointer;
+    }
+
+    .btn-operation {
+      background: #ff6b5c;
+      color: #ffffff;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+      cursor: pointer;
+    }
+
+    /* 左側メニューボタン（元デザインの完全維持） */
+    .left-buttons {
       position: absolute;
-      top: 50px;
-      left: 10px;
+      top: 56px;
+      left: 12px;
       z-index: 1000;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
 
-    /* 地図エリア（スマホの高さ潰れ・Brave対策） */
+    .btn-menu {
+      background: #ff6b5c;
+      color: #ffffff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+      text-align: left;
+      cursor: pointer;
+      width: fit-content;
+    }
+
+    /* 地図エリア（画面全体のレスポンシブ崩れ防止処理を追加） */
     #map {
       width: 100%;
       height: 100vh;
       height: 100dvh;
       min-height: 100%;
-      background-color: #fdf8f5;
+      background: #faf4ed;
     }
   </style>
 
@@ -84,56 +108,51 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    // アプリ内ブラウザの警告
     document.addEventListener("DOMContentLoaded", function() {
-      const ua = navigator.userAgent.toLowerCase();
-      const isInApp = ua.includes('line') || ua.includes('instagram') || ua.includes('fbav') || ua.includes('twitter');
-      if (isInApp) {
-        alert("アプリ内ブラウザでは画面が正常に動かない場合があります。右下のメニューから「Safariで開く」または「Chromeで開く」を選択してください。");
-      }
-      
+      // 地図の初期化
       initMap();
     });
 
-    // 地図の初期化処理
     function initMap() {
       try {
-        // 東京駅を中心に設定
-        const map = L.map('map').setView([35.681236, 139.767125], 14);
+        // 地図オブジェクトの作成（初期表示：東京）
+        const map = L.map('map', {
+          zoomControl: false // デフォルトのズームボタンを非表示
+        }).setView([35.681236, 139.767125], 14);
 
-        // OpenStreetMap タイルレイヤーの読み込み
+        // OSMタイルの読み込み
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        // 描画ズレ防止（描画サイズリセット）
+        // モバイルブラウザでの表示調整
         setTimeout(function() {
           map.invalidateSize();
-        }, 300);
+        }, 200);
 
       } catch (e) {
-        console.error("Map load error:", e);
+        console.error("Map initialization failed:", e);
       }
     }
   </script>
 </head>
 <body>
 
-  <!-- 操作UI -->
-  <div class="header-bar">
-    <span class="badge">店舗: 0/200 📍</span>
-    <button class="btn">エリア移動 ∨</button>
-    <button class="btn btn-action">≡ 操作</button>
+  <!-- 元画像に基づいたUI構造 -->
+  <div class="top-bar">
+    <div class="badge-count">店舗: 0/200 📋</div>
+    <button class="select-area">エリア移動 ∨</button>
+    <button class="btn-operation">≡ 操作</button>
   </div>
 
-  <div class="side-menu">
-    <button class="btn">📍 店舗登録</button>
-    <button class="btn">🚩 エリア登録</button>
-    <button class="btn">🔍 絞り込み</button>
+  <div class="left-buttons">
+    <button class="btn-menu">📍 店舗登録</button>
+    <button class="btn-menu">🚩 エリア登録</button>
+    <button class="btn-menu">🔍 絞り込み</button>
   </div>
 
-  <!-- 地図表示エリア -->
+  <!-- 地図コンテナ -->
   <div id="map"></div>
 
 </body>
