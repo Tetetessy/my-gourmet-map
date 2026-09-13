@@ -1,3 +1,41 @@
+// Firebase SDK のインポート
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { 
+  getAuth, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  onAuthStateChanged,
+  signOut,
+  updatePassword,
+  sendPasswordResetEmail
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { 
+  getFirestore, 
+  doc, 
+  setDoc, 
+  getDoc,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// ==========================================
+// 1. Firebase 初期化設定
+// ==========================================
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ==========================================
+// 2. 定数定義
+// ==========================================
 const AREA_COLORS = [
   { id: 'teal', label: 'エメラルド', bg: 'linear-gradient(135deg, #4ecdc4, #2ab7ca)' },
   { id: 'rose', label: 'ローズ', bg: 'linear-gradient(135deg, #ff6b6b, #ee5253)' },
@@ -23,8 +61,7 @@ const GENRE_OPTIONS = [
 ];
 
 let map;
-let currentUser = JSON.parse(localStorage.getItem('gourmet_current_user')) || { loggedIn: false, email: '', name: '' };
-let users = JSON.parse(localStorage.getItem('gourmet_users')) || {};
+let currentUser = { loggedIn: false, email: '', name: '', uid: '' };
 let sharedStoreDB = JSON.parse(localStorage.getItem('gourmet_shared_maps')) || {};
 
 let maps = [];
@@ -79,11 +116,24 @@ function createDefaultMap(id, name) {
   return { id: id || generateDefaultShareCode(), name: name || 'マイグルメマップ', stores: [], areas: [], lists: [], isShared: false };
 }
 
-function loadCurrentUserData() {
-  if (currentUser.loggedIn && users[currentUser.email]) {
-    currentUser.name = users[currentUser.email].name || currentUser.name || 'ユーザー';
-    maps = users[currentUser.email].maps || [];
-    currentMapId = users[currentUser.email].currentMapId || (maps[0] ? maps[0].id : '');
+async function loadCurrentUserData() {
+  if (currentUser.loggedIn && currentUser.uid) {
+    try {
+      const userDocRef = doc(db, "users", currentUser.uid);
+      const userSnap = await getDoc(userDocRef);
+      if (userSnap.exists()) {
+        const data = userSnap.data();
+        currentUser.name = data.name || currentUser.name || 'ユーザー';
+        maps = data.maps || [];
+        currentMapId = data.currentMapId || (maps[0] ? maps[0].id : '');
+      } else {
+        const defaultMap = createDefaultMap();
+        maps = [defaultMap];
+        currentMapId = defaultMap.id;
+      }
+    } catch (e) {
+      console.error("Firebaseデータ取得失敗", e);
+    }
   } else {
     maps = JSON.parse(localStorage.getItem('gourmet_guest_maps')) || [];
     currentMapId = localStorage.getItem('gourmet_guest_map_id') || '';
@@ -100,7 +150,7 @@ function loadCurrentUserData() {
   maps.forEach(m => { if (!m.lists) m.lists = []; });
 }
 
-function saveStorage() {
+async function saveStorage() {
   try {
     const curMap = getCurrentMap();
     if (curMap && !curMap.isShared) {
@@ -114,22 +164,21 @@ function saveStorage() {
       localStorage.setItem('gourmet_shared_maps', JSON.stringify(sharedStoreDB));
     }
 
-    if (currentUser.loggedIn) {
-      users[currentUser.email] = {
+    if (currentUser.loggedIn && currentUser.uid) {
+      const userDocRef = doc(db, "users", currentUser.uid);
+      await setDoc(userDocRef, {
         name: currentUser.name || 'ユーザー',
-        password: users[currentUser.email]?.password || '',
+        email: currentUser.email,
         maps: maps,
         currentMapId: currentMapId
-      };
-      localStorage.setItem('gourmet_users', JSON.stringify(users));
-      localStorage.setItem('gourmet_current_user', JSON.stringify(currentUser));
+      }, { merge: true });
     } else {
       localStorage.setItem('gourmet_guest_maps', JSON.stringify(maps));
       localStorage.setItem('gourmet_guest_map_id', currentMapId);
     }
     renderCurrentMap();
   } catch (e) {
-    alert('ストレージ容量が上限に達しました。不要なデータを削除してください。');
+    alert('データの保存に失敗しました。容量オーバーまたは通信状態をご確認ください。');
   }
 }
 
@@ -138,8 +187,16 @@ function getCurrentMap() {
 }
 
 window.onload = function() {
-  loadCurrentUserData();
-  updateAuthUI();
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUser = { loggedIn: true, email: user.email, name: user.displayName || user.email.split('@')[0], uid: user.uid };
+    } else {
+      currentUser = { loggedIn: false, email: '', name: '', uid: '' };
+    }
+    await loadCurrentUserData();
+    updateAuthUI();
+    renderCurrentMap();
+  });
 
   map = L.map('map').setView([35.681236, 139.767125], 14);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -171,7 +228,6 @@ window.onload = function() {
   });
 
   initSearchOptions();
-  renderCurrentMap();
 };
 
 function initSearchOptions() {
@@ -1487,20 +1543,21 @@ function openAuthModal() {
   `;
 }
 
-function sendForgotOtp() {
+async function sendForgotOtp() {
   const email = document.getElementById('auth-email').value.trim();
   if (!email) {
     alert('先にメールアドレスを入力してください。');
     return;
   }
-  if (!users[email]) {
-    alert('⚠️ このメールアドレスは登録されていません。');
-    return;
+  try {
+    await sendPasswordResetEmail(auth, email);
+    alert(`📩 ${email} 宛にパスワード再設定用のメールを送信しました。\nメール本文をご確認の上、手続きを行ってください。`);
+  } catch (error) {
+    alert('⚠️ 再設定メールの送信に失敗しました。メールアドレスをご確認ください。');
   }
-  alert(`📩 ${email} 宛に日本語でワンタイムパスワードを送信しました。\nメール本文をご確認の上、パスワードの再設定を行ってください。`);
 }
 
-function handleAuth(isRegister) {
+async function handleAuth(isRegister) {
   const email = document.getElementById('auth-email').value.trim();
   const name = document.getElementById('auth-name').value.trim();
   const pass = document.getElementById('auth-pass').value.trim();
@@ -1511,38 +1568,45 @@ function handleAuth(isRegister) {
   }
 
   if (isRegister) {
-    if (users[email]) {
-      alert('⚠️ このメールアドレスは既に登録されています。ログインしてください。');
-      return;
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+      const user = userCredential.user;
+      const accountName = name || email.split('@')[0];
+      const defaultMap = createDefaultMap();
+
+      await setDoc(doc(db, "users", user.uid), {
+        name: accountName,
+        email: email,
+        maps: [defaultMap],
+        currentMapId: defaultMap.id
+      });
+
+      currentUser = { loggedIn: true, email: email, name: accountName, uid: user.uid };
+      await loadCurrentUserData();
+      updateAuthUI();
+      renderCurrentMap();
+      closeModal();
+      alert(`🎉 新規登録が完了しました！ようこそ、${accountName}さん。`);
+    } catch (error) {
+      if (error.code === 'auth/email-already-in-use') {
+        alert('⚠️ このメールアドレスは既に登録されています。ログインしてください。');
+      } else {
+        alert('⚠️ 登録エラー: ' + error.message);
+      }
     }
-    const accountName = name || email.split('@')[0];
-    const defaultMap = createDefaultMap();
-    users[email] = {
-      name: accountName,
-      password: pass,
-      maps: [defaultMap],
-      currentMapId: defaultMap.id
-    };
-    currentUser = { loggedIn: true, email: email, name: accountName };
-    saveStorage();
-    updateAuthUI();
-    closeModal();
-    alert(`🎉 新規登録が完了しました！ようこそ、${accountName}さん。`);
   } else {
-    if (!users[email]) {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+      const user = userCredential.user;
+      currentUser = { loggedIn: true, email: email, name: user.displayName || email.split('@')[0], uid: user.uid };
+      await loadCurrentUserData();
+      updateAuthUI();
+      renderCurrentMap();
+      closeModal();
+      alert(`🎉 ログインしました！登録されていた全てのマップ情報を復元しました。`);
+    } catch (error) {
       alert('⚠️ アカウント情報が一致しないか登録されていません。正しい情報でログインするか新規登録を行ってください。');
-      return;
     }
-    if (users[email].password !== pass) {
-      alert('⚠️ パスワードが間違っています。');
-      return;
-    }
-    currentUser = { loggedIn: true, email: email, name: users[email].name || email.split('@')[0] };
-    loadCurrentUserData();
-    updateAuthUI();
-    renderCurrentMap();
-    closeModal();
-    alert(`🎉 ログインしました！登録されていた全てのマップ情報を復元しました。`);
   }
 }
 
@@ -1560,15 +1624,19 @@ function openEditProfileModal() {
   `;
 }
 
-function saveAccountName() {
+async function saveAccountName() {
   const newName = document.getElementById('new-account-name').value.trim();
   if (!newName) {
     alert('アカウント名を入力してください。');
     return;
   }
   currentUser.name = newName;
-  if (users[currentUser.email]) {
-    users[currentUser.email].name = newName;
+  if (currentUser.loggedIn && currentUser.uid) {
+    try {
+      await updateDoc(doc(db, "users", currentUser.uid), { name: newName });
+    } catch (e) {
+      console.error(e);
+    }
   }
   saveStorage();
   updateAuthUI();
@@ -1591,29 +1659,35 @@ function openChangePasswordModal() {
   `;
 }
 
-function saveNewPassword() {
+async function saveNewPassword() {
   const curPass = document.getElementById('cur-pass').value.trim();
   const newPass = document.getElementById('new-pass').value.trim();
 
-  if (users[currentUser.email].password !== curPass) {
-    alert('⚠️ 現在のパスワードが違います。');
-    return;
-  }
   if (newPass.length < 6) {
     alert('⚠️ 新しいパスワードは6文字以上で入力してください。');
     return;
   }
 
-  users[currentUser.email].password = newPass;
-  saveStorage();
-  closeModal();
-  alert('🔑 パスワードを正常に変更しました。');
+  if (auth.currentUser) {
+    try {
+      await signInWithEmailAndPassword(auth, currentUser.email, curPass);
+      await updatePassword(auth.currentUser, newPass);
+      closeModal();
+      alert('🔑 パスワードを正常に変更しました。');
+    } catch (error) {
+      alert('⚠️ 現在のパスワードが間違っているか、変更処理に失敗しました。');
+    }
+  }
 }
 
-function logout() {
-  currentUser = { loggedIn: false, email: '', name: '' };
-  localStorage.removeItem('gourmet_current_user');
-  loadCurrentUserData();
+async function logout() {
+  try {
+    await signOut(auth);
+  } catch (e) {
+    console.error(e);
+  }
+  currentUser = { loggedIn: false, email: '', name: '', uid: '' };
+  await loadCurrentUserData();
   updateAuthUI();
   renderCurrentMap();
 }
