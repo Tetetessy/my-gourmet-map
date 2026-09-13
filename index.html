@@ -1,112 +1,140 @@
 <!DOCTYPE html>
-<html lang="ja" data-theme="casual">
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>地区特化 グルメマップ</title>
-  <!-- Leaflet CSS & JS -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>マイグルメマップ</title>
+
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+
+    /* ヘッダー操作エリア */
+    .header-bar {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      z-index: 1000;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 8px 12px;
+      border-radius: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .badge {
+      font-size: 12px;
+      background: #fff0e6;
+      color: #d9534f;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid #ffcca8;
+    }
+    .btn {
+      background: #ff7b6e;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 15px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-action {
+      margin-left: auto;
+      background: #ff5241;
+    }
+
+    .side-menu {
+      position: absolute;
+      top: 50px;
+      left: 10px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* 地図エリア（スマホの高さ潰れ・Brave対策） */
+    #map {
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      min-height: 100%;
+      background-color: #fdf8f5;
+    }
+  </style>
+
+  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- 分割したCSSの読み込み -->
-  <link rel="stylesheet" href="02_style.css">
+
+  <script>
+    // アプリ内ブラウザの警告
+    document.addEventListener("DOMContentLoaded", function() {
+      const ua = navigator.userAgent.toLowerCase();
+      const isInApp = ua.includes('line') || ua.includes('instagram') || ua.includes('fbav') || ua.includes('twitter');
+      if (isInApp) {
+        alert("アプリ内ブラウザでは画面が正常に動かない場合があります。右下のメニューから「Safariで開く」または「Chromeで開く」を選択してください。");
+      }
+      
+      initMap();
+    });
+
+    // 地図の初期化処理
+    function initMap() {
+      try {
+        // 東京駅を中心に設定
+        const map = L.map('map').setView([35.681236, 139.767125], 14);
+
+        // OpenStreetMap タイルレイヤーの読み込み
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // 描画ズレ防止（描画サイズリセット）
+        setTimeout(function() {
+          map.invalidateSize();
+        }, 300);
+
+      } catch (e) {
+        console.error("Map load error:", e);
+      }
+    }
+  </script>
 </head>
 <body>
 
+  <!-- 操作UI -->
+  <div class="header-bar">
+    <span class="badge">店舗: 0/200 📍</span>
+    <button class="btn">エリア移動 ∨</button>
+    <button class="btn btn-action">≡ 操作</button>
+  </div>
+
+  <div class="side-menu">
+    <button class="btn">📍 店舗登録</button>
+    <button class="btn">🚩 エリア登録</button>
+    <button class="btn">🔍 絞り込み</button>
+  </div>
+
+  <!-- 地図表示エリア -->
   <div id="map"></div>
 
-  <!-- 上部インジケーター & エリア切替 -->
-  <div class="top-bar">
-    <span id="map-indicator" class="indicator-btn" onclick="openStoreListModal()" title="登録店舗一覧を表示">店舗: 0/200 📋</span>
-    <select id="area-select" onchange="moveToArea(this.value)">
-      <option value="">エリア移動</option>
-    </select>
-  </div>
-
-  <!-- 画面左上：登録ボタン群 ＆ 絞り込みボタン (統一サイズ＆色) -->
-  <div class="top-left">
-    <button id="btn-register-store" class="action-btn" onclick="openStoreRegisterModalFromPin()">📍 店舗登録</button>
-    <button id="btn-register-area" class="action-btn" onclick="openAreaRegisterModalPrompt()">🚩 エリア登録</button>
-    <div class="bottom-left-area">
-      <button class="action-btn" onclick="toggleSearchPanel()">🔍 絞り込み</button>
-      <div class="search-panel" id="search-panel">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-          <h4 style="margin: 0;">🔍 条件検索</h4>
-          <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
-        </div>
-        <input type="text" id="search-name" placeholder="店舗名検索" oninput="filterStores()" style="width:100%;">
-        <select id="search-list" onchange="filterStores()" style="width:100%;">
-          <option value="">全てのリスト</option>
-        </select>
-        <select id="search-fav" onchange="filterStores()" style="width:100%;">
-          <option value="">全てのお気に入り</option>
-          <option value="fav">⭐ お気に入りのみ</option>
-        </select>
-        <select id="search-form" onchange="filterStores()" style="width:100%;">
-          <option value="">全ての形式</option>
-        </select>
-        <select id="search-genre" onchange="filterStores()" style="width:100%;">
-          <option value="">全てのジャンル</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <!-- 画面右上：操作メニュー -->
-  <div class="top-right">
-    <button onclick="toggleMenu()">☰ 操作</button>
-    <div id="menu-dropdown" class="menu-dropdown">
-      <small>【アカウント】</small>
-      <div id="auth-status" style="font-weight:bold; margin: 2px 0;">ゲスト利用中</div>
-      <button id="btn-edit-profile" onclick="openEditProfileModal()" style="display:none; background:#6c757d; font-size:10px;">✏️ アカウント名変更</button>
-      <button id="btn-change-pass" onclick="openChangePasswordModal()" style="display:none; background:#6c757d; font-size:10px;">🔑 パスワード変更</button>
-      <button id="auth-btn" onclick="openAuthModal()">ログイン / 登録</button>
-      <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
-      <small>【マップ管理】</small>
-      <button onclick="openMapSwitchModal()">マップ切替・編集</button>
-      <button onclick="openNewMapModal()">新規マップ作成</button>
-      <button onclick="openCustomListModal()">📋 リスト管理</button>
-      <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
-      <small>【共有】</small>
-      <button onclick="exportCode()">共有コード設定・表示</button>
-      <button onclick="importCodePrompt()">共有コード読み込み</button>
-      <button onclick="refreshSharedMap()">🔄 マップ情報を更新</button>
-      <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
-      <small>【設定】</small>
-      <select onchange="changeTheme(this.value)" style="width:100%;">
-        <option value="casual">カジュアル</option>
-        <option value="simple">シンプル</option>
-        <option value="pop">ポップ</option>
-        <option value="light">ライト</option>
-        <option value="dark">ダーク</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- 右側別枠：絞り込み結果表示パネル -->
-  <div class="search-results-panel" id="search-results-panel">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; border-bottom:1px solid var(--border-color); padding-bottom:4px;">
-      <h4 style="margin:0; font-size:12px;">📋 検索結果一覧</h4>
-      <button onclick="closeSearchResultsPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
-    </div>
-    <div id="search-results-container"></div>
-  </div>
-
-  <!-- 店舗・ピン詳細パネル -->
-  <div class="bottom-center-area" id="detail-area">
-    <div class="detail-panel">
-      <div style="display:flex; justify-content:flex-end; margin-bottom: 4px;">
-        <button onclick="closeDetailPanel()" style="background:#6c757d; font-size:10px; padding:2px 6px;">閉じる ✕</button>
-      </div>
-      <div id="detail-content"></div>
-    </div>
-  </div>
-
-  <!-- モーダル各種 -->
-  <div class="modal-overlay" id="modal-overlay" onclick="if(event.target === this) closeModal();">
-    <div class="modal-content" id="modal-content"></div>
-  </div>
-
-  <!-- 分割したJavaScriptの読み込み -->
-  <script src="03_app.js"></script>
 </body>
 </html>
