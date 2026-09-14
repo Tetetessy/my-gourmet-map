@@ -310,6 +310,7 @@
 
     // Firebase Authentication 状態変化リスナー
     auth.onAuthStateChanged((user) => {
+      users = JSON.parse(localStorage.getItem('gourmet_users')) || {};
       if (user) {
         currentUser = {
           loggedIn: true,
@@ -322,7 +323,9 @@
       }
       loadCurrentUserData();
       updateAuthUI();
-      renderCurrentMap();
+      if (map) {
+        renderCurrentMap();
+      }
     });
 
     function toggleMenu() {
