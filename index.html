@@ -1,173 +1,88 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>地区特化 グルメマップ</title>
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- アプリ専用CSS -->
-    <link rel="stylesheet" href="02_style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>グルメマップ</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="theme-casual">
-
-    <!-- ヘッダー / アクションバー -->
-    <div id="header-bar">
-        <div id="stats">店舗: 0/200 📋</div>
-        
-        <!-- エリア切替セレクトボックス -->
-        <select id="area-select">
-            <option value="">エリア移動</option>
-        </select>
-
-        <button id="open-store-modal-btn" class="btn btn-primary">📍 店舗登録</button>
-        <button id="open-area-modal-btn" class="btn btn-secondary">🚩 エリア登録</button>
-        <button id="toggle-filter-btn" class="btn btn-outline">🔍 絞り込み</button>
+<body>
+  <!-- ヘッダー -->
+  <header>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <i class="fa-solid fa-utensils" style="color: var(--primary-color); font-size: 18px;"></i>
+      <div id="map-title-display"></div>
+      <i class="fa-solid fa-chevron-down" style="font-size: 10px; color: #888; cursor: pointer;" onclick="toggleMapDropdown()"></i>
     </div>
-
-    <!-- 検索・絞り込みパネル -->
-    <div id="filter-panel" class="panel hidden">
-        <div class="panel-header">
-            <h3>🔍 条件検索</h3>
-            <button id="close-filter-btn" class="btn-close">閉じる</button>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div class="header-menu-container">
+        <div class="menu-icon" onclick="toggleMenu()"><i class="fa-solid fa-bars"></i></div>
+        <div id="dropdown-menu" class="dropdown-menu">
+          <div class="menu-item" onclick="openMapManagementModal()"><i class="fa-solid fa-map"></i> マップ管理・作成</div>
+          <div class="menu-item" onclick="openAreaManagementModal()"><i class="fa-solid fa-layer-group"></i> エリア管理</div>
+          <div class="menu-item" onclick="openCustomListModal()"><i class="fa-solid fa-list-check"></i> カスタムリスト管理</div>
+          <div style="border-top:1px solid #eee; margin:4px 0;"></div>
+          <div class="menu-item" onclick="exportCode()"><i class="fa-solid fa-share-nodes"></i> 共有コードの発行・設定</div>
+          <div class="menu-item" onclick="importCodePrompt()"><i class="fa-solid fa-download"></i> 共有コードで読み込み</div>
+          <div style="border-top:1px solid #eee; margin:4px 0;"></div>
+          <div class="menu-item" onclick="openAccountModal()"><i class="fa-solid fa-user-gear"></i> アカウント設定</div>
+          <div class="menu-item" onclick="toggleTheme()"><i class="fa-solid fa-moon"></i> ダークモード切替</div>
+          <div class="menu-item" onclick="handleLogout()" style="color:#e74c3c;"><i class="fa-solid fa-right-from-bracket"></i> ログアウト</div>
         </div>
-        <div class="panel-body">
-            <input type="text" id="search-kw" placeholder="店舗名検索">
-            
-            <select id="filter-list">
-                <option value="">全てのリスト</option>
-            </select>
-            
-            <select id="filter-fav">
-                <option value="">全てのお気に入り</option>
-                <option value="1">★1以上</option>
-                <option value="2">★2以上</option>
-                <option value="3">★3のみ</option>
-            </select>
-            
-            <select id="filter-format">
-                <option value="">全ての形式</option>
-                <option value="eat-in">店内飲食</option>
-                <option value="takeout">テイクアウト</option>
-                <option value="both">両方</option>
-            </select>
-            
-            <select id="filter-genre">
-                <option value="">全てのジャンル</option>
-            </select>
-        </div>
+      </div>
     </div>
+  </header>
 
-    <!-- マップ表示エリア -->
-    <div id="map"></div>
+  <!-- マップドロップダウン -->
+  <div id="map-dropdown-menu" class="dropdown-menu" style="top: 50px; left: 15px; width: 200px;"></div>
 
-    <!-- サイドバー切り替えボタン -->
-    <button id="sidebar-toggle-btn" class="btn">☰ 操作</button>
-
-    <!-- サイドバー -->
-    <div id="sidebar" class="sidebar hidden">
-        <div class="sidebar-header">
-            <h3>【アカウント】</h3>
-            <div id="user-info">ゲスト利用中</div>
-            <button id="auth-btn" class="btn">ログイン / 登録</button>
-        </div>
-        
-        <hr>
-
-        <div class="sidebar-section">
-            <h4>【マップ操作】</h4>
-            <button id="btn-map-manage" class="btn">🗺️ マップ切替・管理</button>
-            <button id="btn-map-create" class="btn">➕ 新規マップ作成</button>
-            <button id="btn-list-manage" class="btn">📋 リスト管理</button>
-            <button id="btn-share-code" class="btn">✨ 共有コード設定</button>
-            <button id="btn-load-share" class="btn">📥 共有コード読み込み</button>
-            <button id="btn-update-share" class="btn">🔄 共有マップ更新</button>
-        </div>
-
-        <hr>
-
-        <div class="sidebar-section">
-            <h4>【テーマ切り替え】</h4>
-            <div class="theme-buttons">
-                <button class="btn-theme" data-theme="casual">🎨 カジュアル</button>
-                <button class="btn-theme" data-theme="simple">⚪ シンプル</button>
-                <button class="btn-theme" data-theme="pop">🎉 ポップ</button>
-                <button class="btn-theme" data-theme="light">☀️ ライト</button>
-                <button class="btn-theme" data-theme="dark">🌙 ダーク</button>
-            </div>
-        </div>
+  <!-- 検索バー -->
+  <div id="search-bar-container">
+    <div class="search-input-wrapper">
+      <i class="fa-solid fa-magnifying-glass search-icon"></i>
+      <input type="text" id="search-input" placeholder="店名、エリア、ジャンルで検索..." onkeyup="handleSearchInput(event)">
+      <button class="filter-btn" onclick="toggleSearchFilter()"><i class="fa-solid fa-sliders"></i> 絞り込み</button>
     </div>
+  </div>
 
-    <!-- 店舗登録モーダル -->
-    <div id="store-modal" class="modal hidden">
-        <div class="modal-content">
-            <span id="close-store-modal" class="modal-close">&times;</span>
-            <h2>📍 店舗の登録・編集</h2>
-            <form id="store-form">
-                <input type="hidden" id="store-id">
-                <label>店舗名: <input type="text" id="store-name" required></label>
-                <label>ジャンル: <input type="text" id="store-genre" required></label>
-                <label>評価 (1~3): <input type="number" id="store-rating" min="1" max="3" value="1" required></label>
-                <label>形式: 
-                    <select id="store-format">
-                        <option value="eat-in">店内飲食</option>
-                        <option value="takeout">テイクアウト</option>
-                        <option value="both">両方</option>
-                    </select>
-                </label>
-                <label>緯度: <input type="number" step="any" id="store-lat" required></label>
-                <label>経度: <input type="number" step="any" id="store-lng" required></label>
-                <label>メモ: <textarea id="store-memo"></textarea></label>
-                <button type="submit" class="btn btn-primary">保存</button>
-            </form>
-        </div>
+  <!-- 地図エリア -->
+  <div id="map"></div>
+
+  <!-- 下部操作エリア -->
+  <div class="bottom-controls">
+    <div class="indicator-group">
+      <span class="indicator-btn" id="list-indicator" onclick="openCustomListModal()"><i class="fa-solid fa-list-check"></i> リスト未選択</span>
+      <span class="indicator-btn" id="area-indicator" onclick="openAreaManagementModal()"><i class="fa-solid fa-layer-group"></i> エリア未選択</span>
     </div>
+    <button class="fab-add" onclick="openStoreModal()"><i class="fa-solid fa-plus"></i> 追加</button>
+  </div>
 
-    <!-- エリア登録モーダル -->
-    <div id="area-modal" class="modal hidden">
-        <div class="modal-content">
-            <span id="close-area-modal" class="modal-close">&times;</span>
-            <h2>🚩 エリア登録</h2>
-            <form id="area-form">
-                <label>エリア名: <input type="text" id="area-name" required></label>
-                <label>中心緯度: <input type="number" step="any" id="area-lat" required></label>
-                <label>中心経度: <input type="number" step="any" id="area-lng" required></label>
-                <button type="submit" class="btn btn-primary">登録</button>
-            </form>
-        </div>
-    </div>
+  <!-- 詳細パネル & 検索結果パネル -->
+  <div id="detail-panel" class="detail-panel"></div>
+  <div id="search-results-panel" class="detail-panel"></div>
 
-    <!-- 検索結果一覧パネル -->
-    <div id="search-results-panel" class="panel hidden">
-        <div class="panel-header">
-            <h3>検索結果</h3>
-            <button id="close-results-btn" class="btn-close">閉じる</button>
-        </div>
-        <div id="search-results-list" class="panel-body"></div>
-    </div>
+  <!-- 汎用モーダル構造 -->
+  <div id="modal-overlay" class="modal-overlay">
+    <div id="modal-content" class="modal-content"></div>
+  </div>
 
-    <!-- 店舗詳細モーダル -->
-    <div id="detail-modal" class="modal hidden">
-        <div class="modal-content">
-            <span id="close-detail-modal" class="modal-close">&times;</span>
-            <div id="detail-content"></div>
-            <button id="detail-edit-btn" class="btn btn-secondary">編集</button>
-            <button id="detail-delete-btn" class="btn btn-danger">削除</button>
-        </div>
-    </div>
+  <!-- 外部ライブラリ -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- 分割されたアプリケーション スクリプト群 -->
-    <script src="04_auth.js"></script>
-    <script src="05_data.js"></script>
-    <script src="06_map.js"></script>
-    <script src="07_ui_modal.js"></script>
-    <script src="08_store_modal.js"></script>
-    <script src="09_store.js"></script>
-    <script src="10_area.js"></script>
-    <script src="11_list_search.js"></script>
-    <script src="03_app.js"></script>
+  <!-- アプリケーションJS -->
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/ui_modal.js"></script>
+  <script src="js/store_modal.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/area.js"></script>
+  <script src="js/list_search.js"></script>
 </body>
 </html>
