@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="casual">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>地区特化 グルメマップ</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+  <div id="map"></div>
+
+  <div class="top-bar">
+    <span id="map-indicator" class="indicator-btn" onclick="openStoreListModal()" title="登録店舗一覧を表示">店舗: 0/200 📋</span>
+    <select id="area-select" onchange="moveToArea(this.value)">
+      <option value="">エリア移動</option>
+    </select>
+  </div>
+
+  <div class="top-left">
+    <button id="btn-register-store" class="action-btn" onclick="openStoreRegisterModalFromPin()">📍 店舗登録</button>
+    <button id="btn-register-area" class="action-btn" onclick="openAreaRegisterModalPrompt()">🚩 エリア登録</button>
+    <div class="bottom-left-area">
+      <button class="action-btn" onclick="toggleSearchPanel()">🔍 絞り込み</button>
+      <div class="search-panel" id="search-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+          <h4 style="margin: 0;">🔍 条件検索</h4>
+          <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
+        </div>
+        <input type="text" id="search-name" placeholder="店舗名検索" oninput="filterStores()" style="width:100%;">
+        <select id="search-list" onchange="filterStores()" style="width:100%;">
+          <option value="">全てのリスト</option>
+        </select>
+        <select id="search-fav" onchange="filterStores()" style="width:100%;">
+          <option value="">全てのお気に入り</option>
+          <option value="fav">⭐ お気に入りのみ</option>
+        </select>
+        <select id="search-form" onchange="filterStores()" style="width:100%;">
+          <option value="">全ての形式</option>
+        </select>
+        <select id="search-genre" onchange="filterStores()" style="width:100%;">
+          <option value="">全てのジャンル</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="top-right">
+    <button onclick="toggleMenu()">☰ 操作</button>
+    <div id="menu-dropdown" class="menu-dropdown">
+      <small>【アカウント】</small>
+      <div id="auth-status" style="font-weight:bold; margin: 2px 0;">ゲスト利用中</div>
+      <button id="btn-edit-profile" onclick="openEditProfileModal()" style="display:none; background:#6c757d; font-size:10px;">✏️ アカウント名変更</button>
+      <button id="btn-change-pass" onclick="openChangePasswordModal()" style="display:none; background:#6c757d; font-size:10px;">🔑 パスワード変更</button>
+      <button id="auth-btn" onclick="openAuthModal()">ログイン / 登録</button>
+      <hr style="margin:6px 0;">
+      <small>【マップ操作】</small>
+      <button onclick="openMapSwitchModal()">🗺️ マップ切替・管理</button>
+      <button onclick="openNewMapModal()">➕ 新規マップ作成</button>
+      <button onclick="openCustomListModal()">📋 リスト管理</button>
+      <button onclick="exportCode()">✨ 共有コード設定</button>
+      <button onclick="importCodePrompt()">📥 共有コード読み込み</button>
+      <button onclick="refreshSharedMap()">🔄 共有マップ更新</button>
+      <hr style="margin:6px 0;">
+      <small>【テーマ切り替え】</small>
+      <button onclick="changeTheme('casual')">🎨 カジュアル</button>
+      <button onclick="changeTheme('simple')">⚪ シンプル</button>
+      <button onclick="changeTheme('pop')">🎉 ポップ</button>
+      <button onclick="changeTheme('light')">☀️ ライト</button>
+      <button onclick="changeTheme('dark')">🌙 ダーク</button>
+    </div>
+  </div>
+
+  <div id="search-results-panel" class="search-results-panel">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+      <h4 style="margin:0;">検索結果</h4>
+      <button onclick="closeSearchResultsPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
+    </div>
+    <div id="search-results-container"></div>
+  </div>
+
+  <div id="detail-area" class="bottom-center-area">
+    <div class="detail-panel">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+        <span style="font-weight:bold; font-size:11.5px;">詳細情報</span>
+        <button onclick="closeDetailPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
+      </div>
+      <div id="detail-content"></div>
+    </div>
+  </div>
+
+  <div id="modal-overlay" class="modal-overlay">
+    <div id="modal-content" class="modal-content"></div>
+  </div>
+
+  <script type="module" src="js/config.js"></script>
+  <script type="module" src="js/auth.js"></script>
+  <script type="module" src="js/data.js"></script>
+  <script type="module" src="js/map.js"></script>
+  <script type="module" src="js/ui_modal.js"></script>
+  <script type="module" src="js/store_modal.js"></script>
+  <script type="module" src="js/store.js"></script>
+  <script type="module" src="js/area.js"></script>
+  <script type="module" src="js/list_search.js"></script>
+</body>
+</html>
