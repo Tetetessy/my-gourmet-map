@@ -15,12 +15,14 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCwCvKcYkGdqsIf9srXHiX4RGKtEEi0Tj8",
+  authDomain: "my-gourmet-map-25508.firebaseapp.com",
+  databaseURL: "https://my-gourmet-map-25508-default-rtdb.firebaseio.com",
+  projectId: "my-gourmet-map-25508",
+  storageBucket: "my-gourmet-map-25508.firebasestorage.app",
+  messagingSenderId: "118013321716",
+  appId: "1:118013321716:web:33dd3ea5c2ce2aa50fd9a1",
+  measurementId: "G-RM3R988L24"
 };
 
 export const app = initializeApp(firebaseConfig);
