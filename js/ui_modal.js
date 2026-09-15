@@ -30,7 +30,7 @@ function toggleMapDropdown() {
   }
 }
 
-// 共有コードの発行モーダル（コピーボタン付き）
+// 共有コードの発行モーダル（「コードをコピー」ボタン配置）
 function exportCode() {
   if (typeof saveStorage === 'function') {
     saveStorage();
@@ -48,15 +48,16 @@ function exportCode() {
     const code = btoa(encodeURIComponent(jsonStr));
 
     const html = `
-      <div style="padding:15px;">
-        <h3 style="margin-top:0;"><i class="fa-solid fa-share-nodes"></i> 共有コードの発行</h3>
-        <p style="font-size:12px; color:#666;">このコードをコピーして、別端末の「共有コードで読み込み」に入力してください。</p>
-        <textarea id="share-code-input" readonly style="width:100%; height:100px; font-size:11px; margin:10px 0; padding:8px; box-sizing:border-box; word-break:break-all; border:1px solid #ccc; border-radius:4px;">${code}</textarea>
+      <div style="padding:15px; background:#fff; border-radius:8px;">
+        <h3 style="margin-top:0; color:#333;"><i class="fa-solid fa-share-nodes"></i> 共有コードの発行</h3>
+        <p style="font-size:12px; color:#666; margin-bottom:8px;">以下のコードをコピーして、別端末の「共有コードで読み込み」に入力してください。</p>
+        <textarea id="share-code-input" readonly style="width:100%; height:90px; font-size:11px; margin:5px 0 10px 0; padding:8px; box-sizing:border-box; word-break:break-all; border:1px solid #ccc; border-radius:4px; background:#f9f9f9;">${code}</textarea>
+        
         <div style="display:flex; gap:10px; margin-top:10px;">
-          <button onclick="copyShareCode()" style="flex:1; background:var(--primary-color, #ff4757); color:#fff; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">
-            <i class="fa-solid fa-copy"></i> コードをコピー
+          <button id="btn-copy-code" onclick="copyShareCode()" style="flex:1; background:#ff4757; color:#fff; border:none; padding:12px; border-radius:5px; cursor:pointer; font-weight:bold; font-size:14px;">
+            📋 コードをコピー
           </button>
-          <button onclick="closeModal()" style="background:#ccc; border:none; padding:10px 15px; border-radius:5px; cursor:pointer;">閉じる</button>
+          <button onclick="closeModal()" style="background:#ccc; color:#333; border:none; padding:12px 15px; border-radius:5px; cursor:pointer; font-weight:bold;">閉じる</button>
         </div>
       </div>
     `;
@@ -69,34 +70,57 @@ function exportCode() {
 // クリップボードへの自動コピー機能
 function copyShareCode() {
   const codeArea = document.getElementById('share-code-input');
+  const copyBtn = document.getElementById('btn-copy-code');
   if (!codeArea) return;
 
   codeArea.select();
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(codeArea.value).then(() => {
-      alert('📋 共有コードをクリップボードにコピーしました！');
-    }).catch(() => {
+  codeArea.setSelectionRange(0, 99999); // スマホ対応
+
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(codeArea.value).then(() => {
+        showCopySuccess(copyBtn);
+      }).catch(() => {
+        document.execCommand('copy');
+        showCopySuccess(copyBtn);
+      });
+    } else {
       document.execCommand('copy');
-      alert('📋 共有コードをコピーしました！');
-    });
+      showCopySuccess(copyBtn);
+    }
+  } catch (err) {
+    alert('📋 コードを選択しました。長押しまたは Ctrl+C でコピーしてください。');
+  }
+}
+
+// コピー成功時の視覚フィードバック
+function showCopySuccess(btn) {
+  if (btn) {
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '✅ コピー完了！';
+    btn.style.background = '#2ed573';
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.style.background = '#ff4757';
+    }, 2000);
   } else {
-    document.execCommand('copy');
-    alert('📋 共有コードをコピーしました！');
+    alert('📋 共有コードをクリップボードにコピーしました！');
   }
 }
 
 // 共有コードの読み込み入力モーダル
 function importCodePrompt() {
   const html = `
-    <div style="padding:15px;">
-      <h3 style="margin-top:0;"><i class="fa-solid fa-download"></i> 共有コードで読み込み</h3>
-      <p style="font-size:12px; color:#666;">発行された共有コードを貼り付けて「読み込む」を押してください。<br><span style="color:#e74c3c;">※現在のデータは上書き・同期されます。</span></p>
-      <textarea id="import-code-input" placeholder="ここに共有コードを貼り付け..." style="width:100%; height:100px; font-size:11px; margin:10px 0; padding:8px; box-sizing:border-box; word-break:break-all; border:1px solid #ccc; border-radius:4px;"></textarea>
+    <div style="padding:15px; background:#fff; border-radius:8px;">
+      <h3 style="margin-top:0; color:#333;"><i class="fa-solid fa-download"></i> 共有コードで読み込み</h3>
+      <p style="font-size:12px; color:#666; margin-bottom:8px;">発行された共有コードを貼り付けて「読み込む」を押してください。<br><span style="color:#e74c3c;">※現在のデータは上書き・同期されます。</span></p>
+      <textarea id="import-code-input" placeholder="ここに共有コードを貼り付け..." style="width:100%; height:90px; font-size:11px; margin:5px 0 10px 0; padding:8px; box-sizing:border-box; word-break:break-all; border:1px solid #ccc; border-radius:4px;"></textarea>
+      
       <div style="display:flex; gap:10px; margin-top:10px;">
-        <button onclick="applyImportCode()" style="flex:1; background:var(--primary-color, #ff4757); color:#fff; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">
-          <i class="fa-solid fa-check"></i> 読み込んで反映
+        <button onclick="applyImportCode()" style="flex:1; background:#ff4757; color:#fff; border:none; padding:12px; border-radius:5px; cursor:pointer; font-weight:bold; font-size:14px;">
+          📥 読み込んで反映
         </button>
-        <button onclick="closeModal()" style="background:#ccc; border:none; padding:10px 15px; border-radius:5px; cursor:pointer;">キャンセル</button>
+        <button onclick="closeModal()" style="background:#ccc; color:#333; border:none; padding:12px 15px; border-radius:5px; cursor:pointer;">キャンセル</button>
       </div>
     </div>
   `;
