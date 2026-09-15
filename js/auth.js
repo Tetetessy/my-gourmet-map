@@ -1,4 +1,4 @@
-import { auth } from './03_app.js';
+import { auth } from './app.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 function initSearchOptions() {
