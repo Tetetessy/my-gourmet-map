@@ -1,117 +1,139 @@
-// モーダルを閉じる
-function closeModal() {
-  document.getElementById('modal-overlay').style.display = 'none';
-  document.getElementById('modal-content').innerHTML = '';
+// モーダル表示の共通基盤
+function openModal(contentHtml) {
+  const overlay = document.getElementById('modal-overlay');
+  const content = document.getElementById('modal-content');
+  if (overlay && content) {
+    content.innerHTML = contentHtml;
+    overlay.style.display = 'flex';
+  }
 }
 
-// ドロップダウンメニューの切り替え
+function closeModal() {
+  const overlay = document.getElementById('modal-overlay');
+  if (overlay) {
+    overlay.style.display = 'none';
+  }
+}
+
+// ドロップダウンメニューの開閉制御
 function toggleMenu() {
   const menu = document.getElementById('dropdown-menu');
-  menu.classList.toggle('active');
+  if (menu) {
+    menu.classList.toggle('show');
+  }
 }
 
-// マップ選択ドロップダウンの表示切替
 function toggleMapDropdown() {
   const menu = document.getElementById('map-dropdown-menu');
-  if (menu.classList.contains('active')) {
-    menu.classList.remove('active');
+  if (menu) {
+    menu.classList.toggle('show');
+  }
+}
+
+// 共有コードの発行モーダル（コピーボタン付き）
+function exportCode() {
+  if (typeof saveStorage === 'function') {
+    saveStorage();
+  }
+  
+  const exportData = {
+    maps: typeof maps !== 'undefined' ? maps : [],
+    stores: typeof stores !== 'undefined' ? stores : [],
+    customLists: typeof customLists !== 'undefined' ? customLists : [],
+    areas: typeof areas !== 'undefined' ? areas : []
+  };
+
+  try {
+    const jsonStr = JSON.stringify(exportData);
+    const code = btoa(encodeURIComponent(jsonStr));
+
+    const html = `
+      <div style="padding:15px;">
+        <h3 style="margin-top:0;"><i class="fa-solid fa-share-nodes"></i> 共有コードの発行</h3>
+        <p style="font-size:12px; color:#666;">このコードをコピーして、別端末の「共有コードで読み込み」に入力してください。</p>
+        <textarea id="share-code-input" readonly style="width:100%; height:100px; font-size:11px; margin:10px 0; padding:8px; box-sizing:border-box; word-break:break-all; border:1px solid #ccc; border-radius:4px;">${code}</textarea>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <button onclick="copyShareCode()" style="flex:1; background:var(--primary-color, #ff4757); color:#fff; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">
+            <i class="fa-solid fa-copy"></i> コードをコピー
+          </button>
+          <button onclick="closeModal()" style="background:#ccc; border:none; padding:10px 15px; border-radius:5px; cursor:pointer;">閉じる</button>
+        </div>
+      </div>
+    `;
+    openModal(html);
+  } catch (err) {
+    alert('⚠️ 共有コードの生成に失敗しました: ' + err.message);
+  }
+}
+
+// クリップボードへの自動コピー機能
+function copyShareCode() {
+  const codeArea = document.getElementById('share-code-input');
+  if (!codeArea) return;
+
+  codeArea.select();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(codeArea.value).then(() => {
+      alert('📋 共有コードをクリップボードにコピーしました！');
+    }).catch(() => {
+      document.execCommand('copy');
+      alert('📋 共有コードをコピーしました！');
+    });
+  } else {
+    document.execCommand('copy');
+    alert('📋 共有コードをコピーしました！');
+  }
+}
+
+// 共有コードの読み込み入力モーダル
+function importCodePrompt() {
+  const html = `
+    <div style="padding:15px;">
+      <h3 style="margin-top:0;"><i class="fa-solid fa-download"></i> 共有コードで読み込み</h3>
+      <p style="font-size:12px; color:#666;">発行された共有コードを貼り付けて「読み込む」を押してください。<br><span style="color:#e74c3c;">※現在のデータは上書き・同期されます。</span></p>
+      <textarea id="import-code-input" placeholder="ここに共有コードを貼り付け..." style="width:100%; height:100px; font-size:11px; margin:10px 0; padding:8px; box-sizing:border-box; word-break:break-all; border:1px solid #ccc; border-radius:4px;"></textarea>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button onclick="applyImportCode()" style="flex:1; background:var(--primary-color, #ff4757); color:#fff; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">
+          <i class="fa-solid fa-check"></i> 読み込んで反映
+        </button>
+        <button onclick="closeModal()" style="background:#ccc; border:none; padding:10px 15px; border-radius:5px; cursor:pointer;">キャンセル</button>
+      </div>
+    </div>
+  `;
+  openModal(html);
+}
+
+// 共有コードの解析・適用（エラー回避版）
+function applyImportCode() {
+  const codeInput = document.getElementById('import-code-input');
+  if (!codeInput || !codeInput.value.trim()) {
+    alert('⚠️ 共有コードを入力してください。');
     return;
   }
 
-  let html = '';
-  maps.forEach(m => {
-    const isCurrent = m.id === currentMapId;
-    html += `
-      <div class="menu-item" style="${isCurrent ? 'font-weight:bold; color:var(--primary-color);' : ''}" onclick="switchMap('${m.id}')">
-        <i class="fa-solid fa-map-pin"></i> ${m.name} ${m.isShared ? '(共有)' : ''}
-      </div>
-    `;
-  });
+  try {
+    const rawCode = codeInput.value.trim();
+    const jsonStr = decodeURIComponent(atob(rawCode));
+    const importedData = JSON.parse(jsonStr);
 
-  menu.innerHTML = html;
-  menu.classList.add('active');
-}
+    if (!importedData.maps || !importedData.stores) {
+      throw new Error('データ構造が無効です。');
+    }
 
-// マップの切り替え
-function switchMap(mapId) {
-  currentMapId = mapId;
-  currentSelectedAreaId = null;
-  currentSelectedListId = null;
-  document.getElementById('map-dropdown-menu').classList.remove('active');
-  closeDetailPanel();
-  closeSearchResultsPanel();
-  renderAll();
-}
+    // グローバル変数の安全更新
+    if (typeof maps !== 'undefined') maps = importedData.maps || [];
+    if (typeof stores !== 'undefined') stores = importedData.stores || [];
+    if (typeof customLists !== 'undefined') customLists = importedData.customLists || [];
+    if (typeof areas !== 'undefined') areas = importedData.areas || [];
+    if (typeof currentMapId !== 'undefined' && maps.length > 0) currentMapId = maps[0].id;
 
-// マップ管理・作成モーダル
-function openMapManagementModal() {
-  toggleMenu();
-  const content = document.getElementById('modal-content');
-  document.getElementById('modal-overlay').style.display = 'flex';
+    // ローカル保存・Firestore連携・描画更新
+    if (typeof saveStorage === 'function') saveStorage();
+    if (typeof renderCurrentMap === 'function') renderCurrentMap();
 
-  let mapListHtml = maps.map(m => `
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #eee;">
-      <span style="font-size:13px; font-weight:${m.id === currentMapId ? 'bold' : 'normal'}">${m.name} ${m.isShared ? '<small>(共有)</small>' : ''}</span>
-      ${!m.isShared && maps.length > 1 ? `<button onclick="deleteMap('${m.id}')" style="background:none; border:none; color:#e74c3c; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>` : ''}
-    </div>
-  `).join('');
-
-  content.innerHTML = `
-    <div class="modal-header">
-      <h3>🗺️ マップ管理・新規作成</h3>
-      <span style="cursor:pointer; font-size:16px; opacity:0.6;" onclick="closeModal()">✕</span>
-    </div>
-    <div class="form-group">
-      <label>新規マップ名</label>
-      <input type="text" id="new-map-name" class="stylish-input" placeholder="例: 東京グルメ巡り">
-    </div>
-    <button onclick="createNewMap()" style="width:100%; padding:8px; background:var(--primary-color); color:white; border:none; border-radius:6px; font-weight:bold; margin-bottom:15px;">作成</button>
-    <div style="font-size:12px; font-weight:bold; margin-bottom:8px;">マップ一覧</div>
-    <div>${mapListHtml}</div>
-  `;
-}
-
-// 新規マップ作成
-function createNewMap() {
-  const nameInput = document.getElementById('new-map-name');
-  const name = nameInput.value.trim();
-  if (!name) return;
-
-  const newMap = {
-    id: "map_" + Date.now(),
-    name: name,
-    stores: [],
-    areas: [],
-    lists: []
-  };
-
-  maps.push(newMap);
-  currentMapId = newMap.id;
-  saveStorage();
-  closeModal();
-  renderAll();
-}
-
-// マップ削除
-function deleteMap(mapId) {
-  if (!confirm("このマップを削除してもよろしいですか？")) return;
-
-  maps = maps.filter(m => m.id !== mapId);
-  if (currentMapId === mapId) {
-    currentMapId = maps[0].id;
-  }
-  saveStorage();
-  openMapManagementModal();
-  renderAll();
-}
-
-// テーマ（ダークモード）切り替え
-function toggleTheme() {
-  toggleMenu();
-  const currentTheme = document.body.getAttribute('data-theme');
-  if (currentTheme === 'dark') {
-    document.body.removeAttribute('data-theme');
-  } else {
-    document.body.setAttribute('data-theme', 'dark');
+    closeModal();
+    alert('🎉 データを正常に読み込み、画面へ反映しました！');
+  } catch (err) {
+    alert('⚠️ 共有コードの読み込みに失敗しました。正しいコードかご確認ください。\n(' + err.message + ')');
   }
 }
