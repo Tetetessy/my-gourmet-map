@@ -357,6 +357,9 @@
         <select id="search-genre" onchange="filterStores()" style="width:100%;">
           <option value="">全てのジャンル</option>
         </select>
+        <select id="search-budget" onchange="filterStores()" style="width:100%;">
+          <option value="">全ての予算</option>
+        </select>
         <input type="text" id="search-station" placeholder="最寄り駅検索" oninput="filterStores()" style="width:100%;">
       </div>
     </div>
@@ -385,11 +388,11 @@
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
       <small>【設定】</small>
       <select onchange="changeTheme(this.value)" style="width:100%;">
-        <option value="casual">☁️ カジュアル・雲</option>
-        <option value="simple">▦ シンプル・無機質</option>
-        <option value="pop">🍓 ポップ・いちご＆生クリーム</option>
-        <option value="light">🫧 ライト・ガラス</option>
-        <option value="dark">⚙️ ダーク・鉄</option>
+        <option value="casual">☁️ カジュアル</option>
+        <option value="simple">▦ シンプル</option>
+        <option value="pop">🍓 ポップ</option>
+        <option value="light">🫧 ライト</option>
+        <option value="dark">⚙️ ダーク</option>
       </select>
     </div>
   </div>
@@ -459,6 +462,11 @@
       '和食', '洋食', '中華', '韓国', 'アジアン', 'エスニック', '他国料理', 
       '郷土料理', 'ジビエ', '寿司', '焼肉', 'ラーメン', 'カレー', '魚系', 
       '肉系', '野菜系', 'スイーツ系', 'カフェ', '居酒屋', 'ビーガン', 'ゲテモノ', 'その他'
+    ];
+
+    const BUDGET_OPTIONS = [
+      '1000円以下', '1000～3000円以下', '3000～5000円以下',
+      '5000～7000円以下', '7000～10000円以下', '10000円以上'
     ];
 
     let map;
@@ -812,11 +820,15 @@
     function initSearchOptions() {
       const formSel = document.getElementById('search-form');
       const genreSel = document.getElementById('search-genre');
+      const budgetSel = document.getElementById('search-budget');
       if (formSel) {
         formSel.innerHTML = '<option value="">全ての形式</option>' + FORM_OPTIONS.map(f => `<option>${f}</option>`).join('');
       }
       if (genreSel) {
         genreSel.innerHTML = '<option value="">全てのジャンル</option>' + GENRE_OPTIONS.map(g => `<option>${g}</option>`).join('');
+      }
+      if (budgetSel) {
+        budgetSel.innerHTML = '<option value="">全ての予算</option>' + BUDGET_OPTIONS.map(b => `<option>${b}</option>`).join('');
       }
     }
 
@@ -1025,6 +1037,14 @@
         </div>
 
         <div class="form-group">
+          <label>予算</label>
+          <select id="reg-store-budget" class="stylish-input">
+            <option value="">選択してください</option>
+            ${BUDGET_OPTIONS.map(b => `<option ${isEdit && storeToEdit.budget === b ? 'selected' : ''}>${b}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="form-group">
           <label>コスパ</label>
           <div class="range-control-row">
             <span class="range-label-left">[低]</span>
@@ -1223,6 +1243,7 @@
         images: [...currentEditingImages],
         form: document.getElementById('reg-store-form').value,
         genre: document.getElementById('reg-store-genre').value,
+        budget: document.getElementById('reg-store-budget').value,
         cospa: parseInt(document.getElementById('reg-store-cospa').value, 10),
         capa: parseInt(document.getElementById('reg-store-capa').value, 10),
         mood: parseInt(document.getElementById('reg-store-mood').value, 10),
@@ -1274,10 +1295,9 @@
 
       const areasHtml = curMap.areas.map((a, index) => `
         <li style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.03); padding:6px 8px; margin-bottom:4px; border-radius:6px;">
-          <span style="font-size:12px;">🚩 <b>${a.name}</b></span>
+          <span style="font-size:12px;">🚩 <b>No.${index + 1}</b>　${a.name}</span>
           <div>
-            <button onclick="moveAreaOrder(${index}, -1)" class="btn-sm-icon">▲</button>
-            <button onclick="moveAreaOrder(${index}, 1)" class="btn-sm-icon">▼</button>
+            <button onclick="moveAreaToNo('${a.id}')" style="padding:2px 6px; font-size:10px;">↕️ No.移動</button>
             <button onclick="editAreaName('${a.id}')" style="background:#ff9f43; padding:2px 6px; font-size:10px;">✏️ 編集</button>
             <button onclick="deleteArea('${a.id}'); openAreaRegisterModalPrompt();" style="background:#dc3545; padding:2px 6px; font-size:10px;">削除</button>
           </div>
@@ -1357,14 +1377,23 @@
       }
     }
 
-    function moveAreaOrder(index, direction) {
+    function moveAreaToNo(areaId) {
       const curMap = getCurrentMap();
       if (curMap.isShared) return;
-      const targetIndex = index + direction;
-      if (targetIndex < 0 || targetIndex >= curMap.areas.length) return;
-      const temp = curMap.areas[index];
-      curMap.areas[index] = curMap.areas[targetIndex];
-      curMap.areas[targetIndex] = temp;
+      const currentIndex = curMap.areas.findIndex(a => a.id === areaId);
+      if (currentIndex < 0) return;
+      const currentNo = currentIndex + 1;
+      const input = prompt(`「${curMap.areas[currentIndex].name}」を何番目に移動しますか？\n現在: No.${currentNo} / 範囲: No.1～No.${curMap.areas.length}`, String(currentNo));
+      if (input === null) return;
+      const targetNo = parseInt(input, 10);
+      if (!Number.isInteger(targetNo) || targetNo < 1 || targetNo > curMap.areas.length) {
+        alert(`No.は1～${curMap.areas.length}の範囲で指定してください。`);
+        return;
+      }
+      const targetIndex = targetNo - 1;
+      if (targetIndex === currentIndex) return;
+      const [moved] = curMap.areas.splice(currentIndex, 1);
+      curMap.areas.splice(targetIndex, 0, moved);
       saveStorage();
       openAreaRegisterModalPrompt();
     }
@@ -1512,7 +1541,8 @@
         ${imgHtml}
 
         <div style="font-size:11px; margin-top:4px; background:rgba(0,0,0,0.02); padding:4px; border-radius:4px;">
-          <b>形式:</b> ${store.form || '-'} / <b>ジャンル:</b> ${store.genre || '-'}
+          <div><b>形式:</b> ${store.form || '-'} / <b>ジャンル:</b> ${store.genre || '-'}</div>
+          <div style="margin-top:2px;"><b>予算:</b> ${store.budget || '-'}</div>
         </div>
 
         <div style="font-size:11px; margin-top:4px; display:flex; flex-direction:column; gap:2px;">
@@ -1665,6 +1695,7 @@
       const favVal = document.getElementById('search-fav').value;
       const formVal = document.getElementById('search-form').value;
       const genreVal = document.getElementById('search-genre').value;
+      const budgetVal = document.getElementById('search-budget').value;
       const stationVal = document.getElementById('search-station').value.trim().toLowerCase();
 
       const curMap = getCurrentMap();
@@ -1675,6 +1706,7 @@
         if (favVal === 'fav' && !s.isFavorite) return false;
         if (formVal && s.form !== formVal) return false;
         if (genreVal && s.genre !== genreVal) return false;
+        if (budgetVal && s.budget !== budgetVal) return false;
         return true;
       });
 
@@ -1692,6 +1724,7 @@
         <div style="padding:6px 8px; margin-top:4px; background:rgba(0,0,0,0.03); border-radius:6px; cursor:pointer; border-left:3px solid var(--primary-color);" onclick="showStoreDetail('${s.id}')">
           <b style="font-size:12px;">${s.isFavorite ? '⭐ ' : ''}${s.name}</b>
           <div style="font-size:10px; color:#666; margin-top:2px;">${s.form || '-'} / ${s.genre || '-'}</div>
+          <div style="font-size:10px; color:#666; margin-top:1px;">💰 ${s.budget || '-'}</div>
           <div style="font-size:10px; color:#777; margin-top:1px;">🚉 ${s.station || '-'}</div>
         </div>
       `).join('');
@@ -2030,11 +2063,10 @@
         const assignedStores = (curMap.stores || []).filter(s => (s.listIds || []).includes(l.id) || s.listId === l.id);
         const storesHtml = assignedStores.map((s, sIndex) => `
           <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.7); padding:3px 6px; margin-top:2px; border-radius:4px; font-size:11px;">
-            <span>🍽️ ${s.name}</span>
+            <span>🍽️ <b>No.${sIndex + 1}</b>　${s.name}</span>
             ${!curMap.isShared ? `
               <div>
-                <button onclick="moveStoreInList('${l.id}', ${sIndex}, -1)" class="btn-sm-icon">▲</button>
-                <button onclick="moveStoreInList('${l.id}', ${sIndex}, 1)" class="btn-sm-icon">▼</button>
+                <button onclick="moveStoreInList('${l.id}', '${s.id}')" style="padding:2px 6px; font-size:10px;">↕️ No.移動</button>
                 <button onclick="removeStoreFromList('${l.id}', '${s.id}')" class="btn-sm-icon" style="background:#dc3545; color:#fff;">削除</button>
               </div>
             ` : ''}
@@ -2104,27 +2136,40 @@
       }
     }
 
-    function moveStoreInList(listId, storeIndex, direction) {
+    function moveStoreInList(listId, storeId) {
       const curMap = getCurrentMap();
       if (curMap.isShared) return;
       const assignedStores = (curMap.stores || []).filter(s => (s.listIds || []).includes(listId) || s.listId === listId);
-      const targetIndex = storeIndex + direction;
-      if (targetIndex < 0 || targetIndex >= assignedStores.length) return;
-
-      const storeA = assignedStores[storeIndex];
-      const storeB = assignedStores[targetIndex];
-
-      const idxA = curMap.stores.findIndex(s => s.id === storeA.id);
-      const idxB = curMap.stores.findIndex(s => s.id === storeB.id);
-
-      if (idxA >= 0 && idxB >= 0) {
-        const temp = curMap.stores[idxA];
-        curMap.stores[idxA] = curMap.stores[idxB];
-        curMap.stores[idxB] = temp;
-        saveStorage();
-        openCustomListModal();
-        toggleListAccordion('list-stores-' + listId);
+      const currentIndex = assignedStores.findIndex(s => s.id === storeId);
+      if (currentIndex < 0) return;
+      const currentNo = currentIndex + 1;
+      const store = assignedStores[currentIndex];
+      const input = prompt(`「${store.name}」を何番目に移動しますか？\n現在: No.${currentNo} / 範囲: No.1～No.${assignedStores.length}`, String(currentNo));
+      if (input === null) return;
+      const targetNo = parseInt(input, 10);
+      if (!Number.isInteger(targetNo) || targetNo < 1 || targetNo > assignedStores.length) {
+        alert(`No.は1～${assignedStores.length}の範囲で指定してください。`);
+        return;
       }
+      const targetIndex = targetNo - 1;
+      if (targetIndex === currentIndex) return;
+
+      // リスト内では「入れ替え」ではなく、指定Noへ割り込ませる。
+      // 実データは店舗配列を、リスト内の並びを保ったまま組み替える。
+      const idxA = curMap.stores.findIndex(s => s.id === storeId);
+      if (idxA < 0) return;
+      const targetStore = assignedStores[targetIndex];
+      const idxTarget = curMap.stores.findIndex(s => s.id === targetStore.id);
+      if (idxTarget < 0) return;
+
+      const [moved] = curMap.stores.splice(idxA, 1);
+      const adjustedTargetIndex = curMap.stores.findIndex(s => s.id === targetStore.id);
+      if (adjustedTargetIndex < 0) return;
+      curMap.stores.splice(adjustedTargetIndex, 0, moved);
+
+      saveStorage();
+      openCustomListModal();
+      toggleListAccordion('list-stores-' + listId);
     }
 
     function removeStoreFromList(listId, storeId) {
