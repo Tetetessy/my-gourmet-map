@@ -80,6 +80,23 @@
       color: #ffffff; border: 2px solid #ffffff; border-radius: 20px; padding: 4px 10px; font-weight: bold; font-size: 11px; white-space: nowrap; box-shadow: 0 3px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; gap: 3px; cursor: pointer;
     }
 
+    .store-custom-pin {
+      width: 34px; height: 34px; box-sizing: border-box; display:flex; align-items:center; justify-content:center;
+      color:#fff; font-weight:900; font-size:21px; line-height:1; cursor:pointer;
+      filter: drop-shadow(0 3px 4px rgba(0,0,0,.35));
+      text-shadow: 0 1px 2px rgba(0,0,0,.35);
+    }
+    .store-pin-heart { border-radius: 50% 50% 50% 8%; transform: rotate(-45deg); }
+    .store-pin-heart .store-pin-symbol { transform: rotate(45deg); }
+    .store-pin-star { clip-path: polygon(50% 2%, 61% 35%, 98% 36%, 68% 57%, 79% 94%, 50% 72%, 21% 94%, 32% 57%, 2% 36%, 39% 35%); }
+    .store-pin-triangle { clip-path: polygon(5% 5%, 95% 5%, 50% 98%); }
+    .store-pin-double-circle { border-radius:50%; border:4px solid #fff; box-shadow: inset 0 0 0 3px rgba(255,255,255,.9), 0 0 0 2px rgba(0,0,0,.12), 0 3px 4px rgba(0,0,0,.35); }
+    .store-pin-double-circle .store-pin-symbol { font-size:0; width:12px; height:12px; border-radius:50%; background:rgba(255,255,255,.9); }
+    .store-pin-choice-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; }
+    .store-pin-choice { border:2px solid var(--border-color); background:var(--panel-bg); border-radius:8px; padding:6px 3px; cursor:pointer; text-align:center; font-size:10px; }
+    .store-pin-choice.selected { border-color:var(--primary-color); box-shadow:0 0 0 2px rgba(0,0,0,.08); }
+    .store-pin-preview { width:28px; height:28px; margin:0 auto 3px; transform:scale(.75); }
+
     .bottom-left-area { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; }
     .search-panel {
       background: var(--panel-bg); backdrop-filter: blur(8px); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 220px; max-height: 40vh; overflow-y: auto; display: none;
@@ -449,6 +466,24 @@
       { id: 'mint', label: 'ティール', bg: 'linear-gradient(135deg, #1dd1a1, #10ac84)' },
       { id: 'dark', label: 'ダーク', bg: 'linear-gradient(135deg, #576574, #222f3e)' },
       { id: 'gold', label: 'ゴールド', bg: 'linear-gradient(135deg, #f1c40f, #d35400)' }
+    ];
+
+    const STORE_PIN_SHAPES = [
+      { id: 'heart', label: 'ハート', icon: '♥' },
+      { id: 'star', label: '星型', icon: '★' },
+      { id: 'triangle', label: '逆三角', icon: '▼' },
+      { id: 'double-circle', label: '二重丸', icon: '◎' }
+    ];
+
+    const STORE_PIN_COLORS = [
+      { id: 'red', label: 'レッド', bg: 'linear-gradient(135deg, #ff6b6b, #e74c3c)' },
+      { id: 'orange', label: 'オレンジ', bg: 'linear-gradient(135deg, #ffb347, #f39c12)' },
+      { id: 'yellow', label: 'イエロー', bg: 'linear-gradient(135deg, #ffe66d, #f1c40f)' },
+      { id: 'green', label: 'グリーン', bg: 'linear-gradient(135deg, #55efc4, #00b894)' },
+      { id: 'cyan', label: 'シアン', bg: 'linear-gradient(135deg, #81ecec, #00cec9)' },
+      { id: 'blue', label: 'ブルー', bg: 'linear-gradient(135deg, #74b9ff, #0984e3)' },
+      { id: 'purple', label: 'パープル', bg: 'linear-gradient(135deg, #a29bfe, #6c5ce7)' },
+      { id: 'pink', label: 'ピンク', bg: 'linear-gradient(135deg, #fd79a8, #e84393)' }
     ];
 
     const FORM_OPTIONS = [
@@ -861,7 +896,14 @@
       });
 
       (curMap.stores || []).forEach(store => {
-        const marker = L.marker([store.lat, store.lng]).addTo(map);
+        const shape = STORE_PIN_SHAPES.find(x => x.id === store.pinShape) || STORE_PIN_SHAPES[0];
+        const color = STORE_PIN_COLORS.find(x => x.id === store.pinColor) || STORE_PIN_COLORS[0];
+        const shapeClass = shape.id === 'double-circle' ? 'store-pin-double-circle' : `store-pin-${shape.id}`;
+        const iconHtml = `<div class="store-custom-pin ${shapeClass}" style="background:${color.bg};"><span class="store-pin-symbol">${shape.icon}</span></div>`;
+        const storeIcon = L.divIcon({
+          className: '', html: iconHtml, iconSize: [34,34], iconAnchor: [17,17]
+        });
+        const marker = L.marker([store.lat, store.lng], { icon: storeIcon }).addTo(map);
         marker.on('click', (e) => {
           L.DomEvent.stopPropagation(e);
           showStoreDetail(store.id);
@@ -1045,6 +1087,29 @@
         </div>
 
         <div class="form-group">
+          <label>店舗ピンの形状</label>
+          <div class="store-pin-choice-grid">
+            ${STORE_PIN_SHAPES.map(sh => `
+              <button type="button" class="store-pin-choice ${(isEdit ? (storeToEdit.pinShape || 'heart') : 'heart') === sh.id ? 'selected' : ''}" onclick="selectStorePinShape('${sh.id}')" data-pin-shape="${sh.id}">
+                <div class="store-custom-pin store-pin-preview ${sh.id === 'double-circle' ? 'store-pin-double-circle' : 'store-pin-' + sh.id}" style="background:${STORE_PIN_COLORS[0].bg};"><span class="store-pin-symbol">${sh.icon}</span></div>
+                ${sh.label}
+              </button>
+            `).join('')}
+          </div>
+          <input type="hidden" id="reg-store-pin-shape" value="${isEdit ? (storeToEdit.pinShape || 'heart') : 'heart'}">
+        </div>
+
+        <div class="form-group">
+          <label>店舗ピンの色味 (8段階)</label>
+          <div class="color-picker-grid">
+            ${STORE_PIN_COLORS.map(c => `
+              <button type="button" class="color-btn" style="background:${c.bg}; border:${(isEdit ? (storeToEdit.pinColor || 'red') : 'red') === c.id ? '3px solid #000' : '2px solid #fff'};" onclick="selectStorePinColor('${c.id}')" title="${c.label}"></button>
+            `).join('')}
+          </div>
+          <input type="hidden" id="reg-store-pin-color" value="${isEdit ? (storeToEdit.pinColor || 'red') : 'red'}">
+        </div>
+
+        <div class="form-group">
           <label>コスパ</label>
           <div class="range-control-row">
             <span class="range-label-left">[低]</span>
@@ -1117,6 +1182,43 @@
         </div>
       `;
       renderImagePreviews();
+    }
+
+    function selectStorePinShape(shapeId) {
+      const input = document.getElementById('reg-store-pin-shape');
+      if (!input) return;
+      input.value = shapeId;
+      document.querySelectorAll('.store-pin-choice').forEach(btn => btn.classList.toggle('selected', btn.dataset.pinShape === shapeId));
+    }
+
+    function selectStorePinColor(colorId) {
+      const input = document.getElementById('reg-store-pin-color');
+      if (!input) return;
+      input.value = colorId;
+      const colors = STORE_PIN_COLORS;
+      document.querySelectorAll('#modal-content .color-btn').forEach(btn => {
+        const bg = btn.getAttribute('style') || '';
+        // selection is refreshed by rebuilding the modal on save/edit; keep the chosen color in the hidden field.
+      });
+      // Visually mark the chosen color without relying on the gradient string.
+      document.querySelectorAll('#modal-content .color-btn').forEach((btn, i) => {
+        if (i < colors.length) btn.style.border = `2px solid #fff`;
+      });
+      const idx = colors.findIndex(c => c.id === colorId);
+      if (idx >= 0) document.querySelectorAll('#modal-content .color-btn')[idx].style.border = '3px solid #000';
+    }
+
+    function changeStorePin(storeId, key, value) {
+      const curMap = getCurrentMap();
+      if (curMap.isShared) return;
+      const store = curMap.stores.find(s => s.id === storeId);
+      if (!store) return;
+      if (key === 'pinShape' && !STORE_PIN_SHAPES.some(x => x.id === value)) return;
+      if (key === 'pinColor' && !STORE_PIN_COLORS.some(x => x.id === value)) return;
+      store[key] = value;
+      saveStorage();
+      renderCurrentMap();
+      showStoreDetail(storeId);
     }
 
     function generateListOptionsHtml(selectedId = '') {
@@ -1244,6 +1346,8 @@
         form: document.getElementById('reg-store-form').value,
         genre: document.getElementById('reg-store-genre').value,
         budget: document.getElementById('reg-store-budget').value,
+        pinShape: document.getElementById('reg-store-pin-shape').value || 'heart',
+        pinColor: document.getElementById('reg-store-pin-color').value || 'red',
         cospa: parseInt(document.getElementById('reg-store-cospa').value, 10),
         capa: parseInt(document.getElementById('reg-store-capa').value, 10),
         mood: parseInt(document.getElementById('reg-store-mood').value, 10),
@@ -1517,6 +1621,25 @@
       const detailContent = document.getElementById('detail-content');
       detailPanel.style.display = 'block';
 
+      const currentShape = STORE_PIN_SHAPES.find(x => x.id === store.pinShape) || STORE_PIN_SHAPES[0];
+      const currentColor = STORE_PIN_COLORS.find(x => x.id === store.pinColor) || STORE_PIN_COLORS[0];
+      const pinSettingsHtml = curMap.isShared ? '' : `
+        <div style="margin-top:7px; padding:6px; border:1px solid var(--border-color); border-radius:6px;">
+          <div style="font-size:10px; font-weight:bold; margin-bottom:4px;">📍 店舗ピン</div>
+          <div class="store-pin-choice-grid">
+            ${STORE_PIN_SHAPES.map(sh => `
+              <button type="button" class="store-pin-choice ${currentShape.id === sh.id ? 'selected' : ''}" onclick="changeStorePin('${store.id}','pinShape','${sh.id}')">
+                <div class="store-custom-pin store-pin-preview ${sh.id === 'double-circle' ? 'store-pin-double-circle' : 'store-pin-' + sh.id}" style="background:${currentColor.bg};"><span class="store-pin-symbol">${sh.icon}</span></div>${sh.label}
+              </button>
+            `).join('')}
+          </div>
+          <div style="font-size:10px; font-weight:bold; margin:5px 0 3px;">色味 (8段階)</div>
+          <div class="color-picker-grid">
+            ${STORE_PIN_COLORS.map(c => `<button type="button" class="color-btn" style="background:${c.bg}; border:${currentColor.id === c.id ? '3px solid #000' : '2px solid #fff'};" onclick="changeStorePin('${store.id}','pinColor','${c.id}')" title="${c.label}"></button>`).join('')}
+          </div>
+        </div>
+      `;
+
       const actionButtons = curMap.isShared ? `
         <button onclick="reflectStoreToMyMap('${store.id}')" style="background:#4ecdc4; font-size:10px; padding:2px 6px;">📥 マイマップへ反映</button>
       ` : `
@@ -1544,6 +1667,8 @@
           <div><b>形式:</b> ${store.form || '-'} / <b>ジャンル:</b> ${store.genre || '-'}</div>
           <div style="margin-top:2px;"><b>予算:</b> ${store.budget || '-'}</div>
         </div>
+
+        ${pinSettingsHtml}
 
         <div style="font-size:11px; margin-top:4px; display:flex; flex-direction:column; gap:2px;">
           <div><b>コスパ:</b> [低] ${'★'.repeat(store.cospa || 3)}${'☆'.repeat(5 - (store.cospa || 3))} [高&lt;良&gt;]</div>
