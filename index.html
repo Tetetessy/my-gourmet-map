@@ -125,6 +125,9 @@
     .form-group label { font-weight: 600; font-size: 11.5px; opacity: 0.9; }
     .stylish-input { width: 100%; padding: 8px 10px; font-size: 13px; border: 1px solid var(--border-color); border-radius: var(--radius); background: rgba(255, 255, 255, 0.9); }
     .stylish-input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.2); }
+    .share-code-row { display: flex; gap: 6px; align-items: stretch; }
+    .share-code-row .stylish-input { flex: 1; min-width: 0; }
+    .copy-code-btn { white-space: nowrap; padding: 8px 12px; font-size: 12px; }
 
     .range-control-row {
       display: grid;
@@ -1338,7 +1341,10 @@
         </p>
         <div class="form-group">
           <label>共有コード (数字＋半角英字混在 6〜20文字)</label>
-          <input type="text" id="custom-share-code" class="stylish-input" value="${curMap.id}" minlength="6" maxlength="20" placeholder="例: gourmet2026">
+          <div class="share-code-row">
+            <input type="text" id="custom-share-code" class="stylish-input" value="${curMap.id}" minlength="6" maxlength="20" placeholder="例: gourmet2026">
+            <button type="button" class="copy-code-btn" onclick="copyShareCode()">📋 コピー</button>
+          </div>
           <div id="share-code-error" class="error-msg"></div>
           <div id="share-code-success" class="success-msg"></div>
         </div>
@@ -1347,6 +1353,39 @@
           <button onclick="closeModal()" class="btn-secondary">閉じる</button>
         </div>
       `;
+    }
+
+    async function copyShareCode() {
+      const input = document.getElementById('custom-share-code');
+      const successEl = document.getElementById('share-code-success');
+      const errorEl = document.getElementById('share-code-error');
+      if (!input) return;
+
+      const code = input.value.trim();
+      if (!code) return;
+
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(code);
+        } else {
+          input.focus();
+          input.select();
+          document.execCommand('copy');
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
+
+        if (errorEl) errorEl.style.display = 'none';
+        if (successEl) {
+          successEl.textContent = '✅ 共有コードをコピーしました。';
+          successEl.style.display = 'block';
+        }
+      } catch (e) {
+        if (successEl) successEl.style.display = 'none';
+        if (errorEl) {
+          errorEl.textContent = '⚠️ コピーできませんでした。コードを選択して手動でコピーしてください。';
+          errorEl.style.display = 'block';
+        }
+      }
     }
 
     function saveCustomShareCode() {
