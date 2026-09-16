@@ -172,8 +172,8 @@
 
   <!-- 画面左上：登録ボタン群 ＆ 絞り込みボタン -->
   <div class="top-left">
-    <button id="btn-register-store" class="action-btn" onclick="openStoreRegisterModalFromPin()">📍 店舗登録</button>
-    <button id="btn-register-area" class="action-btn" onclick="openAreaRegisterModalPrompt()">🚩 エリア登録</button>
+    <button id="btn-register-store" class="action-btn" onclick="startStoreRegistration()">📍 店舗登録</button>
+    <button id="btn-register-area" class="action-btn" onclick="startAreaRegistration()">🚩 エリア登録</button>
     <div class="bottom-left-area">
       <button class="action-btn" onclick="toggleSearchPanel()">🔍 絞り込み</button>
       <div class="search-panel" id="search-panel">
@@ -306,6 +306,7 @@
     let currentMapId = '';
     let tempPinLocation = null; 
     let tempMarker = null;
+    let pendingRegistrationType = null;
 
     let mapStoreMarkers = [];
     let mapAreaMarkers = [];
@@ -381,6 +382,21 @@
       return { id: id || generateDefaultShareCode(), name: name || 'マイグルメマップ', stores: [], areas: [], lists: [], isShared: false };
     }
 
+    function asArray(value) {
+      if (Array.isArray(value)) return value;
+      if (value && typeof value === 'object') return Object.values(value);
+      return [];
+    }
+
+    function normalizeMapData() {
+      maps = asArray(maps).map(m => ({
+        ...m,
+        stores: asArray(m.stores),
+        areas: asArray(m.areas),
+        lists: asArray(m.lists)
+      }));
+    }
+
     async function loadCurrentUserData() {
       // ログインユーザーのデータはFirebase Realtime Databaseから取得。
       // これでPC・スマホなど端末が変わっても同じ店舗・エリア・リストを利用できる。
@@ -391,7 +407,7 @@
 
           if (cloudData) {
             currentUser.name = cloudData.name || currentUser.name || 'ユーザー';
-            maps = Array.isArray(cloudData.maps) ? cloudData.maps : [];
+            maps = asArray(cloudData.maps);
             currentMapId = cloudData.currentMapId || (maps[0] ? maps[0].id : '');
           } else {
             // 初回ログイン時：旧localStorageにデータがあればFirebaseへ移行。
@@ -429,6 +445,8 @@
         maps = JSON.parse(localStorage.getItem('gourmet_guest_maps')) || [];
         currentMapId = localStorage.getItem('gourmet_guest_map_id') || '';
       }
+
+      normalizeMapData();
 
       if (!maps || maps.length === 0) {
         const defaultMap = createDefaultMap();
@@ -532,8 +550,16 @@
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <p style="color:var(--primary-color); font-weight:bold; margin:0;">📍 ピンを置きました</p>
           </div>
-          <p style="font-size:11.5px; color:#666; margin-top:4px;">左上の「📍 店舗登録」または「🚩 エリア登録」を押して情報を登録できます。</p>
+          <p style="font-size:11.5px; color:#666; margin-top:4px;">「📍 店舗登録」または「🚩 エリア登録」を押すと登録できます。</p>
         `;
+
+        if (pendingRegistrationType === 'store') {
+          pendingRegistrationType = null;
+          openStoreRegisterModalFromPin();
+        } else if (pendingRegistrationType === 'area') {
+          pendingRegistrationType = null;
+          openAreaRegisterModalPrompt();
+        }
       });
 
       initSearchOptions();
@@ -612,18 +638,52 @@
       const cur = getCurrentMap();
       const select = document.getElementById('area-select');
       if (!select) return;
+      const currentVal = select.value;
       let html = '<option value="">エリア移動</option>';
-      if (cur && cur.areas) {
-        cur.areas.forEach((a, i) => { html += `<option value="${i}">${a.name}</option>`; });
+      if (cur && Array.isArray(cur.areas)) {
+        cur.areas.forEach(a => {
+          html += `<option value="${a.id}">${a.name}</option>`;
+        });
       }
       select.innerHTML = html;
+      if (cur && cur.areas.some(a => a.id === currentVal)) select.value = currentVal;
     }
 
-    function moveToArea(index) {
-      if (index === "") return;
+    function moveToArea(areaId) {
+      if (!areaId) return;
       const cur = getCurrentMap();
-      const area = cur.areas[index];
-      if (area) map.setView([area.lat, area.lng], 15);
+      const area = (cur.areas || []).find(a => a.id === areaId);
+      if (area && Number.isFinite(Number(area.lat)) && Number.isFinite(Number(area.lng))) {
+        map.setView([Number(area.lat), Number(area.lng)], 15);
+      }
+    }
+
+    function startStoreRegistration() {
+      const curMap = getCurrentMap();
+      if (curMap.isShared) {
+        alert('🔒 共有されたマップのため、店舗登録はできません。');
+        return;
+      }
+      if (tempPinLocation) {
+        openStoreRegisterModalFromPin();
+        return;
+      }
+      pendingRegistrationType = 'store';
+      alert('店舗を登録したい場所を地図上でタップしてください。');
+    }
+
+    function startAreaRegistration() {
+      const curMap = getCurrentMap();
+      if (curMap.isShared) {
+        alert('🔒 共有されたマップのため、エリア登録はできません。');
+        return;
+      }
+      if (tempPinLocation) {
+        openAreaRegisterModalPrompt();
+        return;
+      }
+      pendingRegistrationType = 'area';
+      alert('エリアの中心にしたい場所を地図上でタップしてください。');
     }
 
     /* 店舗登録モーダル */
@@ -1031,6 +1091,7 @@
       tempPinLocation = null;
 
       saveStorage();
+      renderCurrentMap();
       openAreaRegisterModalPrompt();
     }
 
