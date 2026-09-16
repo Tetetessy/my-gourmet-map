@@ -310,21 +310,28 @@
     let mapStoreMarkers = [];
     let mapAreaMarkers = [];
     let currentEditingImages = [];
+    let cloudDataReady = false;
+    let cloudSaveInProgress = Promise.resolve();
 
     // Firebase Authentication 状態変化リスナー
-    auth.onAuthStateChanged((user) => {
+    // ログイン後はFirebase Realtime Databaseを正本として読み込む
+    auth.onAuthStateChanged(async (user) => {
       users = JSON.parse(localStorage.getItem('gourmet_users')) || {};
+      cloudDataReady = false;
+
       if (user) {
         currentUser = {
           loggedIn: true,
-          email: user.email,
-          name: user.displayName || user.email.split('@')[0],
+          email: user.email || '',
+          name: user.displayName || (user.email ? user.email.split('@')[0] : 'ユーザー'),
           uid: user.uid
         };
       } else {
         currentUser = { loggedIn: false, email: '', name: '', uid: '' };
       }
-      loadCurrentUserData();
+
+      await loadCurrentUserData();
+      cloudDataReady = true;
       updateAuthUI();
       if (map) {
         renderCurrentMap();
@@ -374,36 +381,75 @@
       return { id: id || generateDefaultShareCode(), name: name || 'マイグルメマップ', stores: [], areas: [], lists: [], isShared: false };
     }
 
-    function loadCurrentUserData() {
-      if (currentUser.loggedIn) {
-        const userKey = currentUser.uid || currentUser.email;
-        if (users[userKey]) {
-          currentUser.name = users[userKey].name || currentUser.name || 'ユーザー';
-          maps = users[userKey].maps || [];
-          currentMapId = users[userKey].currentMapId || (maps[0] ? maps[0].id : '');
-        } else {
-          maps = JSON.parse(localStorage.getItem(`gourmet_user_maps_${currentUser.uid}`)) || [];
-          currentMapId = localStorage.getItem(`gourmet_user_map_id_${currentUser.uid}`) || '';
+    async function loadCurrentUserData() {
+      // ログインユーザーのデータはFirebase Realtime Databaseから取得。
+      // これでPC・スマホなど端末が変わっても同じ店舗・エリア・リストを利用できる。
+      if (currentUser.loggedIn && currentUser.uid) {
+        try {
+          const snapshot = await database.ref(`users/${currentUser.uid}`).once('value');
+          const cloudData = snapshot.val();
+
+          if (cloudData) {
+            currentUser.name = cloudData.name || currentUser.name || 'ユーザー';
+            maps = Array.isArray(cloudData.maps) ? cloudData.maps : [];
+            currentMapId = cloudData.currentMapId || (maps[0] ? maps[0].id : '');
+          } else {
+            // 初回ログイン時：旧localStorageにデータがあればFirebaseへ移行。
+            const legacyUser = users[currentUser.uid];
+            const legacyMaps = legacyUser && Array.isArray(legacyUser.maps)
+              ? legacyUser.maps
+              : (JSON.parse(localStorage.getItem(`gourmet_user_maps_${currentUser.uid}`)) || []);
+
+            maps = legacyMaps;
+            currentMapId = (legacyUser && legacyUser.currentMapId)
+              || localStorage.getItem(`gourmet_user_map_id_${currentUser.uid}`)
+              || (maps[0] ? maps[0].id : '');
+
+            if (!maps.length) {
+              const defaultMap = createDefaultMap();
+              maps = [defaultMap];
+              currentMapId = defaultMap.id;
+            }
+
+            await saveStorage(false);
+          }
+        } catch (e) {
+          console.error('Firebaseデータ取得失敗:', e);
+
+          // 通信エラー時だけローカルを表示。クラウドを上書きしない。
+          const legacyUser = users[currentUser.uid];
+          maps = legacyUser && Array.isArray(legacyUser.maps)
+            ? legacyUser.maps
+            : (JSON.parse(localStorage.getItem(`gourmet_user_maps_${currentUser.uid}`)) || []);
+          currentMapId = (legacyUser && legacyUser.currentMapId)
+            || localStorage.getItem(`gourmet_user_map_id_${currentUser.uid}`)
+            || '';
         }
       } else {
         maps = JSON.parse(localStorage.getItem('gourmet_guest_maps')) || [];
         currentMapId = localStorage.getItem('gourmet_guest_map_id') || '';
       }
-      
+
       if (!maps || maps.length === 0) {
         const defaultMap = createDefaultMap();
         maps = [defaultMap];
         currentMapId = defaultMap.id;
       }
+
       if (!currentMapId || !maps.find(m => m.id === currentMapId)) {
         currentMapId = maps[0].id;
       }
+
       maps.forEach(m => { if (!m.lists) m.lists = []; });
     }
 
-    function saveStorage() {
+    // Firebaseへの保存。
+    // 複数操作が連続しても保存順序が逆転しないよう直列化する。
+    function saveStorage(renderAfterSave = true) {
+      const curMap = getCurrentMap();
+
+      // 既存のローカル保存（ゲスト・共有機能用）も維持。
       try {
-        const curMap = getCurrentMap();
         if (curMap && !curMap.isShared) {
           sharedStoreDB[curMap.id] = {
             id: curMap.id,
@@ -414,34 +460,51 @@
           };
           localStorage.setItem('gourmet_shared_maps', JSON.stringify(sharedStoreDB));
         }
+      } catch (e) {
+        console.warn('localStorage保存警告:', e);
+      }
 
-        if (currentUser.loggedIn) {
-          const userKey = currentUser.uid || currentUser.email;
-          users[userKey] = {
-            name: currentUser.name || 'ユーザー',
-            email: currentUser.email,
-            maps: maps,
-            currentMapId: currentMapId
-          };
+      if (currentUser.loggedIn && currentUser.uid) {
+        const payload = {
+          name: currentUser.name || 'ユーザー',
+          email: currentUser.email || '',
+          maps: JSON.parse(JSON.stringify(maps || [])),
+          currentMapId: currentMapId || ''
+        };
+
+        cloudSaveInProgress = cloudSaveInProgress
+          .catch(() => {})
+          .then(() => database.ref(`users/${currentUser.uid}`).set(payload))
+          .catch((e) => {
+            console.error('Firebaseデータ保存失敗:', e);
+            throw e;
+          });
+
+        cloudSaveInProgress.then(() => {
+          users = JSON.parse(localStorage.getItem('gourmet_users')) || {};
+          users[currentUser.uid] = payload;
           localStorage.setItem('gourmet_users', JSON.stringify(users));
           localStorage.setItem(`gourmet_user_maps_${currentUser.uid}`, JSON.stringify(maps));
           localStorage.setItem(`gourmet_user_map_id_${currentUser.uid}`, currentMapId);
-        } else {
-          localStorage.setItem('gourmet_guest_maps', JSON.stringify(maps));
-          localStorage.setItem('gourmet_guest_map_id', currentMapId);
-        }
-        renderCurrentMap();
-      } catch (e) {
-        alert('ストレージ容量が上限に達しました。不要なデータを削除してください。');
+        }).catch(() => {});
+
+        if (renderAfterSave && typeof renderCurrentMap === 'function') renderCurrentMap();
+        return cloudSaveInProgress;
       }
+
+      localStorage.setItem('gourmet_guest_maps', JSON.stringify(maps));
+      localStorage.setItem('gourmet_guest_map_id', currentMapId);
+      if (renderAfterSave && typeof renderCurrentMap === 'function') renderCurrentMap();
+      return Promise.resolve();
     }
 
     function getCurrentMap() {
       return maps.find(m => m.id === currentMapId) || maps[0];
     }
 
-    window.onload = function() {
-      loadCurrentUserData();
+    window.onload = async function() {
+      await loadCurrentUserData();
+      cloudDataReady = true;
       updateAuthUI();
 
       map = L.map('map').setView([35.681236, 139.767125], 14);
