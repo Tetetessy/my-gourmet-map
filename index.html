@@ -212,7 +212,7 @@
       <button onclick="openCustomListModal()">📋 リスト管理</button>
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
       <small>【共有】</small>
-    <div class="menu-item" onclick="openExportCodeModal()"><i class="fa-solid fa-share-nodes"></i> 共有コードの発行・設定</div>
+      <button onclick="exportCode()">共有コード設定・表示</button>
       <button onclick="importCodePrompt()">共有コード読み込み</button>
       <button onclick="refreshSharedMap()">🔄 マップ情報を更新</button>
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
@@ -1942,31 +1942,6 @@
         alert('ログアウトしました。');
       });
     }
-<script>
-  // 他のファイルの干渉を受けない、HTML内直書きのコピー機能
-  window.copyShareCodeDirect = function() {
-    const input = document.getElementById('share-code-input');
-    const btn = document.getElementById('btn-copy-code');
-    if (!input || !input.value.trim()) {
-      alert('⚠️ コードがありません');
-      return;
-    }
-    input.select();
-    input.setSelectionRange(0, 99999);
-    navigator.clipboard.writeText(input.value.trim()).then(() => {
-      if (btn) {
-        btn.innerHTML = '✅ コピー完了！';
-        btn.style.background = '#2ed573';
-        setTimeout(() => {
-          btn.innerHTML = '📋 コピー';
-          btn.style.background = '#4b6584';
-        }, 2000);
-      }
-    }).catch(() => {
-      document.execCommand('copy');
-      alert('📋 コピーしました: ' + input.value.trim());
-    });
-  };
-</script>
+  </script>
 </body>
 </html>
