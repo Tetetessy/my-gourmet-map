@@ -99,10 +99,53 @@
       .top-left { top: 40px; left: 6px; gap: 4px; }
       .top-left .action-btn { width: 110px; }
       .top-right { top: 6px; right: 6px; }
-      .search-panel { width: 80vw; max-height: 35vh; }
-      .search-results-panel { width: 80vw; top: 80px; right: 10px; max-height: 40vh; }
-      .bottom-center-area { width: 80vw; top: 130px; right: 10px; }
+      .search-panel { width: 46vw; max-width: 260px; top: 118px; left: 6px; max-height: 34vh; }
+      .search-results-panel { width: 46vw; max-width: 280px; top: 118px; right: 6px; max-height: 34vh; }
+      .bottom-center-area { width: 58vw; max-width: 330px; top: auto; right: 6px; bottom: 8px; }
     }
+
+    /* ==================== 大幅テーマ差分 ==================== */
+    html[data-theme="casual"] body { background: radial-gradient(circle at 15% 15%, #fff1dc 0, #fff8ef 38%, #f7efe6 100%); }
+    html[data-theme="casual"] .top-bar, html[data-theme="casual"] .search-panel, html[data-theme="casual"] .search-results-panel,
+    html[data-theme="casual"] .detail-panel, html[data-theme="casual"] .menu-dropdown, html[data-theme="casual"] .modal-content {
+      border: 2px solid #f0c9a8; box-shadow: 0 10px 28px rgba(126, 78, 38, .16); }
+    html[data-theme="casual"] button { border-radius: 18px; box-shadow: 0 4px 0 rgba(190, 112, 70, .16); }
+    html[data-theme="casual"] .modal-header { border-bottom: 3px dotted #e7b995; }
+
+    html[data-theme="simple"] body { background: #f3f4f6; }
+    html[data-theme="simple"] .top-bar, html[data-theme="simple"] .search-panel, html[data-theme="simple"] .search-results-panel,
+    html[data-theme="simple"] .detail-panel, html[data-theme="simple"] .menu-dropdown, html[data-theme="simple"] .modal-content {
+      border: 1px solid #cfd4da; box-shadow: 0 2px 8px rgba(0,0,0,.08); border-radius: 5px; backdrop-filter: none; }
+    html[data-theme="simple"] button { border-radius: 4px; box-shadow: none; }
+    html[data-theme="simple"] .modal-header { border-bottom: 1px solid #cfd4da; }
+
+    html[data-theme="pop"] body { background: linear-gradient(135deg, #fff0f8 0%, #f3faff 45%, #fff7d9 100%); }
+    html[data-theme="pop"] .top-bar, html[data-theme="pop"] .search-panel, html[data-theme="pop"] .search-results-panel,
+    html[data-theme="pop"] .detail-panel, html[data-theme="pop"] .menu-dropdown, html[data-theme="pop"] .modal-content {
+      border: 3px solid #ff65ad; box-shadow: 8px 8px 0 rgba(0, 229, 255, .20), 0 12px 28px rgba(255, 0, 127, .14); }
+    html[data-theme="pop"] button { border-radius: 4px; text-transform: none; box-shadow: 4px 4px 0 rgba(255, 0, 127, .18); }
+    html[data-theme="pop"] .modal-header { border-bottom: 3px solid #00e5ff; }
+
+    html[data-theme="light"] body { background: linear-gradient(180deg, #eaf4ff 0%, #f6fbff 100%); }
+    html[data-theme="light"] .top-bar, html[data-theme="light"] .search-panel, html[data-theme="light"] .search-results-panel,
+    html[data-theme="light"] .detail-panel, html[data-theme="light"] .menu-dropdown, html[data-theme="light"] .modal-content {
+      border: 1px solid #9eb8d5; box-shadow: 0 8px 22px rgba(32, 86, 135, .15); }
+    html[data-theme="light"] button { border-radius: 7px; box-shadow: 0 3px 8px rgba(0, 76, 140, .16); }
+    html[data-theme="light"] .modal-header { border-bottom: 2px solid #8fb8df; }
+
+    html[data-theme="dark"] body { background: radial-gradient(circle at 50% 0%, #20252d 0%, #0d0f12 70%); }
+    html[data-theme="dark"] .top-bar, html[data-theme="dark"] .search-panel, html[data-theme="dark"] .search-results-panel,
+    html[data-theme="dark"] .detail-panel, html[data-theme="dark"] .menu-dropdown, html[data-theme="dark"] .modal-content {
+      border: 1px solid #5a5a66; box-shadow: 0 12px 30px rgba(0,0,0,.55); background: rgba(25,25,31,.97); }
+    html[data-theme="dark"] button { border-radius: 5px; box-shadow: 0 0 0 1px rgba(3,218,198,.15); }
+    html[data-theme="dark"] .stylish-input { background: #17191e; color: #eee; }
+    html[data-theme="dark"] .modal-header { border-bottom: 2px solid #5a5a66; }
+
+    /* ==================== パネルの固定配置 ==================== */
+    .search-panel { position: fixed; top: 112px; left: 10px; z-index: 1002; }
+    .search-results-panel { top: 62px; right: 270px; z-index: 999; }
+    .bottom-center-area { top: auto; right: 270px; bottom: 18px; z-index: 1000; }
+    .menu-dropdown { top: 42px; right: 0; z-index: 1003; }
 
     .menu-dropdown {
       display: none; position: absolute; right: 0; top: 36px; background: var(--panel-bg); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 8px; width: 210px; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 1001;
@@ -206,6 +249,7 @@
       <small>【アカウント】</small>
       <div id="auth-status" style="font-weight:bold; margin: 2px 0;">ゲスト利用中</div>
       <button id="btn-edit-profile" onclick="openEditProfileModal()" style="display:none; background:#6c757d; font-size:10px;">✏️ アカウント名変更</button>
+      <button id="btn-change-email" onclick="openChangeEmailModal()" style="display:none; background:#6c757d; font-size:10px;">✉️ アドレス変更</button>
       <button id="btn-change-pass" onclick="openChangePasswordModal()" style="display:none; background:#6c757d; font-size:10px;">🔑 パスワード変更</button>
       <button id="auth-btn" onclick="openAuthModal()">ログイン / 登録</button>
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
@@ -379,7 +423,7 @@
     }
 
     function createDefaultMap(id, name) {
-      return { id: id || generateDefaultShareCode(), name: name || 'マイグルメマップ', stores: [], areas: [], lists: [], isShared: false };
+      return { id: id || ('map_' + Date.now() + '_' + Math.floor(Math.random()*1000)), name: name || 'マイグルメマップ', stores: [], areas: [], lists: [], isShared: false, shareCode: '', shareSnapshot: '', shareVersion: 0 };
     }
 
     function asArray(value) {
@@ -461,10 +505,89 @@
       maps.forEach(m => { if (!m.lists) m.lists = []; });
     }
 
+    // ==================== 共有コード管理 ====================
+    function getShareSnapshot(mapObj) {
+      if (!mapObj) return '';
+      return JSON.stringify({
+        name: mapObj.name || '',
+        stores: mapObj.stores || [],
+        areas: mapObj.areas || [],
+        lists: mapObj.lists || []
+      });
+    }
+
+    function invalidateShareCode(mapObj, reason = 'マップ情報が更新されたため、この共有コードは無効になりました。') {
+      if (!mapObj || mapObj.isShared || !mapObj.shareCode || !currentUser.uid) return Promise.resolve();
+      const code = mapObj.shareCode;
+      const ownerUid = currentUser.uid;
+      const tombstone = {
+        ownerUid,
+        reason,
+        invalidatedAt: firebase.database.ServerValue.TIMESTAMP
+      };
+      mapObj.shareCode = '';
+      mapObj.shareSnapshot = '';
+      mapObj.shareVersion = (mapObj.shareVersion || 0) + 1;
+      return database.ref(`sharedMaps/${code}`).remove()
+        .then(() => database.ref(`invalidSharedCodes/${code}`).set(tombstone))
+        .catch(e => console.error('共有コード無効化失敗:', e));
+    }
+
+    async function publishShareCode(mapObj, code) {
+      if (!mapObj || !currentUser.uid) throw new Error('共有コードの発行にはログインが必要です。');
+      const existing = await database.ref(`sharedMaps/${code}`).once('value');
+      const existingData = existing.val();
+      if (existingData && existingData.ownerUid !== currentUser.uid) {
+        throw new Error('この共有コードはすでに別のユーザーが使用しています。');
+      }
+      const invalidSnapshot = await database.ref(`invalidSharedCodes/${code}`).once('value');
+      const invalidData = invalidSnapshot.val();
+      if (invalidData && invalidData.ownerUid !== currentUser.uid) {
+        throw new Error('この共有コードは以前に無効化されたコードのため再利用できません。別のコードを指定してください。');
+      }
+      const snapshot = getShareSnapshot(mapObj);
+      const version = (mapObj.shareVersion || 0) + 1;
+      const payload = {
+        ownerUid: currentUser.uid,
+        mapId: mapObj.id,
+        name: mapObj.name || 'マイグルメマップ',
+        stores: JSON.parse(JSON.stringify(mapObj.stores || [])),
+        areas: JSON.parse(JSON.stringify(mapObj.areas || [])),
+        lists: JSON.parse(JSON.stringify(mapObj.lists || [])),
+        version,
+        snapshot,
+        createdAt: existingData && existingData.createdAt ? existingData.createdAt : firebase.database.ServerValue.TIMESTAMP,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      };
+      await database.ref(`sharedMaps/${code}`).set(payload);
+      await database.ref(`invalidSharedCodes/${code}`).remove();
+      mapObj.shareCode = code;
+      mapObj.shareSnapshot = snapshot;
+      mapObj.shareVersion = version;
+      return payload;
+    }
+
+    async function readSharedCode(code) {
+      const snapshot = await database.ref(`sharedMaps/${code}`).once('value');
+      if (snapshot.exists()) return { status: 'valid', data: snapshot.val() };
+      const invalid = await database.ref(`invalidSharedCodes/${code}`).once('value');
+      if (invalid.exists()) return { status: 'invalid', data: invalid.val() };
+      return { status: 'missing', data: null };
+    }
+
     // Firebaseへの保存。
     // 複数操作が連続しても保存順序が逆転しないよう直列化する。
     function saveStorage(renderAfterSave = true) {
       const curMap = getCurrentMap();
+
+      // 共有コード発行後に店舗・エリア・リスト・マップ名などの情報が変わったら、
+      // 旧コードを即時無効化する。時間経過では失効しない。
+      if (curMap && !curMap.isShared && curMap.shareCode && curMap.shareSnapshot) {
+        const currentSnapshot = getShareSnapshot(curMap);
+        if (currentSnapshot !== curMap.shareSnapshot) {
+          invalidateShareCode(curMap);
+        }
+      }
 
       // 既存のローカル保存（ゲスト・共有機能用）も維持。
       try {
@@ -1451,29 +1574,35 @@
         alert('🔒 共有されたマップのコード変更はできません。');
         return;
       }
+      if (!currentUser.loggedIn) {
+        alert('🔐 共有コードを発行するにはログインしてください。\n発行したコードは端末に依存せず、いつでも読み込めるようになります。');
+        return;
+      }
 
+      const activeCode = curMap.shareCode || '';
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
-
       content.innerHTML = `
         <div class="modal-header">
           <h3>✨ 共有コードの設定・表示</h3>
           <span style="cursor:pointer; font-size:16px; opacity:0.6;" onclick="closeModal()">✕</span>
         </div>
-        <p style="font-size:11.5px; color:#666; margin-bottom:10px; line-height:1.4;">
-          共有コードには<b>数字と半角英字の組み合わせ（6〜20文字以内）</b>を指定してください。
+        <p style="font-size:11.5px; color:#666; margin-bottom:10px; line-height:1.5;">
+          このコードには<strong>時間制限はありません。</strong><br>
+          ただし、店舗・エリア・リスト・マップ名などの情報を更新すると、セキュリティのため現在のコードは無効になり、新しいコードが必要になります。
         </p>
         <div class="form-group">
           <label>共有コード (数字＋半角英字混在 6〜20文字)</label>
           <div class="share-code-row">
-            <input type="text" id="custom-share-code" class="stylish-input" value="${curMap.id}" minlength="6" maxlength="20" placeholder="例: gourmet2026">
+            <input type="text" id="custom-share-code" class="stylish-input" value="${activeCode}" minlength="6" maxlength="20" placeholder="例: gourmet2026">
             <button type="button" class="copy-code-btn" onclick="copyShareCode()">📋 コピー</button>
           </div>
           <div id="share-code-error" class="error-msg"></div>
           <div id="share-code-success" class="success-msg"></div>
         </div>
+        <div style="font-size:10.5px; color:#777; margin:4px 0 8px;">現在の状態: ${activeCode ? '🟢 有効' : '⚪ 未発行'}</div>
         <div class="btn-group">
-          <button onclick="saveCustomShareCode()">コード更新・保存</button>
+          <button onclick="saveCustomShareCode()">コード発行・更新</button>
           <button onclick="closeModal()" class="btn-secondary">閉じる</button>
         </div>
       `;
@@ -1484,139 +1613,150 @@
       const successEl = document.getElementById('share-code-success');
       const errorEl = document.getElementById('share-code-error');
       if (!input) return;
-
       const code = input.value.trim();
       if (!code) return;
-
       try {
         if (navigator.clipboard && window.isSecureContext) {
           await navigator.clipboard.writeText(code);
         } else {
-          input.focus();
-          input.select();
-          document.execCommand('copy');
+          input.focus(); input.select(); document.execCommand('copy');
           input.setSelectionRange(input.value.length, input.value.length);
         }
-
         if (errorEl) errorEl.style.display = 'none';
-        if (successEl) {
-          successEl.textContent = '✅ 共有コードをコピーしました。';
-          successEl.style.display = 'block';
-        }
+        if (successEl) { successEl.textContent = '✅ 共有コードをコピーしました。'; successEl.style.display = 'block'; }
       } catch (e) {
         if (successEl) successEl.style.display = 'none';
-        if (errorEl) {
-          errorEl.textContent = '⚠️ コピーできませんでした。コードを選択して手動でコピーしてください。';
-          errorEl.style.display = 'block';
-        }
+        if (errorEl) { errorEl.textContent = '⚠️ コピーできませんでした。手動でコピーしてください。'; errorEl.style.display = 'block'; }
       }
     }
 
-    function saveCustomShareCode() {
+    async function saveCustomShareCode() {
       const curMap = getCurrentMap();
       if (curMap.isShared) return;
-
+      if (!currentUser.loggedIn) {
+        alert('🔐 共有コードを発行するにはログインしてください。');
+        return;
+      }
       const input = document.getElementById('custom-share-code');
       const errorEl = document.getElementById('share-code-error');
       const successEl = document.getElementById('share-code-success');
       const newCode = input.value.trim();
-
-      errorEl.style.display = 'none';
-      successEl.style.display = 'none';
+      errorEl.style.display = 'none'; successEl.style.display = 'none';
 
       if (newCode.length < 6 || newCode.length > 20) {
-        errorEl.textContent = '⚠️ 6〜20文字以内で入力してください。';
-        errorEl.style.display = 'block';
-        return;
+        errorEl.textContent = '⚠️ 6〜20文字以内で入力してください。'; errorEl.style.display = 'block'; return;
       }
-
       if (!/^[a-zA-Z0-9]+$/.test(newCode)) {
-        errorEl.textContent = '⚠️ 記号や全角文字は使用できません。半角英字と数字のみ使用してください。';
-        errorEl.style.display = 'block';
-        return;
+        errorEl.textContent = '⚠️ 記号や全角文字は使用できません。'; errorEl.style.display = 'block'; return;
+      }
+      if (!/[a-zA-Z]/.test(newCode) || !/[0-9]/.test(newCode)) {
+        errorEl.textContent = '⚠️ 半角英字と数字の両方を使用してください。'; errorEl.style.display = 'block'; return;
       }
 
-      const hasAlpha = /[a-zA-Z]/.test(newCode);
-      const hasDigit = /[0-9]/.test(newCode);
-
-      if (!hasAlpha || !hasDigit) {
-        errorEl.textContent = '⚠️ 数字と半角英字の両方を組み合わせて入力してください（例: gourmet2026）。';
+      try {
+        if (curMap.shareCode && curMap.shareCode !== newCode) {
+          const oldCode = curMap.shareCode;
+          await database.ref(`sharedMaps/${oldCode}`).remove();
+          await database.ref(`invalidSharedCodes/${oldCode}`).set({
+            ownerUid: currentUser.uid,
+            reason: '共有コードが変更されたため、このコードは無効になりました。',
+            replacedBy: newCode,
+            invalidatedAt: firebase.database.ServerValue.TIMESTAMP
+          });
+          curMap.shareCode = '';
+          curMap.shareSnapshot = '';
+        }
+        await publishShareCode(curMap, newCode);
+        await saveStorage();
+        successEl.textContent = '🎉 共有コードを発行しました。時間制限はありません。';
+        successEl.style.display = 'block';
+      } catch (e) {
+        console.error(e);
+        errorEl.textContent = '⚠️ ' + (e.message || '共有コードの発行に失敗しました。');
         errorEl.style.display = 'block';
-        return;
       }
-
-      delete sharedStoreDB[curMap.id];
-      const oldId = curMap.id;
-      curMap.id = newCode;
-      if (currentMapId === oldId) currentMapId = newCode;
-
-      saveStorage();
-      successEl.textContent = '🎉 共有コードを正常に更新しました！';
-      successEl.style.display = 'block';
     }
 
-    function importCodePrompt() {
+    async function importCodePrompt() {
       toggleMenu();
       const code = prompt('読み込む共有コードを入力してください:');
       if (!code || !code.trim()) return;
-
       const trimmed = code.trim();
-      const hasAlpha = /[a-zA-Z]/.test(trimmed);
-      const hasDigit = /[0-9]/.test(trimmed);
-      const isLengthValid = trimmed.length >= 6 && trimmed.length <= 20;
-
-      if (!isLengthValid || !hasAlpha || !hasDigit || !/^[a-zA-Z0-9]+$/.test(trimmed)) {
-        alert('⚠️ 共有コードは「数字と半角英字の組み合わせ（6〜20文字）」です。正しく入力してください。');
+      if (trimmed.length < 6 || trimmed.length > 20 || !/[a-zA-Z]/.test(trimmed) || !/[0-9]/.test(trimmed) || !/^[a-zA-Z0-9]+$/.test(trimmed)) {
+        alert('⚠️ 共有コードは「数字と半角英字の組み合わせ（6〜20文字）」です。');
         return;
       }
 
-      sharedStoreDB = JSON.parse(localStorage.getItem('gourmet_shared_maps')) || {};
-      const targetMapData = sharedStoreDB[trimmed];
+      try {
+        const result = await readSharedCode(trimmed);
+        if (result.status === 'invalid') {
+          alert(`🚫 この共有コードは古いコードのため拒否されました。\n\n⚠️ ${result.data?.reason || '共有元の情報が更新されたため無効になっています。'}\n\n共有元から新しい共有コードを取得してください。`);
+          return;
+        }
+        if (result.status !== 'valid' || !result.data) {
+          // 旧バージョンとの互換用に、この端末のlocalStorageも確認。
+          sharedStoreDB = JSON.parse(localStorage.getItem('gourmet_shared_maps')) || {};
+          const legacy = sharedStoreDB[trimmed];
+          if (!legacy) {
+            alert('⚠️ 指定された共有コードのマップが見つかりませんでした。コードを確認してください。');
+            return;
+          }
+          result.data = legacy;
+        }
 
-      if (!targetMapData) {
-        alert('⚠️ 指定された共有コードのマップが見つかりませんでした。コードを確認するか、共有元で保存を行ってください。');
-        return;
+        const targetMapData = result.data;
+        const sharedMap = {
+          id: 'shared_' + trimmed,
+          sourceShareCode: trimmed,
+          name: `${targetMapData.name} (共有)`,
+          stores: JSON.parse(JSON.stringify(targetMapData.stores || [])),
+          areas: JSON.parse(JSON.stringify(targetMapData.areas || [])),
+          lists: JSON.parse(JSON.stringify(targetMapData.lists || [])),
+          isShared: true,
+          shareVersion: targetMapData.version || 1
+        };
+        const existingIndex = maps.findIndex(m => m.isShared && m.sourceShareCode === trimmed);
+        if (existingIndex >= 0) maps[existingIndex] = sharedMap;
+        else maps.push(sharedMap);
+        currentMapId = sharedMap.id;
+        saveStorage();
+        closeDetailPanel(); closeSearchResultsPanel();
+        alert(`🎉 共有コード「${trimmed}」を読み込みました。\n（このコードは時間制限なしで利用できます）`);
+      } catch (e) {
+        console.error('共有コード読み込み失敗:', e);
+        alert('⚠️ 共有コードを読み込めませんでした。Firebaseの接続・Security Rulesを確認してください。');
       }
-
-      const sharedMap = {
-        id: targetMapData.id,
-        name: `${targetMapData.name} (共有)`,
-        stores: JSON.parse(JSON.stringify(targetMapData.stores || [])),
-        areas: JSON.parse(JSON.stringify(targetMapData.areas || [])),
-        lists: JSON.parse(JSON.stringify(targetMapData.lists || [])),
-        isShared: true
-      };
-
-      const existingIndex = maps.findIndex(m => m.id === trimmed);
-      if (existingIndex >= 0) {
-        maps[existingIndex] = sharedMap;
-      } else {
-        maps.push(sharedMap);
-      }
-
-      currentMapId = trimmed;
-      saveStorage();
-      closeDetailPanel();
-      closeSearchResultsPanel();
-      alert(`🎉 共有コード「${trimmed}」のマップを自動読み込みして切り替えました！\n（閲覧専用としてマップ管理に保存されました）`);
     }
 
-    function refreshSharedMap() {
+    async function refreshSharedMap() {
       toggleMenu();
       const curMap = getCurrentMap();
-      sharedStoreDB = JSON.parse(localStorage.getItem('gourmet_shared_maps')) || {};
-      const latestData = sharedStoreDB[curMap.id];
-
-      if (latestData) {
+      if (!curMap.isShared || !curMap.sourceShareCode) {
+        alert('ℹ️ 現在のマップは共有マップではありません。');
+        return;
+      }
+      try {
+        const result = await readSharedCode(curMap.sourceShareCode);
+        if (result.status === 'invalid') {
+          alert(`🚫 この共有コードは古いコードのため更新できません。\n\n⚠️ ${result.data?.reason || '共有元の情報が更新されたため無効になっています。'}\n\n共有元から新しいコードを取得してください。`);
+          return;
+        }
+        if (result.status !== 'valid' || !result.data) {
+          alert('⚠️ 共有コードのデータが見つかりません。');
+          return;
+        }
+        const latestData = result.data;
+        curMap.name = `${latestData.name} (共有)`;
         curMap.stores = JSON.parse(JSON.stringify(latestData.stores || []));
         curMap.areas = JSON.parse(JSON.stringify(latestData.areas || []));
         curMap.lists = JSON.parse(JSON.stringify(latestData.lists || []));
+        curMap.shareVersion = latestData.version || curMap.shareVersion;
         saveStorage();
-        closeDetailPanel();
-        closeSearchResultsPanel();
-        alert('🔄 共有元の最新データに合わせてマップ情報を更新しました！');
-      } else {
-        alert('ℹ️ 最新の共有データが見つかりませんでした。元データで更新・保存が行われているかご確認ください。');
+        closeDetailPanel(); closeSearchResultsPanel();
+        alert('🔄 共有元の最新データに更新しました。');
+      } catch (e) {
+        console.error(e);
+        alert('⚠️ 共有マップの更新に失敗しました。');
       }
     }
 
@@ -1919,6 +2059,7 @@
       const btnElem = document.getElementById('auth-btn');
       const editProfileBtn = document.getElementById('btn-edit-profile');
       const changePassBtn = document.getElementById('btn-change-pass');
+      const changeEmailBtn = document.getElementById('btn-change-email');
 
       if (currentUser.loggedIn) {
         statusElem.innerText = `👤 ${currentUser.name || 'ユーザー'}`;
@@ -1926,24 +2067,37 @@
         btnElem.onclick = logout;
         if (editProfileBtn) editProfileBtn.style.display = 'block';
         if (changePassBtn) changePassBtn.style.display = 'block';
+        if (changeEmailBtn) changeEmailBtn.style.display = 'block';
       } else {
         statusElem.innerText = 'ゲスト利用中';
         btnElem.innerText = 'ログイン / 登録';
         btnElem.onclick = openAuthModal;
         if (editProfileBtn) editProfileBtn.style.display = 'none';
         if (changePassBtn) changePassBtn.style.display = 'none';
+        if (changeEmailBtn) changeEmailBtn.style.display = 'none';
       }
+    }
+
+    function getSavedAuthInput(key) {
+      try { return sessionStorage.getItem(key) || ''; } catch (e) { return ''; }
+    }
+    function saveAuthInputs(email, pass) {
+      try {
+        sessionStorage.setItem('gourmet_login_email', email || '');
+        sessionStorage.setItem('gourmet_login_password', pass || '');
+      } catch (e) {}
     }
 
     function openAuthModal() {
       toggleMenu();
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
+      const savedEmail = getSavedAuthInput('gourmet_login_email');
+      const savedPass = getSavedAuthInput('gourmet_login_password');
       content.innerHTML = `
         <div class="modal-header"><h3>アカウント ログイン / 登録</h3></div>
-        <div class="form-group"><label>メールアドレス</label><input type="email" id="auth-email" class="stylish-input"></div>
-        <div class="form-group"><label>アカウント名（新規登録時のみ有効）</label><input type="text" id="auth-name" class="stylish-input" placeholder="例: グルメ太郎"></div>
-        <div class="form-group"><label>パスワード</label><input type="password" id="auth-pass" class="stylish-input"></div>
+        <div class="form-group"><label>メールアドレス</label><input type="email" id="auth-email" class="stylish-input" value="${savedEmail.replace(/"/g,'&quot;')}" autocomplete="email"></div>
+        <div class="form-group"><label>パスワード</label><input type="password" id="auth-pass" class="stylish-input" value="${savedPass.replace(/"/g,'&quot;')}" autocomplete="current-password"></div>
         <div style="text-align:right; margin-bottom:8px;">
           <a href="javascript:void(0)" onclick="sendForgotOtp()" style="font-size:11px; color:var(--primary-color); text-decoration:underline;">パスワードを忘れた場合</a>
         </div>
@@ -1952,70 +2106,102 @@
           <button onclick="handleAuth(true)" style="background: linear-gradient(135deg, #4ecdc4, #2ab7ca);">新規登録</button>
           <button onclick="closeModal()" class="btn-secondary">閉じる</button>
         </div>
+        <p style="font-size:10px;color:#777;margin-top:8px;">※新規登録では、メールアドレスとパスワード入力後にアカウント名を登録します。</p>
       `;
     }
 
-    // Firebase Auth: パスワード再設定メール送信
     function sendForgotOtp() {
       const emailInput = document.getElementById('auth-email');
       const email = emailInput ? emailInput.value.trim() : '';
-      if (!email) {
-        alert('先にメールアドレスを入力してください。');
-        return;
-      }
-      auth.sendPasswordResetEmail(email).then(() => {
-        alert(`📩 ${email} 宛にパスワード再設定用のメールを送信しました。\nメール本文をご確認の上、手続きを行ってください。`);
-      }).catch((error) => {
-        alert('⚠️ エラー: ' + error.message);
-      });
+      if (!email) { alert('先にメールアドレスを入力してください。'); return; }
+      saveAuthInputs(email, document.getElementById('auth-pass')?.value || '');
+      auth.languageCode = 'ja';
+      auth.sendPasswordResetEmail(email)
+        .then(() => {
+          alert(`📩 ${email} 宛にパスワード再設定メールを送信しました。\n\n届かない場合は、迷惑メールフォルダとFirebase Authenticationのメールテンプレート設定をご確認ください。`);
+        })
+        .catch((error) => {
+          console.error('password reset error:', error);
+          const messages = {
+            'auth/invalid-email': 'メールアドレスの形式が正しくありません。',
+            'auth/too-many-requests': '短時間に送信しすぎています。少し時間を置いて再度お試しください。',
+            'auth/network-request-failed': '通信に失敗しました。ネットワーク接続を確認してください。'
+          };
+          alert('⚠️ パスワード再設定メールを送信できませんでした。\n' + (messages[error.code] || error.message));
+        });
     }
 
-    // Firebase Auth: ログイン / 新規登録処理
     function handleAuth(isRegister) {
       const email = document.getElementById('auth-email').value.trim();
-      const name = document.getElementById('auth-name').value.trim();
-      const pass = document.getElementById('auth-pass').value.trim();
-
-      if (!email || pass.length < 6) {
-        alert('正しいメールアドレスと6文字以上のパスワードを入力してください。');
-        return;
-      }
+      const pass = document.getElementById('auth-pass').value;
+      if (!email || pass.length < 6) { alert('正しいメールアドレスと6文字以上のパスワードを入力してください。'); return; }
+      saveAuthInputs(email, pass);
 
       if (isRegister) {
-        // Firebase 新規アカウント作成
         auth.createUserWithEmailAndPassword(email, pass)
           .then((userCredential) => {
             const user = userCredential.user;
-            const accountName = name || email.split('@')[0];
-            return user.updateProfile({ displayName: accountName }).then(() => {
-              currentUser = { loggedIn: true, email: user.email, name: accountName, uid: user.uid };
-              const defaultMap = createDefaultMap();
-              maps = [defaultMap];
-              currentMapId = defaultMap.id;
-              saveStorage();
-              updateAuthUI();
-              closeModal();
-              alert(`🎉 Firebaseでの新規登録が完了しました！ようこそ、${accountName}さん。`);
-            });
+            currentUser = { loggedIn: true, email: user.email, name: '', uid: user.uid };
+            // FirebaseのAuth状態反映後、アカウント名だけを続けて登録させる。
+            openAccountNameSetupModal(user);
           })
           .catch((error) => {
-            alert('⚠️ 登録エラー: ' + error.message);
+            const messages = {
+              'auth/email-already-in-use': 'このメールアドレスはすでに登録されています。',
+              'auth/invalid-email': 'メールアドレスの形式が正しくありません。',
+              'auth/weak-password': 'パスワードが弱すぎます。6文字以上で設定してください。'
+            };
+            alert('⚠️ 登録エラー: ' + (messages[error.code] || error.message));
           });
       } else {
-        // Firebase ログイン
         auth.signInWithEmailAndPassword(email, pass)
           .then((userCredential) => {
             const user = userCredential.user;
             currentUser = { loggedIn: true, email: user.email, name: user.displayName || user.email.split('@')[0], uid: user.uid };
-            loadCurrentUserData();
-            updateAuthUI();
-            renderCurrentMap();
-            closeModal();
-            alert(`🎉 Firebaseログインに成功しました！`);
+            return loadCurrentUserData();
+          })
+          .then(() => {
+            updateAuthUI(); renderCurrentMap(); closeModal();
+            alert('🎉 Firebaseログインに成功しました！');
           })
           .catch((error) => {
-            alert('⚠️ ログインエラー: Emailまたはパスワードが正しくありません。');
+            console.error('login error:', error);
+            alert('⚠️ ログインエラー: メールアドレスまたはパスワードが正しくありません。');
           });
+      }
+    }
+
+    function openAccountNameSetupModal(user) {
+      const content = document.getElementById('modal-content');
+      document.getElementById('modal-overlay').style.display = 'flex';
+      content.innerHTML = `
+        <div class="modal-header"><h3>👤 アカウント名の登録</h3></div>
+        <p style="font-size:11px;color:#666;line-height:1.5;margin-bottom:10px;">メールアドレスとパスワードの登録が完了しました。最後に表示用のアカウント名を設定してください。</p>
+        <div class="form-group"><label>アカウント名*</label><input type="text" id="setup-account-name" class="stylish-input" placeholder="例: グルメ太郎" autofocus></div>
+        <div class="btn-group">
+          <button onclick="completeAccountNameSetup()">登録完了</button>
+        </div>
+      `;
+      window.pendingAccountSetupUid = user.uid;
+    }
+
+    async function completeAccountNameSetup() {
+      const name = document.getElementById('setup-account-name').value.trim();
+      if (!name) { alert('アカウント名を入力してください。'); return; }
+      const user = auth.currentUser;
+      if (!user || user.uid !== window.pendingAccountSetupUid) { alert('アカウント情報を確認できませんでした。'); return; }
+      try {
+        await user.updateProfile({ displayName: name });
+        currentUser = { loggedIn: true, email: user.email, name, uid: user.uid };
+        if (!maps || !maps.length) {
+          const defaultMap = createDefaultMap(); maps = [defaultMap]; currentMapId = defaultMap.id;
+        }
+        await saveStorage();
+        updateAuthUI(); closeModal(); renderCurrentMap();
+        window.pendingAccountSetupUid = null;
+        alert(`🎉 アカウント登録が完了しました。ようこそ、${name}さん。`);
+      } catch (error) {
+        alert('⚠️ アカウント名の登録に失敗しました: ' + error.message);
       }
     }
 
@@ -2059,6 +2245,58 @@
       }
     }
 
+    function openChangeEmailModal() {
+      toggleMenu();
+      const content = document.getElementById('modal-content');
+      document.getElementById('modal-overlay').style.display = 'flex';
+      content.innerHTML = `
+        <div class="modal-header"><h3>✉️ メールアドレスの変更</h3></div>
+        <p style="font-size:10.5px;color:#777;line-height:1.5;margin-bottom:8px;">安全確認のため現在のパスワードを入力します。変更先アドレスには確認メールが送られます。</p>
+        <div class="form-group"><label>新しいメールアドレス</label><input type="email" id="new-email" class="stylish-input" value="${(currentUser.email || '').replace(/"/g,'&quot;')}" autocomplete="email"></div>
+        <div class="form-group"><label>現在のパスワード</label><input type="password" id="email-change-pass" class="stylish-input" autocomplete="current-password"></div>
+        <div class="btn-group">
+          <button onclick="saveNewEmail()">確認メールを送る</button>
+          <button onclick="closeModal()" class="btn-secondary">キャンセル</button>
+        </div>
+      `;
+    }
+
+    async function saveNewEmail() {
+      const newEmail = document.getElementById('new-email').value.trim();
+      const currentPass = document.getElementById('email-change-pass').value;
+      if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) { alert('正しいメールアドレスを入力してください。'); return; }
+      if (!currentPass) { alert('現在のパスワードを入力してください。'); return; }
+      const user = auth.currentUser;
+      if (!user) return;
+      if (newEmail.toLowerCase() === (user.email || '').toLowerCase()) { alert('現在と同じメールアドレスです。'); return; }
+      try {
+        const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPass);
+        await user.reauthenticateWithCredential(credential);
+        auth.languageCode = 'ja';
+        const actionSettings = { url: window.location.href, handleCodeInApp: false };
+        if (typeof user.verifyBeforeUpdateEmail === 'function') {
+          await user.verifyBeforeUpdateEmail(newEmail, actionSettings);
+          alert(`📩 ${newEmail} 宛に確認メールを送信しました。\nメール内の確認操作が完了すると新しいアドレスへ変更されます。`);
+        } else {
+          await user.updateEmail(newEmail);
+          currentUser.email = newEmail;
+          await saveStorage();
+          alert('✉️ メールアドレスを変更しました。');
+        }
+        closeModal();
+      } catch (error) {
+        console.error('email update error:', error);
+        const messages = {
+          'auth/wrong-password': '現在のパスワードが正しくありません。',
+          'auth/invalid-credential': '現在のパスワードが正しくありません。',
+          'auth/requires-recent-login': '再認証に失敗しました。いったんログインし直してください。',
+          'auth/email-already-in-use': '変更先のメールアドレスはすでに使用されています。',
+          'auth/invalid-email': '変更先メールアドレスの形式が正しくありません。'
+        };
+        alert('⚠️ メールアドレス変更に失敗しました。\n' + (messages[error.code] || error.message));
+      }
+    }
+
     function openChangePasswordModal() {
       toggleMenu();
       const content = document.getElementById('modal-content');
@@ -2074,25 +2312,41 @@
     }
 
     // Firebase Auth: パスワード更新
-    function saveNewPassword() {
-      const newPass = document.getElementById('new-pass').value.trim();
-
-      if (newPass.length < 6) {
-        alert('⚠️ 新しいパスワードは6文字以上で入力してください。');
-        return;
-      }
-
+    async function saveNewPassword() {
+      const newPass = document.getElementById('new-pass').value;
+      if (newPass.length < 6) { alert('⚠️ 新しいパスワードは6文字以上で入力してください。'); return; }
       const user = auth.currentUser;
-      if (user) {
-        user.updatePassword(newPass).then(() => {
-          saveStorage();
-          closeModal();
-          alert('🔑 パスワードを正常に変更しました。');
-        }).catch((error) => {
-          alert('⚠️ エラー: 再ログインが必要な場合があります。 (' + error.message + ')');
-        });
+      if (!user) return;
+      try {
+        await user.updatePassword(newPass);
+        saveAuthInputs(user.email || currentUser.email, newPass);
+        await saveStorage();
+        closeModal();
+        alert('🔑 パスワードを正常に変更しました。');
+      } catch (error) {
+        if (error.code === 'auth/requires-recent-login') {
+          const currentPass = prompt('安全確認のため、現在のパスワードを入力してください。');
+          if (!currentPass) return;
+          try {
+            const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPass);
+            await user.reauthenticateWithCredential(credential);
+            await user.updatePassword(newPass);
+            saveAuthInputs(user.email || currentUser.email, newPass);
+            closeModal();
+            alert('🔑 パスワードを変更しました。');
+          } catch (reauthError) {
+            alert('⚠️ 現在のパスワード確認に失敗しました。');
+          }
+        } else {
+          alert('⚠️ パスワード変更に失敗しました: ' + error.message);
+        }
       }
     }
+
+    document.addEventListener('input', function(e) {
+      if (e.target && e.target.id === 'auth-email') saveAuthInputs(e.target.value, document.getElementById('auth-pass')?.value || '');
+      if (e.target && e.target.id === 'auth-pass') saveAuthInputs(document.getElementById('auth-email')?.value || '', e.target.value);
+    });
 
     // Firebase Auth: ログアウト
     function logout() {
