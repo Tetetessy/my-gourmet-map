@@ -357,6 +357,7 @@
         <select id="search-genre" onchange="filterStores()" style="width:100%;">
           <option value="">全てのジャンル</option>
         </select>
+        <input type="text" id="search-station" placeholder="最寄り駅検索" oninput="filterStores()" style="width:100%;">
       </div>
     </div>
   </div>
@@ -1051,6 +1052,11 @@
         </div>
 
         <div class="form-group">
+          <label>最寄り駅</label>
+          <input type="text" id="reg-store-station" class="stylish-input" value="${isEdit ? (storeToEdit.station || '') : ''}" placeholder="例：横浜駅 徒歩5分">
+        </div>
+
+        <div class="form-group">
           <label>連絡先</label>
           <input type="text" id="reg-store-contact" class="stylish-input" value="${isEdit ? (storeToEdit.contact || '-') : '-'}">
         </div>
@@ -1220,6 +1226,7 @@
         cospa: parseInt(document.getElementById('reg-store-cospa').value, 10),
         capa: parseInt(document.getElementById('reg-store-capa').value, 10),
         mood: parseInt(document.getElementById('reg-store-mood').value, 10),
+        station: document.getElementById('reg-store-station').value.trim(),
         contact: document.getElementById('reg-store-contact').value.trim(),
         reserve: document.getElementById('reg-store-reserve').value.trim(),
         official: document.getElementById('reg-store-official').value.trim(),
@@ -1514,6 +1521,7 @@
           <div><b>雰囲気:</b> [落ち着いた] ${'★'.repeat(store.mood || 3)}${'☆'.repeat(5 - (store.mood || 3))} [にぎやか]</div>
         </div>
 
+        <div style="font-size:11px; margin-top:4px;"><b>最寄り駅:</b> ${store.station || '-'}</div>
         <div style="font-size:11px; margin-top:4px;"><b>連絡先:</b> ${store.contact || '-'}</div>
 
         ${urlSectionHtml}
@@ -1657,10 +1665,12 @@
       const favVal = document.getElementById('search-fav').value;
       const formVal = document.getElementById('search-form').value;
       const genreVal = document.getElementById('search-genre').value;
+      const stationVal = document.getElementById('search-station').value.trim().toLowerCase();
 
       const curMap = getCurrentMap();
       const filtered = (curMap.stores || []).filter(s => {
         if (nameVal && !s.name.toLowerCase().includes(nameVal)) return false;
+        if (stationVal && !(s.station || '').toLowerCase().includes(stationVal)) return false;
         if (listVal && !(s.listIds || []).includes(listVal) && s.listId !== listVal) return false;
         if (favVal === 'fav' && !s.isFavorite) return false;
         if (formVal && s.form !== formVal) return false;
@@ -1682,6 +1692,7 @@
         <div style="padding:6px 8px; margin-top:4px; background:rgba(0,0,0,0.03); border-radius:6px; cursor:pointer; border-left:3px solid var(--primary-color);" onclick="showStoreDetail('${s.id}')">
           <b style="font-size:12px;">${s.isFavorite ? '⭐ ' : ''}${s.name}</b>
           <div style="font-size:10px; color:#666; margin-top:2px;">${s.form || '-'} / ${s.genre || '-'}</div>
+          <div style="font-size:10px; color:#777; margin-top:1px;">🚉 ${s.station || '-'}</div>
         </div>
       `).join('');
     }
