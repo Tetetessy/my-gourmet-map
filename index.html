@@ -109,6 +109,18 @@
     .bottom-center-area { position: absolute; top: 50px; right: 270px; z-index: 1000; width: 260px; display: none; }
     .detail-panel { background: var(--panel-bg); backdrop-filter: blur(10px); padding: 12px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 6px 20px rgba(0,0,0,0.2); max-height: 70vh; overflow-y: auto; }
 
+
+    .store-options-grid {
+      display:grid; grid-template-columns:1fr 1fr; gap:5px;
+    }
+    .store-option-check {
+      display:flex; align-items:center; gap:5px; padding:6px 7px; border:1px solid var(--border-color);
+      border-radius:7px; background:rgba(255,255,255,.55); cursor:pointer; font-size:11px; box-sizing:border-box;
+    }
+    .store-option-check input { margin:0; width:15px; height:15px; accent-color:var(--primary-color); }
+    .search-options-box { margin:4px 0; padding:5px; border:1px solid var(--border-color); border-radius:6px; }
+    .search-options-title { font-size:10px; font-weight:bold; margin-bottom:4px; color:var(--text-color,#444); }
+    .search-options-grid .store-option-check { padding:4px 5px; font-size:10px; }
     @media (max-width: 768px) {
       :root { --font-size: 11px; }
       button, input, select, textarea { padding: 4px 6px; font-size: 11px; }
@@ -118,7 +130,12 @@
       .top-right { top: 6px; right: 6px; }
       .search-panel { width: 46vw; max-width: 260px; top: 118px; left: 6px; max-height: 34vh; }
       .search-results-panel { width: 46vw; max-width: 280px; top: 118px; right: 6px; max-height: 34vh; }
-      .bottom-center-area { width: 58vw; max-width: 330px; top: auto; right: 6px; bottom: 8px; }
+      .bottom-center-area { width: calc(100vw - 12px); max-width: none; top: auto; left: 6px; right: 6px; bottom: 8px; }
+      .detail-panel { max-height: 42vh; overflow-y:auto; box-sizing:border-box; }
+      .modal-overlay { align-items:flex-start; padding:10px 6px; overflow-y:auto; box-sizing:border-box; }
+      .modal-content { width:min(94vw, 520px); max-width:94vw; max-height:calc(100vh - 20px); overflow-y:auto; box-sizing:border-box; margin:auto; }
+      .menu-dropdown { max-width:calc(100vw - 12px); box-sizing:border-box; }
+      .search-panel, .search-results-panel { box-sizing:border-box; overflow-y:auto; }
     }
 
     /* ==================== 大幅テーマ差分 ==================== */
@@ -377,6 +394,12 @@
         <select id="search-budget" onchange="filterStores()" style="width:100%;">
           <option value="">全ての予算</option>
         </select>
+        <div class="search-options-box">
+          <div class="search-options-title">オプション（複数選択可）</div>
+          <div class="store-options-grid search-options-grid">
+            ${STORE_OPTION_DEFS.map(o => `<label class="store-option-check"><input type="checkbox" class="search-option-check" value="${o.id}" onchange="filterStores()"><span>${o.label}</span></label>`).join('')}
+          </div>
+        </div>
         <input type="text" id="search-station" placeholder="最寄り駅検索" oninput="filterStores()" style="width:100%;">
       </div>
     </div>
@@ -503,6 +526,28 @@
       '1000円以下', '1000～3000円以下', '3000～5000円以下',
       '5000～7000円以下', '7000～10000円以下', '10000円以上'
     ];
+
+    const STORE_OPTION_DEFS = [
+      { id: 'private', label: '貸し切り' },
+      { id: 'course', label: 'コースあり' },
+      { id: 'allYouCanDrink', label: '飲み放題' },
+      { id: 'allYouCanEat', label: '食べ放題' }
+    ];
+
+    function getStoreOptions(store) {
+      if (!store) return [];
+      if (Array.isArray(store.options)) return store.options;
+      return STORE_OPTION_DEFS.filter(o => store[o.id] === true).map(o => o.id);
+    }
+
+    function renderStoreOptionChecks(selected = [], prefix = 'store-option', disabled = false) {
+      const set = new Set(selected || []);
+      return `<div class=\"store-options-grid\">${STORE_OPTION_DEFS.map(o => `
+        <label class=\"store-option-check\">
+          <input type=\"checkbox\" class=\"${prefix}\" value=\"${o.id}\" ${set.has(o.id) ? 'checked' : ''} ${disabled ? 'disabled' : ''}>
+          <span>${o.label}</span>
+        </label>`).join('')}</div>`;
+    }
 
     let map;
     let currentUser = { loggedIn: false, email: '', name: '', uid: '' };
@@ -691,6 +736,8 @@
       mapObj.shareCode = '';
       mapObj.shareSnapshot = '';
       mapObj.shareVersion = (mapObj.shareVersion || 0) + 1;
+      mapObj.shareInvalidated = true;
+      mapObj.shareInvalidationReason = reason;
       return database.ref(`sharedMaps/${code}`).remove()
         .then(() => database.ref(`invalidSharedCodes/${code}`).set(tombstone))
         .catch(e => console.error('共有コード無効化失敗:', e));
@@ -727,6 +774,8 @@
       mapObj.shareCode = code;
       mapObj.shareSnapshot = snapshot;
       mapObj.shareVersion = version;
+      mapObj.shareInvalidated = false;
+      mapObj.shareInvalidationReason = '';
       return payload;
     }
 
@@ -950,9 +999,16 @@
       if (!areaId) return;
       const cur = getCurrentMap();
       const area = (cur.areas || []).find(a => a.id === areaId);
-      if (area && Number.isFinite(Number(area.lat)) && Number.isFinite(Number(area.lng))) {
-        map.setView([Number(area.lat), Number(area.lng)], 15);
-      }
+      if (!area || !Number.isFinite(Number(area.lat)) || !Number.isFinite(Number(area.lng))) return;
+      const target = [Number(area.lat), Number(area.lng)];
+      const currentZoom = map.getZoom();
+      const travelZoom = Math.max(10, Math.min(12, currentZoom - 2));
+      // いったんズームアウトしてから、目的地へスライド移動しつつ近づく。
+      map.flyTo(map.getCenter(), travelZoom, { duration: 0.45, easeLinearity: 0.25 });
+      setTimeout(() => {
+        map.flyTo(target, 15, { duration: 1.15, easeLinearity: 0.25 });
+      }, 480);
+      document.getElementById('area-select').blur();
     }
 
     function startStoreRegistration() {
@@ -1084,6 +1140,11 @@
             <option value="">選択してください</option>
             ${BUDGET_OPTIONS.map(b => `<option ${isEdit && storeToEdit.budget === b ? 'selected' : ''}>${b}</option>`).join('')}
           </select>
+        </div>
+
+        <div class="form-group">
+          <label>オプション（複数選択可）</label>
+          ${renderStoreOptionChecks(isEdit ? getStoreOptions(storeToEdit) : [], 'reg-store-option')}
         </div>
 
         <div class="form-group">
@@ -1346,6 +1407,7 @@
         form: document.getElementById('reg-store-form').value,
         genre: document.getElementById('reg-store-genre').value,
         budget: document.getElementById('reg-store-budget').value,
+        options: Array.from(document.querySelectorAll('.reg-store-option:checked')).map(el => el.value),
         pinShape: document.getElementById('reg-store-pin-shape').value || 'heart',
         pinColor: document.getElementById('reg-store-pin-color').value || 'red',
         cospa: parseInt(document.getElementById('reg-store-cospa').value, 10),
@@ -1666,7 +1728,16 @@
         <div style="font-size:11px; margin-top:4px; background:rgba(0,0,0,0.02); padding:4px; border-radius:4px;">
           <div><b>形式:</b> ${store.form || '-'} / <b>ジャンル:</b> ${store.genre || '-'}</div>
           <div style="margin-top:2px;"><b>予算:</b> ${store.budget || '-'}</div>
+          <div style="margin-top:5px;"><b>オプション:</b> ${getStoreOptions(store).length ? getStoreOptions(store).map(id => (STORE_OPTION_DEFS.find(o => o.id === id) || {}).label).filter(Boolean).join(' / ') : 'なし'}</div>
         </div>
+
+        ${!curMap.isShared ? `
+          <div style="margin-top:6px; padding:6px; border:1px solid var(--border-color); border-radius:6px;">
+            <div style="font-size:10px; font-weight:bold; margin-bottom:4px;">オプション（複数選択可）</div>
+            ${renderStoreOptionChecks(getStoreOptions(store), 'detail-store-option')}
+            <button onclick="saveDetailStoreOptions('${store.id}')" style="margin-top:5px; width:100%; font-size:10px; padding:4px;">オプションを保存</button>
+          </div>
+        ` : ''}
 
         ${pinSettingsHtml}
 
@@ -1689,6 +1760,16 @@
       `;
 
       map.setView([store.lat, store.lng], 16);
+    }
+
+    function saveDetailStoreOptions(storeId) {
+      const curMap = getCurrentMap();
+      if (curMap.isShared) return;
+      const store = curMap.stores.find(s => s.id === storeId);
+      if (!store) return;
+      store.options = Array.from(document.querySelectorAll('.detail-store-option:checked')).map(el => el.value);
+      saveStorage();
+      showStoreDetail(storeId);
     }
 
     function reflectStoreToMyMap(storeId) {
@@ -1822,6 +1903,7 @@
       const genreVal = document.getElementById('search-genre').value;
       const budgetVal = document.getElementById('search-budget').value;
       const stationVal = document.getElementById('search-station').value.trim().toLowerCase();
+      const optionVals = Array.from(document.querySelectorAll('.search-option-check:checked')).map(el => el.value);
 
       const curMap = getCurrentMap();
       const filtered = (curMap.stores || []).filter(s => {
@@ -1832,6 +1914,8 @@
         if (formVal && s.form !== formVal) return false;
         if (genreVal && s.genre !== genreVal) return false;
         if (budgetVal && s.budget !== budgetVal) return false;
+        const storeOptions = getStoreOptions(s);
+        if (optionVals.length && !optionVals.every(v => storeOptions.includes(v))) return false;
         return true;
       });
 
@@ -1888,9 +1972,13 @@
           <div id="share-code-error" class="error-msg"></div>
           <div id="share-code-success" class="success-msg"></div>
         </div>
-        <div style="font-size:10.5px; color:#777; margin:4px 0 8px;">現在の状態: ${activeCode ? '🟢 有効' : '⚪ 未発行'}</div>
+        <div style="margin:8px 0; padding:8px; border-radius:8px; border:2px solid ${activeCode ? '#28a745' : (curMap.shareInvalidated ? '#f0ad4e' : '#aaa')}; background:${activeCode ? 'rgba(40,167,69,.10)' : (curMap.shareInvalidated ? 'rgba(240,173,78,.14)' : 'rgba(0,0,0,.04)')};">
+          <div style="font-size:12px; font-weight:bold;">現在の状態：${activeCode ? '🟢 発行済み・利用可能' : (curMap.shareInvalidated ? '🟠 マップ更新のため再発行が必要' : '⚪ 未発行')}</div>
+          ${activeCode ? `<div style="font-size:10.5px; margin-top:3px;">このコード <b>${activeCode}</b> は現在利用できます。</div>` : ''}
+          ${curMap.shareInvalidated ? `<div style="font-size:10.5px; margin-top:3px; color:#9a6500;">${curMap.shareInvalidationReason || 'マップ情報が更新されたため、以前のコードは無効です。'}<br>新しいコードを発行してください。</div>` : ''}
+        </div>
         <div class="btn-group">
-          <button onclick="saveCustomShareCode()">コード発行・更新</button>
+          <button onclick="saveCustomShareCode()">${activeCode ? 'コードを再発行・更新' : '共有コードを発行'}</button>
           <button onclick="closeModal()" class="btn-secondary">閉じる</button>
         </div>
       `;
@@ -1956,7 +2044,7 @@
         }
         await publishShareCode(curMap, newCode);
         await saveStorage();
-        successEl.textContent = '🎉 共有コードを発行しました。時間制限はありません。';
+        successEl.textContent = `🎉 共有コード「${curMap.shareCode}」を発行しました。現在「発行済み・利用可能」です。`;
         successEl.style.display = 'block';
       } catch (e) {
         console.error(e);
@@ -2202,12 +2290,11 @@
           <li style="margin-bottom:8px; background:rgba(0,0,0,0.03); padding:8px; border-radius:8px; border:1px solid var(--border-color);">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <span style="font-size:12px; cursor:pointer;" onclick="toggleListAccordion('list-stores-${l.id}')">
-                ▶ 📌 <b>${l.name}</b> <small>(${assignedStores.length}件)</small>
+                ▶ 📌 <b>No.${index + 1}　${l.name}</b> <small>(${assignedStores.length}件)</small>
               </span>
               ${!curMap.isShared ? `
                 <div>
-                  <button onclick="moveCustomList(${index}, -1)" class="btn-sm-icon">▲</button>
-                  <button onclick="moveCustomList(${index}, 1)" class="btn-sm-icon">▼</button>
+                  <button onclick="moveCustomListToNo('${l.id}')" style="padding:2px 6px; font-size:10px;">↕️ No.移動</button>
                   <button onclick="editCustomListName('${l.id}')" style="background:#ff9f43; padding:2px 6px; font-size:10px;">✏️ 編集</button>
                   <button onclick="deleteCustomList('${l.id}')" style="background:#dc3545; padding:2px 6px; font-size:10px;">削除</button>
                 </div>
@@ -2234,6 +2321,25 @@
       if (el) {
         el.style.display = el.style.display === 'none' ? 'block' : 'none';
       }
+    }
+
+    function moveCustomListToNo(listId) {
+      const curMap = getCurrentMap();
+      if (curMap.isShared) return;
+      const currentIndex = curMap.lists.findIndex(l => l.id === listId);
+      if (currentIndex < 0) return;
+      const list = curMap.lists[currentIndex];
+      const input = prompt(`「${list.name}」を何番目に移動しますか？\n現在: No.${currentIndex + 1} / 範囲: No.1～No.${curMap.lists.length}`, String(currentIndex + 1));
+      if (input === null) return;
+      const targetNo = parseInt(input, 10);
+      if (!Number.isInteger(targetNo) || targetNo < 1 || targetNo > curMap.lists.length) {
+        alert(`No.は1～${curMap.lists.length}の範囲で指定してください。`);
+        return;
+      }
+      const [moved] = curMap.lists.splice(currentIndex, 1);
+      curMap.lists.splice(targetNo - 1, 0, moved);
+      saveStorage();
+      openCustomListModal();
     }
 
     function moveCustomList(index, direction) {
