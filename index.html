@@ -478,7 +478,7 @@
   </div>
 
   <!-- モーダル各種 -->
-  <div class="modal-overlay" id="modal-overlay" onclick="if(event.target === this) closeModal();">
+  <div class="modal-overlay" id="modal-overlay">
     <div class="modal-content" id="modal-content"></div>
   </div>
 
@@ -612,14 +612,25 @@
       }
     });
 
+    function closeSimplePanels() {
+      const searchPanel = document.getElementById('search-panel');
+      const listPanel = document.getElementById('map-list-panel');
+      if (searchPanel) searchPanel.style.display = 'none';
+      if (listPanel) listPanel.style.display = 'none';
+    }
+
     function toggleMenu() {
+      // 操作メニューを開閉したら、簡易表示（絞り込み／リスト展開）は自動で閉じる。
+      closeSimplePanels();
       const dropdown = document.getElementById('menu-dropdown');
       dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
     }
 
     function toggleSearchPanel() {
       const panel = document.getElementById('search-panel');
+      const listPanel = document.getElementById('map-list-panel');
       const isVisible = panel.style.display === 'block';
+      if (listPanel) listPanel.style.display = 'none';
       panel.style.display = isVisible ? 'none' : 'block';
       if (!isVisible) filterStores();
     }
@@ -772,7 +783,8 @@
       // ここでは事前の「読み取り」を行わず、そのまま書き込みを試みる。
       // sharedMaps の公開読み取り権限が無いSecurity Rulesでも、所有者としての書き込みが許可されていれば発行できる。
       const snapshot = getShareSnapshot(mapObj);
-      const existingData = null;
+      // 同じコードを何度でも更新可能。読み手（共有相手）は認証不要で読み取れるため、
+      // 同一コードを複数人へ渡して利用できる。書き込みは所有者だけに制限する。
       const version = (mapObj.shareVersion || 0) + 1;
       const payload = {
         ownerUid: currentUser.uid,
@@ -783,7 +795,7 @@
         lists: JSON.parse(JSON.stringify(mapObj.lists || [])),
         version,
         snapshot,
-        createdAt: existingData && existingData.createdAt ? existingData.createdAt : firebase.database.ServerValue.TIMESTAMP,
+        createdAt: firebase.database.ServerValue.TIMESTAMP,
         updatedAt: firebase.database.ServerValue.TIMESTAMP
       };
       await database.ref(`sharedMaps/${code}`).set(payload);
@@ -811,14 +823,9 @@
     function saveStorage(renderAfterSave = true) {
       const curMap = getCurrentMap();
 
-      // 共有コード発行後に店舗・エリア・リスト・マップ名などの情報が変わったら、
-      // 旧コードを即時無効化する。時間経過では失効しない。
-      if (curMap && !curMap.isShared && curMap.shareCode && curMap.shareSnapshot) {
-        const currentSnapshot = getShareSnapshot(curMap);
-        if (currentSnapshot !== curMap.shareSnapshot) {
-          invalidateShareCode(curMap);
-        }
-      }
+      // 共有コードは、発行後にマップ情報を変更しても自動失効させない。
+      // 所有者が「コード再発行・更新」を押した時点で同じコードの共有データを更新する。
+      // これにより、同じコードを複数人へ渡して継続利用できる。
 
       // 既存のローカル保存（ゲスト・共有機能用）も維持。
       try {
@@ -1060,9 +1067,12 @@
 
     function toggleMapListPanel() {
       const panel = document.getElementById('map-list-panel');
+      const searchPanel = document.getElementById('search-panel');
       if (!panel) return;
-      panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-      if (panel.style.display === 'block') {
+      const isVisible = panel.style.display === 'block';
+      if (searchPanel) searchPanel.style.display = 'none';
+      panel.style.display = isVisible ? 'none' : 'block';
+      if (!isVisible) {
         updateMapListDropdown();
         updateMapListStoreSummary();
       }
@@ -2186,7 +2196,7 @@
           } catch (localError) { console.warn('共有コード状態のローカル保存にも失敗:', localError); }
         }
 
-        successEl.textContent = `🎉 共有コード「${curMap.shareCode}」を発行しました。現在「発行済み・利用可能」です。${userSaveWarning}`;
+        successEl.textContent = `🎉 共有コード「${curMap.shareCode}」を更新しました。現在「発行済み・利用可能」です。複数人で同じコードを利用できます。${userSaveWarning}`;
         successEl.style.display = 'block';
         errorEl.style.display = 'none';
         const statusBox = document.getElementById('share-code-status-box');
