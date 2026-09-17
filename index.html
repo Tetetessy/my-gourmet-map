@@ -102,6 +102,12 @@
       background: var(--panel-bg); backdrop-filter: blur(8px); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 220px; max-height: 40vh; overflow-y: auto; display: none;
     }
 
+
+    .map-list-panel { position:fixed; top:112px; left:10px; width:260px; max-width:calc(100vw - 20px); background:var(--panel-bg); border:2px solid var(--border-color); border-radius:var(--radius); padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.18); z-index:1003; display:none; backdrop-filter:blur(8px); }
+    .store-pin-dimmed { filter: grayscale(1) saturate(0) opacity(.38); }
+    @media (max-width: 700px) {
+      .map-list-panel { top:118px; left:6px; width:calc(46vw - 6px); max-width:none; }
+    }
     .search-results-panel {
       position: absolute; top: 50px; right: 10px; z-index: 999; background: var(--panel-bg); backdrop-filter: blur(8px); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 250px; max-height: 60vh; overflow-y: auto; display: none;
     }
@@ -371,6 +377,17 @@
     <button id="btn-register-store" class="action-btn" onclick="startStoreRegistration()">📍 店舗登録</button>
     <button id="btn-register-area" class="action-btn" onclick="startAreaRegistration()">🚩 エリア登録</button>
     <div class="bottom-left-area">
+      <button class="action-btn" onclick="toggleMapListPanel()">📋 リスト展開</button>
+      <div class="map-list-panel" id="map-list-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <h4 style="margin:0;">📋 リスト表示</h4>
+          <button onclick="toggleMapListPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
+        </div>
+        <select id="map-list-select" onchange="applyMapListView(this.value)" style="width:100%;">
+          <option value="">全店舗を表示</option>
+        </select>
+        <div id="map-list-status" style="font-size:10px; margin-top:5px; color:#666;">リストを選ぶと対象外の店舗ピンがグレーになります。</div>
+      </div>
       <button class="action-btn" onclick="toggleSearchPanel()">🔍 絞り込み</button>
       <div class="search-panel" id="search-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
@@ -396,9 +413,7 @@
         </select>
         <div class="search-options-box">
           <div class="search-options-title">オプション（複数選択可）</div>
-          <div class="store-options-grid search-options-grid">
-            ${STORE_OPTION_DEFS.map(o => `<label class="store-option-check"><input type="checkbox" class="search-option-check" value="${o.id}" onchange="filterStores()"><span>${o.label}</span></label>`).join('')}
-          </div>
+          <div id="search-options-container" class="store-options-grid search-options-grid"></div>
         </div>
         <input type="text" id="search-station" placeholder="最寄り駅検索" oninput="filterStores()" style="width:100%;">
       </div>
@@ -513,13 +528,13 @@
       'レストラン', 'ビアレストラン', 'ブッフェ', 'ダイニング', 'カフェ', 
       'カフェダイニング', 'カレー屋', 'ケーキ屋', 'パン屋', 'スイーツ', 
       '料亭', '郷土料理屋', '小料理屋', 'ラーメン屋', '焼肉屋', 
-      '居酒屋', 'バー', '屋台', 'キッチンカー', '野外', 'ビアガーデン', 'その他'
+      '居酒屋', 'バー', 'バーダイニング', '屋台', 'キッチンカー', '野外', 'ビアガーデン', '販売店/ショップ', 'その他'
     ];
 
     const GENRE_OPTIONS = [
       '和食', '洋食', '中華', '韓国', 'アジアン', 'エスニック', '他国料理', 
       '郷土料理', 'ジビエ', '寿司', '焼肉', 'ラーメン', 'カレー', '魚系', 
-      '肉系', '野菜系', 'スイーツ系', 'カフェ', '居酒屋', 'ビーガン', 'ゲテモノ', 'その他'
+      '肉系', '野菜系', 'スイーツ系', 'カフェ', '居酒屋', 'ビーガン', 'ゲテモノ', 'お土産/ギフト', 'その他'
     ];
 
     const BUDGET_OPTIONS = [
@@ -914,11 +929,17 @@
       if (budgetSel) {
         budgetSel.innerHTML = '<option value="">全ての予算</option>' + BUDGET_OPTIONS.map(b => `<option>${b}</option>`).join('');
       }
+      const optionContainer = document.getElementById('search-options-container');
+      if (optionContainer) {
+        optionContainer.innerHTML = STORE_OPTION_DEFS.map(o => `<label class="store-option-check"><input type="checkbox" class="search-option-check" value="${o.id}" onchange="filterStores()"><span>${o.label}</span></label>`).join('');
+      }
+      updateMapListDropdown();
     }
 
     function renderCurrentMap() {
       updateIndicator();
       updateSearchListDropdown();
+      updateMapListDropdown();
       updateAreaDropdown();
 
       mapStoreMarkers.forEach(m => map.removeLayer(m));
@@ -948,7 +969,9 @@
         const shape = STORE_PIN_SHAPES.find(x => x.id === store.pinShape) || STORE_PIN_SHAPES[0];
         const color = STORE_PIN_COLORS.find(x => x.id === store.pinColor) || STORE_PIN_COLORS[0];
         const shapeClass = shape.id === 'double-circle' ? 'store-pin-double-circle' : `store-pin-${shape.id}`;
-        const iconHtml = `<div class="store-custom-pin ${shapeClass}" style="background:${color.bg};"><span class="store-pin-symbol">${shape.icon}</span></div>`;
+        const activeList = window.activeMapListId || '';
+        const inActiveList = !activeList || ((store.listIds || []).includes(activeList) || store.listId === activeList);
+        const iconHtml = `<div class="store-custom-pin ${shapeClass}${inActiveList ? '' : ' store-pin-dimmed'}" style="background:${color.bg};"><span class="store-pin-symbol">${shape.icon}</span></div>`;
         const storeIcon = L.divIcon({
           className: '', html: iconHtml, iconSize: [34,34], iconAnchor: [17,17]
         });
@@ -978,6 +1001,38 @@
       }
       select.innerHTML = html;
       select.value = currentVal;
+    }
+
+    function updateMapListDropdown() {
+      const cur = getCurrentMap();
+      const select = document.getElementById('map-list-select');
+      if (!select) return;
+      const currentVal = window.activeMapListId || '';
+      let html = '<option value="">全店舗を表示</option>';
+      (cur && cur.lists ? cur.lists : []).forEach(l => {
+        html += `<option value="${l.id}">${l.name}</option>`;
+      });
+      select.innerHTML = html;
+      select.value = currentVal;
+      if (select.value !== currentVal) window.activeMapListId = '';
+    }
+
+    function toggleMapListPanel() {
+      const panel = document.getElementById('map-list-panel');
+      if (!panel) return;
+      panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+      if (panel.style.display === 'block') updateMapListDropdown();
+    }
+
+    function applyMapListView(listId) {
+      window.activeMapListId = listId || '';
+      const status = document.getElementById('map-list-status');
+      const cur = getCurrentMap();
+      const list = (cur && cur.lists ? cur.lists : []).find(l => l.id === window.activeMapListId);
+      if (status) {
+        status.textContent = list ? `「${list.name}」を表示中：リスト外の店舗ピンはグレー表示です。` : '全店舗を表示しています。';
+      }
+      renderCurrentMap();
     }
 
     function updateAreaDropdown() {
