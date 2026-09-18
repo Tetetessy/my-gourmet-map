@@ -101,12 +101,20 @@
     .search-panel {
       background: var(--panel-bg); backdrop-filter: blur(8px); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 220px; max-height: 40vh; overflow-y: auto; display: none;
     }
+    .simple-panel-header {
+      position: sticky; top: -10px; z-index: 20;
+      display:flex; justify-content:space-between; align-items:center; gap:6px;
+      margin:-10px -10px 8px; padding:8px 10px 7px;
+      background:var(--panel-bg); backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--border-color);
+    }
+    .search-results-header { top:-10px; margin:-10px -10px 8px; }
 
 
     .map-list-panel { position:fixed; top:112px; left:10px; width:260px; max-width:calc(100vw - 20px); background:var(--panel-bg); border:2px solid var(--border-color); border-radius:var(--radius); padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.18); z-index:1003; display:none; backdrop-filter:blur(8px); }
     .area-move-wrap { position:relative; }
     .area-move-btn { min-width:150px; max-width:260px; text-align:center; }
-    .area-move-panel { position:absolute; top:36px; left:0; width:280px; max-width:calc(100vw - 20px); background:var(--panel-bg); backdrop-filter:blur(10px); border:1px solid var(--border-color); border-radius:var(--radius); box-shadow:0 8px 24px rgba(0,0,0,.18); padding:8px; display:none; z-index:1004; }
+    .area-move-panel { position:fixed; top:48px; left:50%; transform:translateX(-50%); width:280px; max-width:calc(100vw - 20px); background:var(--panel-bg); backdrop-filter:blur(10px); border:1px solid var(--border-color); border-radius:var(--radius); box-shadow:0 8px 24px rgba(0,0,0,.18); padding:8px; display:none; z-index:1004; }
     .area-move-scroll { max-height:calc(10 * 34px); overflow-y:auto; }
     .area-move-section { border:1px solid var(--border-color); border-radius:8px; margin-bottom:6px; overflow:hidden; }
     .area-move-section:last-child { margin-bottom:0; }
@@ -120,7 +128,7 @@
     .area-list-row-actions { white-space:nowrap; }
     .scroll-select-10 { max-height: 220px; overflow-y:auto; }
     @media (max-width:700px) {
-      .area-move-panel { width:calc(100vw - 20px); left:50%; transform:translateX(-50%); }
+      .area-move-panel { width:calc(100vw - 20px); left:50%; transform:translateX(-50%); top:48px; }
       .area-move-btn { min-width:120px; max-width:46vw; }
     }
 
@@ -134,7 +142,7 @@
       .map-list-panel { top:118px; left:6px; width:calc(46vw - 6px); max-width:none; }
     }
     .search-results-panel {
-      position: absolute; top: 50px; right: 10px; z-index: 999; background: var(--panel-bg); backdrop-filter: blur(8px); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 250px; max-height: 60vh; overflow-y: auto; display: none;
+      position: fixed; top: 50px; right: 10px; z-index: 999; background: var(--panel-bg); backdrop-filter: blur(8px); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 250px; max-height: 60vh; overflow-y: auto; display: none; padding-bottom: 55vh; box-sizing:border-box;
     }
 
     .bottom-center-area { position: absolute; top: 50px; right: 270px; z-index: 1000; width: 260px; display: none; }
@@ -395,9 +403,9 @@
     <div class="area-move-wrap">
       <button id="area-move-btn" class="area-move-btn" onclick="toggleAreaMovePanel()">🚩 エリア移動 ▾</button>
       <div id="area-move-panel" class="area-move-panel">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <div class="simple-panel-header area-move-header">
           <div style="font-size:11px; font-weight:bold;">🚩 エリア移動</div>
-          <button type="button" onclick="toggleAreaMovePanel()" style="background:#6c757d; font-size:10px; padding:2px 6px;">キャンセル ✕</button>
+          <button type="button" onclick="toggleAreaMovePanel()" style="background:#6c757d; font-size:10px; padding:2px 6px;">閉じる ✕</button>
         </div>
         <div style="font-size:10px; color:#777; margin-bottom:6px;">エリアリストから選択できます（各リストは折りたたみ式）。</div>
         <div id="area-move-content" class="area-move-scroll"></div>
@@ -412,7 +420,7 @@
     <div class="bottom-left-area">
       <button class="action-btn" onclick="toggleMapListPanel()">📋 リスト展開</button>
       <div class="map-list-panel" id="map-list-panel">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <div class="simple-panel-header">
           <h4 style="margin:0;">📋 リスト表示</h4>
           <div style="display:flex; gap:4px;">
             <button onclick="clearMapListView()" style="background:#6c757d; font-size:10px; padding:1px 5px;">選択解除</button>
@@ -426,7 +434,7 @@
       </div>
       <button class="action-btn" onclick="toggleSearchPanel()">🔍 絞り込み</button>
       <div class="search-panel" id="search-panel">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+        <div class="simple-panel-header">
           <h4 style="margin: 0;">🔍 条件検索</h4>
           <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
         </div>
@@ -467,13 +475,13 @@
       <button id="btn-change-pass" onclick="openChangePasswordModal()" style="display:none; background:#6c757d; font-size:10px;">🔑 パスワード変更</button>
       <button id="auth-btn" onclick="openAuthModal()">ログイン / 登録</button>
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
-      <small>【エリア管理】</small>
+      <small>【各種管理】</small>
       <button onclick="openAreaListModal()">🚩 エリア管理</button>
+      <button onclick="openCustomListModal()">📋 リスト管理</button>
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
       <small>【マップ管理】</small>
       <button onclick="openMapSwitchModal()">マップ切替・編集</button>
       <button onclick="openNewMapModal()">新規マップ作成</button>
-      <button onclick="openCustomListModal()">📋 リスト管理</button>
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
       <small>【共有】</small>
       <button onclick="exportCode()">共有コード設定・表示</button>
@@ -493,7 +501,7 @@
 
   <!-- 右側別枠：絞り込み結果表示パネル -->
   <div class="search-results-panel" id="search-results-panel">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; border-bottom:1px solid var(--border-color); padding-bottom:4px;">
+    <div class="simple-panel-header search-results-header">
       <h4 style="margin:0; font-size:12px;">📋 検索結果一覧</h4>
       <button onclick="closeSearchResultsPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
     </div>
@@ -564,15 +572,15 @@
     ];
 
     const FORM_OPTIONS = [
-      'レストラン', 'ビアレストラン', 'ブッフェ', 'ダイニング', 'カフェ', 
+      'レストラン', 'ビストロ', 'ビアレストラン', 'ブッフェ', 'ダイニング', 'カフェ', 'カフェレストラン',
       'カフェダイニング', 'バル', 'カレー屋', 'ケーキ屋', 'パン屋', 'スイーツ系', 
       '料亭', '定食屋', '郷土料理屋', '小料理屋', '寿司', '肉寿司', 'ラーメン屋', 'そば', 'うどん', 'パスタ', '焼肉屋', 'しゃぶしゃぶ', 
       '居酒屋', 'バー', 'バーダイニング', '屋台', 'キッチンカー', '野外', 'ビアガーデン', '販売店/ショップ', 'その他'
     ];
 
     const GENRE_OPTIONS = [
-      '和食', '洋食', '中華', '韓国', 'アジアン', 'エスニック', 'イタリアン', 'フレンチ', 'ヨーロッパ', '欧米', '北米', '南米', '他国料理', 
-      '郷土料理', 'ジビエ', '寿司', '焼肉', 'ラーメン', 'カレー', '魚系', 
+      '和食', '洋食', '中華', '韓国', 'アジアン', 'エスニック', 'イタリアン', 'フレンチ', 'スペイン', 'ヨーロッパ', '欧米', '北米', '南米', 'ハワイ', '南国', '他国料理', 
+      '沖縄料理', '郷土料理', 'ジビエ', '寿司', '焼肉', 'ラーメン', 'カレー', '魚系', 
       '肉系', '麺系', '野菜系', 'スイーツ系', 'カフェ', '居酒屋', 'ビーガン', 'ゲテモノ', 'お土産/ギフト', 'その他'
     ];
 
@@ -582,7 +590,7 @@
     ];
 
     const STORE_OPTION_DEFS = [
-      { id: 'private', label: '貸し切り' },
+      { id: 'private', label: '貸切' },
       { id: 'course', label: 'コースあり' },
       { id: 'allYouCanDrink', label: '飲み放題' },
       { id: 'allYouCanEat', label: '食べ放題' }
@@ -648,8 +656,10 @@
     function closeSimplePanels() {
       const searchPanel = document.getElementById('search-panel');
       const listPanel = document.getElementById('map-list-panel');
+      const areaPanel = document.getElementById('area-move-panel');
       if (searchPanel) searchPanel.style.display = 'none';
       if (listPanel) listPanel.style.display = 'none';
+      if (areaPanel) areaPanel.style.display = 'none';
     }
 
     function toggleMenu() {
@@ -661,11 +671,9 @@
 
     function toggleSearchPanel() {
       const panel = document.getElementById('search-panel');
-      const listPanel = document.getElementById('map-list-panel');
       const isVisible = panel.style.display === 'block';
-      if (listPanel) listPanel.style.display = 'none';
-      panel.style.display = isVisible ? 'none' : 'block';
-      if (!isVisible) filterStores();
+      closeSimplePanels();
+      if (!isVisible) { panel.style.display = 'block'; filterStores(); }
     }
 
     function closeSearchResultsPanel() {
@@ -712,6 +720,11 @@
         areas: asArray(m.areas),
         lists: asArray(m.lists),
         areaLists: asArray(m.areaLists)
+      }));
+      // 表記変更に合わせて既存データも新名称へ統一。
+      maps.forEach(m => (m.stores || []).forEach(s => {
+        if (s.form === 'スイーツ') s.form = 'スイーツ系';
+        if (Array.isArray(s.options) && s.options.includes('private')) { /* option id remains stable */ }
       }));
     }
 
@@ -1116,12 +1129,11 @@
 
     function toggleMapListPanel() {
       const panel = document.getElementById('map-list-panel');
-      const searchPanel = document.getElementById('search-panel');
       if (!panel) return;
       const isVisible = panel.style.display === 'block';
-      if (searchPanel) searchPanel.style.display = 'none';
-      panel.style.display = isVisible ? 'none' : 'block';
+      closeSimplePanels();
       if (!isVisible) {
+        panel.style.display = 'block';
         updateMapListDropdown();
         updateMapListStoreSummary();
       }
@@ -1149,8 +1161,7 @@
       if (!panel) return;
       const open = panel.style.display === 'block';
       closeSimplePanels();
-      panel.style.display = open ? 'none' : 'block';
-      if (!open) updateAreaMovePanel();
+      if (!open) { panel.style.display = 'block'; updateAreaMovePanel(); }
     }
 
     function toggleAreaMoveSection(sectionId) {
@@ -2760,6 +2771,8 @@
               </span>
               ${!curMap.isShared ? `
                 <div>
+                  <button onclick="moveCustomList(${index},-1)" style="padding:2px 6px; font-size:10px;">↑</button>
+                  <button onclick="moveCustomList(${index},1)" style="padding:2px 6px; font-size:10px;">↓</button>
                   <button onclick="moveCustomListToNo('${l.id}')" style="padding:2px 6px; font-size:10px;">↕️ No.移動</button>
                   <button onclick="editCustomListName('${l.id}')" style="background:#ff9f43; padding:2px 6px; font-size:10px;">✏️ 編集</button>
                   <button onclick="deleteCustomList('${l.id}')" style="background:#dc3545; padding:2px 6px; font-size:10px;">削除</button>
@@ -2907,20 +2920,61 @@
       openCustomListModal();
     }
 
+    function moveStoreInRegisteredList(index, direction) {
+      const curMap = getCurrentMap();
+      if (curMap.isShared) return;
+      const arr = curMap.stores || [];
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= arr.length) return;
+      [arr[index], arr[target]] = [arr[target], arr[index]];
+      saveStorage();
+      openStoreListModal();
+    }
+
+    function moveStoreInRegisteredListToNo(storeId) {
+      const curMap = getCurrentMap();
+      if (curMap.isShared) return;
+      const arr = curMap.stores || [];
+      const index = arr.findIndex(s => s.id === storeId);
+      if (index < 0) return;
+      const input = prompt(`「${arr[index].name}」を何番目に移動しますか？\n現在: No.${index + 1} / 範囲: No.1～No.${arr.length}`, String(index + 1));
+      if (input === null) return;
+      const n = parseInt(input, 10);
+      if (!Number.isInteger(n) || n < 1 || n > arr.length) {
+        alert(`No.は1～${arr.length}の範囲で指定してください。`);
+        return;
+      }
+      const [moved] = arr.splice(index, 1);
+      arr.splice(n - 1, 0, moved);
+      saveStorage();
+      openStoreListModal();
+    }
+
     function openStoreListModal() {
       const curMap = getCurrentMap();
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
 
-      let listHtml = (curMap.stores || []).map(s => `
-        <div style="padding:6px; border-bottom:1px solid var(--border-color); cursor:pointer;" onclick="closeModal(); showStoreDetail('${s.id}');">
-          <b>${s.isFavorite ? '⭐ ' : ''}${s.name}</b> <small>(${s.genre || '-'})</small>
+      let listHtml = (curMap.stores || []).map((s, index) => `
+        <div style="display:flex; align-items:center; gap:6px; padding:6px; border-bottom:1px solid var(--border-color);">
+          <span style="display:inline-flex; width:24px; justify-content:center; font-size:16px; font-weight:bold; color:${s.isFavorite ? '#111' : '#999'};" title="${s.isFavorite ? 'お気に入り' : '通常'}">${s.isFavorite ? '★' : '☆'}</span>
+          <div style="flex:1; min-width:0; cursor:pointer;" onclick="closeModal(); showStoreDetail('${s.id}');">
+            <b style="font-size:11px;">No.${index + 1}　${s.name}</b> <small>(${s.genre || '-'})</small>
+          </div>
+          ${!curMap.isShared ? `
+            <div style="display:flex; gap:2px; flex-shrink:0;">
+              <button onclick="moveStoreInRegisteredList(${index},-1)" style="padding:2px 5px;font-size:9px;">↑</button>
+              <button onclick="moveStoreInRegisteredList(${index},1)" style="padding:2px 5px;font-size:9px;">↓</button>
+              <button onclick="moveStoreInRegisteredListToNo('${s.id}')" style="padding:2px 5px;font-size:9px;">No.</button>
+            </div>
+          ` : ''}
         </div>
       `).join('');
 
       content.innerHTML = `
-        <div class="modal-header"><h3>登録店舗一覧 (${curMap.stores.length}件)</h3></div>
+        <div class="modal-header"><h3>登録店舗一覧 (${curMap.stores.length}件)</h3><button onclick="closeModal()" class="btn-secondary" style="padding:2px 7px;font-size:10px;">閉じる</button></div>
         <div style="max-height:60vh; overflow-y:auto; margin-bottom:10px;">${listHtml || '<p style="color:#888;">登録店舗がありません</p>'}</div>
+        ${curMap.isShared ? '' : '<div style="font-size:10px;color:#777;margin-bottom:6px;">★＝お気に入り　☆＝通常</div>'}
         <button onclick="closeModal()" class="btn-secondary" style="width:100%;">閉じる</button>
       `;
     }
