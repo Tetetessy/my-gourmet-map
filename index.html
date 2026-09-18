@@ -104,6 +104,26 @@
 
 
     .map-list-panel { position:fixed; top:112px; left:10px; width:260px; max-width:calc(100vw - 20px); background:var(--panel-bg); border:2px solid var(--border-color); border-radius:var(--radius); padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.18); z-index:1003; display:none; backdrop-filter:blur(8px); }
+    .area-move-wrap { position:relative; }
+    .area-move-btn { min-width:150px; max-width:260px; text-align:center; }
+    .area-move-panel { position:absolute; top:36px; left:0; width:280px; max-width:calc(100vw - 20px); background:var(--panel-bg); backdrop-filter:blur(10px); border:1px solid var(--border-color); border-radius:var(--radius); box-shadow:0 8px 24px rgba(0,0,0,.18); padding:8px; display:none; z-index:1004; }
+    .area-move-scroll { max-height:calc(10 * 34px); overflow-y:auto; }
+    .area-move-section { border:1px solid var(--border-color); border-radius:8px; margin-bottom:6px; overflow:hidden; }
+    .area-move-section:last-child { margin-bottom:0; }
+    .area-move-section-title { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:7px 8px; font-size:11px; font-weight:bold; cursor:pointer; user-select:none; background:rgba(0,0,0,.035); }
+    .area-move-items { display:none; padding:4px; border-top:1px solid var(--border-color); }
+    .area-move-item { display:block; width:100%; text-align:left; margin:2px 0; padding:7px 8px; border:1px solid var(--border-color); border-radius:7px; background:rgba(255,255,255,.5); color:var(--text-color); cursor:pointer; }
+    .area-move-item:hover { background:rgba(0,0,0,.08); }
+    .area-list-manage-box { border:1px solid var(--border-color); border-radius:8px; padding:8px; margin-bottom:8px; }
+    .area-list-assigned { margin-top:5px; padding-left:6px; border-left:2px solid var(--primary-color); }
+    .area-list-row { display:flex; justify-content:space-between; align-items:center; gap:6px; background:rgba(0,0,0,.03); padding:5px 6px; margin-top:3px; border-radius:5px; font-size:10.5px; }
+    .area-list-row-actions { white-space:nowrap; }
+    .scroll-select-10 { max-height: 220px; overflow-y:auto; }
+    @media (max-width:700px) {
+      .area-move-panel { width:calc(100vw - 20px); left:50%; transform:translateX(-50%); }
+      .area-move-btn { min-width:120px; max-width:46vw; }
+    }
+
     .store-pin-dimmed { filter: grayscale(1) saturate(0) opacity(.38); }
     .map-list-store-summary { margin-top:7px; border-top:1px solid var(--border-color); padding-top:7px; max-height:38vh; overflow-y:auto; }
     .map-list-store-item { display:block; width:100%; text-align:left; margin:4px 0 0; padding:7px 8px; border:1px solid var(--border-color); border-radius:8px; background:rgba(0,0,0,.035); color:var(--text-color,#333); cursor:pointer; box-sizing:border-box; }
@@ -372,9 +392,13 @@
   <!-- 上部インジケーター & エリア切替 -->
   <div class="top-bar">
     <span id="map-indicator" class="indicator-btn" onclick="openStoreListModal()" title="登録店舗一覧を表示">店舗: 0/200 📋</span>
-    <select id="area-select" onchange="moveToArea(this.value)">
-      <option value="">エリア移動</option>
-    </select>
+    <div class="area-move-wrap">
+      <button id="area-move-btn" class="area-move-btn" onclick="toggleAreaMovePanel()">🚩 エリア移動 ▾</button>
+      <div id="area-move-panel" class="area-move-panel">
+        <div style="font-size:10px; color:#777; margin-bottom:6px;">エリアリストから選択できます（各リストは折りたたみ式）。</div>
+        <div id="area-move-content" class="area-move-scroll"></div>
+      </div>
+    </div>
   </div>
 
   <!-- 画面左上：登録ボタン群 ＆ 絞り込みボタン -->
@@ -388,7 +412,7 @@
           <h4 style="margin:0;">📋 リスト表示</h4>
           <button onclick="toggleMapListPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
         </div>
-        <select id="map-list-select" onchange="applyMapListView(this.value)" style="width:100%;">
+        <select id="map-list-select" class="scroll-select-10" size="10" onchange="applyMapListView(this.value)" style="width:100%;">
           <option value="">全店舗を表示</option>
         </select>
         <div id="map-list-status" style="font-size:10px; margin-top:5px; color:#666;">リストを選ぶと対象外の店舗ピンがグレーになります。</div>
@@ -401,7 +425,7 @@
           <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
         </div>
         <input type="text" id="search-name" placeholder="店舗名検索" oninput="filterStores()" style="width:100%;">
-        <select id="search-list" onchange="filterStores()" style="width:100%;">
+        <select id="search-list" class="scroll-select-10" size="10" onchange="filterStores()" style="width:100%;">
           <option value="">全てのリスト</option>
         </select>
         <select id="search-fav" onchange="filterStores()" style="width:100%;">
@@ -436,6 +460,9 @@
       <button id="btn-change-email" onclick="openChangeEmailModal()" style="display:none; background:#6c757d; font-size:10px;">✉️ アドレス変更</button>
       <button id="btn-change-pass" onclick="openChangePasswordModal()" style="display:none; background:#6c757d; font-size:10px;">🔑 パスワード変更</button>
       <button id="auth-btn" onclick="openAuthModal()">ログイン / 登録</button>
+      <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
+      <small>【エリア管理】</small>
+      <button onclick="openAreaListModal()">🚩 エリアリスト管理</button>
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
       <small>【マップ管理】</small>
       <button onclick="openMapSwitchModal()">マップ切替・編集</button>
@@ -663,7 +690,7 @@
     }
 
     function createDefaultMap(id, name) {
-      return { id: id || ('map_' + Date.now() + '_' + Math.floor(Math.random()*1000)), name: name || 'マイグルメマップ', stores: [], areas: [], lists: [], isShared: false, shareCode: '', shareSnapshot: '', shareVersion: 0 };
+      return { id: id || ('map_' + Date.now() + '_' + Math.floor(Math.random()*1000)), name: name || 'マイグルメマップ', stores: [], areas: [], lists: [], areaLists: [], isShared: false, shareCode: '', shareSnapshot: '', shareVersion: 0 };
     }
 
     function asArray(value) {
@@ -677,7 +704,8 @@
         ...m,
         stores: asArray(m.stores),
         areas: asArray(m.areas),
-        lists: asArray(m.lists)
+        lists: asArray(m.lists),
+        areaLists: asArray(m.areaLists)
       }));
     }
 
@@ -742,7 +770,13 @@
         currentMapId = maps[0].id;
       }
 
-      maps.forEach(m => { if (!m.lists) m.lists = []; });
+      maps.forEach(m => {
+        if (!m.lists) m.lists = [];
+        if (!m.areaLists) m.areaLists = [];
+        if (!Array.isArray(m.areaLists)) m.areaLists = asArray(m.areaLists);
+        (m.areas || []).forEach(a => { if (!Array.isArray(a.listIds)) a.listIds = []; });
+        m.areaLists.forEach(l => { if (!Array.isArray(l.areaIds)) l.areaIds = []; });
+      });
     }
 
     // ==================== 共有コード管理 ====================
@@ -752,7 +786,8 @@
         name: mapObj.name || '',
         stores: mapObj.stores || [],
         areas: mapObj.areas || [],
-        lists: mapObj.lists || []
+        lists: mapObj.lists || [],
+        areaLists: mapObj.areaLists || []
       });
     }
 
@@ -952,6 +987,7 @@
       updateSearchListDropdown();
       updateMapListDropdown();
       updateAreaDropdown();
+      updateAreaMovePanel();
 
       mapStoreMarkers.forEach(m => map.removeLayer(m));
       mapAreaMarkers.forEach(m => map.removeLayer(m));
@@ -1085,18 +1121,63 @@
     }
 
     function updateAreaDropdown() {
+      // 旧selectとの互換用。現在のUIはエリア移動パネルを使用します。
+      updateAreaMovePanel();
+    }
+
+    function toggleAreaMovePanel() {
+      const panel = document.getElementById('area-move-panel');
+      if (!panel) return;
+      const open = panel.style.display === 'block';
+      closeSimplePanels();
+      panel.style.display = open ? 'none' : 'block';
+      if (!open) updateAreaMovePanel();
+    }
+
+    function toggleAreaMoveSection(sectionId) {
+      const el = document.getElementById(sectionId);
+      if (!el) return;
+      el.style.display = el.style.display === 'block' ? 'none' : 'block';
+      const arrow = document.querySelector(`[data-area-section-arrow="${sectionId}"]`);
+      if (arrow) arrow.textContent = el.style.display === 'block' ? '▼' : '▶';
+    }
+
+    function updateAreaMovePanel() {
+      const container = document.getElementById('area-move-content');
       const cur = getCurrentMap();
-      const select = document.getElementById('area-select');
-      if (!select) return;
-      const currentVal = select.value;
-      let html = '<option value="">エリア移動</option>';
-      if (cur && Array.isArray(cur.areas)) {
-        cur.areas.forEach(a => {
-          html += `<option value="${a.id}">${a.name}</option>`;
-        });
-      }
-      select.innerHTML = html;
-      if (cur && cur.areas.some(a => a.id === currentVal)) select.value = currentVal;
+      if (!container || !cur) return;
+      if (!cur.areaLists) cur.areaLists = [];
+      if (!cur.areas) cur.areas = [];
+
+      let html = '';
+      cur.areaLists.forEach((list, index) => {
+        const areaIds = Array.isArray(list.areaIds) ? list.areaIds : [];
+        const assigned = areaIds.map(id => cur.areas.find(a => a.id === id)).filter(Boolean);
+        const sectionId = 'area-move-list-' + list.id;
+        html += `
+          <div class="area-move-section">
+            <div class="area-move-section-title" onclick="toggleAreaMoveSection('${sectionId}')">
+              <span>📁 No.${index + 1}　${list.name} <small>(${assigned.length}件)</small></span>
+              <span data-area-section-arrow="${sectionId}">▶</span>
+            </div>
+            <div id="${sectionId}" class="area-move-items">
+              ${assigned.length ? assigned.map((a,i) => `<button class="area-move-item" onclick="moveToArea('${a.id}')">🚩 No.${i + 1}　${a.name}</button>`).join('') : '<div style="font-size:10px;color:#888;padding:6px;">このリストにはエリアがありません。</div>'}
+            </div>
+          </div>`;
+      });
+
+      const allId = 'area-move-all';
+      html += `
+        <div class="area-move-section">
+          <div class="area-move-section-title" onclick="toggleAreaMoveSection('${allId}')">
+            <span>📍 すべてのエリア <small>(${cur.areas.length}件)</small></span>
+            <span data-area-section-arrow="${allId}">▶</span>
+          </div>
+          <div id="${allId}" class="area-move-items">
+            ${cur.areas.length ? cur.areas.map((a,i) => `<button class="area-move-item" onclick="moveToArea('${a.id}')">🚩 No.${i + 1}　${a.name}</button>`).join('') : '<div style="font-size:10px;color:#888;padding:6px;">登録エリアはありません。</div>'}
+          </div>
+        </div>`;
+      container.innerHTML = html;
     }
 
     function moveToArea(areaId) {
@@ -1112,7 +1193,8 @@
       setTimeout(() => {
         map.flyTo(target, 15, { duration: 1.15, easeLinearity: 0.25 });
       }, 480);
-      document.getElementById('area-select').blur();
+      const areaPanel = document.getElementById('area-move-panel');
+      if (areaPanel) areaPanel.style.display = 'none';
     }
 
     function startStoreRegistration() {
@@ -1187,14 +1269,14 @@
           <label>リスト登録 (既存リストから追加)</label>
           <div id="existing-list-container">
             <div class="existing-list-row" style="display:flex; gap:4px; margin-bottom:4px;">
-              <select class="stylish-input existing-list-select" style="flex:1;">
+              <select class="stylish-input existing-list-select scroll-select-10" size="10" style="flex:1;">
                 ${generateListOptionsHtml(firstSelectedId)}
               </select>
               <button type="button" onclick="addExistingListRow()" style="padding:4px 10px; font-weight:bold;">＋</button>
             </div>
             ${additionalSelectedIds.map(id => `
               <div class="existing-list-row" style="display:flex; gap:4px; margin-bottom:4px;">
-                <select class="stylish-input existing-list-select" style="flex:1;">
+                <select class="stylish-input existing-list-select scroll-select-10" size="10" style="flex:1;">
                   ${generateListOptionsHtml(id)}
                 </select>
                 <button type="button" onclick="this.parentElement.remove()" style="padding:4px 8px; background:#dc3545; color:#fff;">✕</button>
@@ -1402,7 +1484,7 @@
       div.className = 'existing-list-row';
       div.style.cssText = 'display:flex; gap:4px; margin-bottom:4px;';
       div.innerHTML = `
-        <select class="stylish-input existing-list-select" style="flex:1;">
+        <select class="stylish-input existing-list-select scroll-select-10" size="10" style="flex:1;">
           ${generateListOptionsHtml()}
         </select>
         <button type="button" onclick="this.parentElement.remove()" style="padding:4px 8px; background:#dc3545; color:#fff;">✕</button>
@@ -1559,6 +1641,7 @@
       }
 
       if (!curMap.areas) curMap.areas = [];
+      if (!curMap.areaLists) curMap.areaLists = [];
       
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
@@ -1585,6 +1668,14 @@
             <button onclick="saveNewArea()" style="white-space:nowrap;">登録</button>
           </div>
           <small style="color:#888; font-size:10px;">※地図上にピンを立ててから登録ボタンを押してください。</small>
+          <div style="margin-top:8px;">
+            <label style="font-weight:bold; font-size:11px;">エリアリスト登録（複数可）</label>
+            <div id="area-list-select-container" style="margin-top:4px;">${generateAreaListOptionsHtml()}</div>
+            <div style="display:flex; gap:4px; margin-top:4px;">
+              <input type="text" id="new-area-list-name" class="stylish-input" placeholder="新規エリアリスト名" style="flex:1;">
+              <button type="button" onclick="createAreaListAndSelect()" style="white-space:nowrap;">＋作成</button>
+            </div>
+          </div>
         </div>
 
         <label style="font-weight:bold; font-size:11.5px;">登録済みエリア一覧</label>
@@ -1593,6 +1684,35 @@
         </ul>
         <button onclick="closeModal()" class="btn-secondary" style="width:100%; margin-top:10px;">閉じる</button>
       `;
+    }
+
+    function generateAreaListOptionsHtml(selectedIds = []) {
+      const curMap = getCurrentMap();
+      if (!curMap.areaLists || curMap.areaLists.length === 0) return '<div style="font-size:10px;color:#888;">エリアリストがありません。</div>';
+      const selected = new Set(selectedIds || []);
+      return curMap.areaLists.map(l => `
+        <label style="display:flex;align-items:center;gap:5px;font-size:10.5px;margin:3px 0;cursor:pointer;">
+          <input type="checkbox" class="existing-area-list-check" value="${l.id}" ${selected.has(l.id) ? 'checked' : ''}>
+          <span>📁 ${l.name}</span>
+        </label>`).join('');
+    }
+
+    function createAreaListAndSelect() {
+      const curMap = getCurrentMap();
+      if (curMap.isShared) return;
+      const input = document.getElementById('new-area-list-name');
+      const name = input ? input.value.trim() : '';
+      if (!name) { alert('エリアリスト名を入力してください。'); return; }
+      if (!curMap.areaLists) curMap.areaLists = [];
+      if (curMap.areaLists.length >= 50) { alert('⚠️ エリアリスト上限数（50個）に達しています。'); return; }
+      const newList = { id:'alst_' + Date.now() + '_' + Math.floor(Math.random()*1000), name, areaIds:[] };
+      curMap.areaLists.push(newList);
+      saveStorage();
+      openAreaRegisterModalPrompt();
+      setTimeout(() => {
+        const cb = document.querySelector(`.existing-area-list-check[value="${newList.id}"]`);
+        if (cb) cb.checked = true;
+      }, 0);
     }
 
     function saveNewArea() {
@@ -1618,12 +1738,32 @@
         return;
       }
 
+      const selectedAreaListIds = Array.from(document.querySelectorAll('.existing-area-list-check:checked')).map(el => el.value);
+      const newAreaListName = (document.getElementById('new-area-list-name')?.value || '').trim();
+      if (newAreaListName) {
+        if (!curMap.areaLists) curMap.areaLists = [];
+        if (curMap.areaLists.length >= 50) {
+          alert('⚠️ エリアリスト上限数（50個）に達しています。');
+          return;
+        }
+        const newList = { id: 'alst_' + Date.now() + '_' + Math.floor(Math.random()*1000), name: newAreaListName, areaIds: [] };
+        curMap.areaLists.push(newList);
+        selectedAreaListIds.push(newList.id);
+      }
+      const newAreaId = 'area_' + Date.now() + '_' + Math.floor(Math.random()*1000);
       curMap.areas.push({
-        id: 'area_' + Date.now(),
+        id: newAreaId,
         name: name,
         color: 'teal',
         lat: tempPinLocation.lat,
-        lng: tempPinLocation.lng
+        lng: tempPinLocation.lng,
+        listIds: [...new Set(selectedAreaListIds)]
+      });
+      curMap.areaLists.forEach(l => {
+        if (selectedAreaListIds.includes(l.id)) {
+          if (!Array.isArray(l.areaIds)) l.areaIds = [];
+          l.areaIds.push(newAreaId);
+        }
       });
 
       if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
@@ -1735,6 +1875,7 @@
       if (curMap.isShared) return;
       if (!confirm('このエリアピンを削除しますか？')) return;
       curMap.areas = curMap.areas.filter(a => a.id !== areaId);
+      (curMap.areaLists || []).forEach(l => { l.areaIds = (l.areaIds || []).filter(id => id !== areaId); });
       saveStorage();
       closeDetailPanel();
     }
@@ -2064,8 +2205,8 @@
           <span style="cursor:pointer; font-size:16px; opacity:0.6;" onclick="closeModal()">✕</span>
         </div>
         <p style="font-size:11.5px; color:#666; margin-bottom:10px; line-height:1.5;">
-          このコードには<strong>時間制限はありません。</strong><br>
-          ただし、店舗・エリア・リスト・マップ名などの情報を更新すると、セキュリティのため現在のコードは無効になり、新しいコードが必要になります。
+          このコードには<strong>時間制限はありません。</strong> 同じコードを複数人で利用できます。<br>
+          店舗・エリア・リスト・マップ名などを変更した場合は、「コードを再発行・更新」を押すと同じコードに最新版が反映されます。
         </p>
         <div class="form-group">
           <label>共有コード (数字＋半角英字混在 6〜20文字)</label>
@@ -2249,6 +2390,7 @@
           stores: JSON.parse(JSON.stringify(targetMapData.stores || [])),
           areas: JSON.parse(JSON.stringify(targetMapData.areas || [])),
           lists: JSON.parse(JSON.stringify(targetMapData.lists || [])),
+          areaLists: JSON.parse(JSON.stringify(targetMapData.areaLists || [])),
           isShared: true,
           shareVersion: targetMapData.version || 1
         };
@@ -2324,7 +2466,7 @@
         
         <div class="form-group" style="margin-bottom:12px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
           <label>切り替えるマップを選択</label>
-          <select id="switch-map-select" class="stylish-input" onchange="switchCurrentMap(this.value)">
+          <select id="switch-map-select" class="stylish-input scroll-select-10" size="10" onchange="switchCurrentMap(this.value)">
             ${mapOptions}
           </select>
         </div>
@@ -2426,6 +2568,93 @@
       closeSearchResultsPanel();
       alert(`🎉 新しいマップ「${name}」を作成して切り替えました！`);
     }
+
+    function openAreaListModal() {
+      toggleMenu();
+      const curMap = getCurrentMap();
+      if (!curMap.areaLists) curMap.areaLists = [];
+      const content = document.getElementById('modal-content');
+      document.getElementById('modal-overlay').style.display = 'flex';
+
+      const listsHtml = curMap.areaLists.map((l, index) => {
+        const areaIds = Array.isArray(l.areaIds) ? l.areaIds : [];
+        const assigned = areaIds.map(id => curMap.areas.find(a => a.id === id)).filter(Boolean);
+        const rows = assigned.map((a, i) => `
+          <div class="area-list-row">
+            <span>🚩 <b>No.${i + 1}</b>　${a.name}</span>
+            ${!curMap.isShared ? `<span class="area-list-row-actions">
+              <button onclick="moveAreaInList('${l.id}','${a.id}',-1)" style="padding:2px 5px;font-size:9px;">↑</button>
+              <button onclick="moveAreaInList('${l.id}','${a.id}',1)" style="padding:2px 5px;font-size:9px;">↓</button>
+              <button onclick="moveAreaInListToNo('${l.id}','${a.id}')" style="padding:2px 5px;font-size:9px;">No.</button>
+              <button onclick="removeAreaFromList('${l.id}','${a.id}')" style="padding:2px 5px;font-size:9px;background:#dc3545;">削除</button>
+            </span>` : ''}
+          </div>`).join('');
+        return `
+          <div class="area-list-manage-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+              <span style="font-size:12px;">📁 <b>No.${index + 1}　${l.name}</b> <small>(${assigned.length}件)</small></span>
+              ${!curMap.isShared ? `<span><button onclick="moveAreaListByDirection('${l.id}',-1)" style="padding:2px 5px;font-size:9px;">↑</button><button onclick="moveAreaListByDirection('${l.id}',1)" style="padding:2px 5px;font-size:9px;">↓</button> <button onclick="moveAreaListToNo('${l.id}')" style="padding:2px 6px;font-size:9px;">↕️ No.移動</button> <button onclick="editAreaListName('${l.id}')" style="padding:2px 6px;font-size:9px;background:#ff9f43;">✏️</button> <button onclick="deleteAreaList('${l.id}')" style="padding:2px 6px;font-size:9px;background:#dc3545;">削除</button></span>` : ''}
+            </div>
+            <div class="area-list-assigned">${rows || '<div style="font-size:10px;color:#888;">エリアは登録されていません。</div>'}</div>
+            ${!curMap.isShared ? `
+              <div style="display:flex;gap:4px;align-items:stretch;margin-top:6px;">
+                <select id="area-add-select-${l.id}" class="stylish-input scroll-select-10" size="10" style="flex:1;min-width:0;">
+                  <option value="">追加するエリアを選択</option>
+                  ${curMap.areas.filter(a => !assigned.some(x => x.id === a.id)).map(a => `<option value="${a.id}">🚩 ${a.name}</option>`).join('')}
+                </select>
+                <button onclick="addAreaToList('${l.id}')" style="white-space:nowrap;padding:5px 8px;">追加</button>
+              </div>` : ''}
+          </div>`;
+      }).join('');
+
+      content.innerHTML = `
+        <div class="modal-header"><h3>🚩 エリアリスト管理</h3></div>
+        <p style="font-size:11px;color:#666;margin-bottom:8px;">エリア専用リスト：${curMap.areaLists.length}/50</p>
+        ${!curMap.isShared ? `<button onclick="createAreaListPrompt()" style="width:100%;margin-bottom:10px;">＋ 新しいエリアリストを追加</button>` : ''}
+        <div style="max-height:50vh;overflow-y:auto;">${listsHtml || '<p style="color:#888;font-size:11px;">エリアリストが登録されていません。</p>'}</div>
+        <button onclick="closeModal()" class="btn-secondary" style="width:100%;margin-top:10px;">閉じる</button>`;
+    }
+
+    function createAreaListPrompt() {
+      const curMap = getCurrentMap();
+      if (curMap.isShared) return;
+      if (!curMap.areaLists) curMap.areaLists = [];
+      if (curMap.areaLists.length >= 50) { alert('⚠️ エリアリスト上限数（50個）に達しています。'); return; }
+      const name = prompt('新しいエリアリスト名:');
+      if (!name || !name.trim()) return;
+      curMap.areaLists.push({id:'alst_' + Date.now(), name:name.trim(), areaIds:[]});
+      saveStorage();
+      openAreaListModal();
+    }
+
+    function moveAreaListByDirection(listId,direction){const c=getCurrentMap();if(c.isShared)return;const arr=c.areaLists||[];const i=arr.findIndex(l=>l.id===listId);const j=i+direction;if(i<0||j<0||j>=arr.length)return;[arr[i],arr[j]]=[arr[j],arr[i]];saveStorage();openAreaListModal();}
+    function moveAreaListToNo(listId) {
+      const curMap=getCurrentMap(); if(curMap.isShared)return;
+      const arr=curMap.areaLists||[]; const i=arr.findIndex(l=>l.id===listId); if(i<0)return;
+      const input=prompt(`「${arr[i].name}」を何番目に移動しますか？\n現在: No.${i+1} / 範囲: No.1～No.${arr.length}`,String(i+1));
+      if(input===null)return; const n=parseInt(input,10);
+      if(!Number.isInteger(n)||n<1||n>arr.length){alert(`No.は1～${arr.length}の範囲で指定してください。`);return;}
+      const [m]=arr.splice(i,1); arr.splice(n-1,0,m); saveStorage(); openAreaListModal();
+    }
+    function editAreaListName(listId){const c=getCurrentMap();if(c.isShared)return;const l=(c.areaLists||[]).find(x=>x.id===listId);if(!l)return;const n=prompt('エリアリスト名を編集:',l.name);if(n&&n.trim()){l.name=n.trim();saveStorage();openAreaListModal();}}
+    function deleteAreaList(listId){const c=getCurrentMap();if(c.isShared)return;if(!confirm('このエリアリストを削除しますか？'))return;c.areaLists=c.areaLists.filter(l=>l.id!==listId);c.areas.forEach(a=>{if(Array.isArray(a.listIds))a.listIds=a.listIds.filter(id=>id!==listId);});saveStorage();openAreaListModal();}
+    function moveAreaInList(listId, areaId, direction){const c=getCurrentMap();if(c.isShared)return;const l=(c.areaLists||[]).find(x=>x.id===listId);if(!l)return;if(!Array.isArray(l.areaIds))l.areaIds=[];const i=l.areaIds.indexOf(areaId);const j=i+direction;if(i<0||j<0||j>=l.areaIds.length)return;[l.areaIds[i],l.areaIds[j]]=[l.areaIds[j],l.areaIds[i]];saveStorage();openAreaListModal();}
+    function moveAreaInListToNo(listId, areaId){const c=getCurrentMap();if(c.isShared)return;const l=(c.areaLists||[]).find(x=>x.id===listId);if(!l)return;if(!Array.isArray(l.areaIds))l.areaIds=[];const i=l.areaIds.indexOf(areaId);if(i<0)return;const input=prompt(`「${(c.areas.find(a=>a.id===areaId)||{}).name||''}」を何番目に移動しますか？\n現在: No.${i+1} / 範囲: No.1～No.${l.areaIds.length}`,String(i+1));if(input===null)return;const n=parseInt(input,10);if(!Number.isInteger(n)||n<1||n>l.areaIds.length){alert(`No.は1～${l.areaIds.length}の範囲で指定してください。`);return;}const [m]=l.areaIds.splice(i,1);l.areaIds.splice(n-1,0,m);saveStorage();openAreaListModal();}
+    function addAreaToList(listId) {
+      const c=getCurrentMap();
+      if(c.isShared)return;
+      const l=(c.areaLists||[]).find(x=>x.id===listId); if(!l)return;
+      const sel=document.getElementById('area-add-select-'+listId); const areaId=sel ? sel.value : '';
+      if(!areaId){alert('追加するエリアを選択してください。');return;}
+      if(!Array.isArray(l.areaIds))l.areaIds=[];
+      if(l.areaIds.includes(areaId)){alert('このエリアはすでに登録されています。');return;}
+      l.areaIds.push(areaId);
+      const a=c.areas.find(x=>x.id===areaId);
+      if(a){if(!Array.isArray(a.listIds))a.listIds=[];if(!a.listIds.includes(listId))a.listIds.push(listId);}
+      saveStorage(); openAreaListModal();
+    }
+
+    function removeAreaFromList(listId,areaId){const c=getCurrentMap();if(c.isShared)return;const l=(c.areaLists||[]).find(x=>x.id===listId);if(!l)return;l.areaIds=(l.areaIds||[]).filter(id=>id!==areaId);const a=c.areas.find(x=>x.id===areaId);if(a&&Array.isArray(a.listIds))a.listIds=a.listIds.filter(id=>id!==listId);saveStorage();openAreaListModal();}
 
     function openCustomListModal() {
       toggleMenu();
