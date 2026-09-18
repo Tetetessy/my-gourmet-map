@@ -395,6 +395,10 @@
     <div class="area-move-wrap">
       <button id="area-move-btn" class="area-move-btn" onclick="toggleAreaMovePanel()">🚩 エリア移動 ▾</button>
       <div id="area-move-panel" class="area-move-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="font-size:11px; font-weight:bold;">🚩 エリア移動</div>
+          <button type="button" onclick="toggleAreaMovePanel()" style="background:#6c757d; font-size:10px; padding:2px 6px;">キャンセル ✕</button>
+        </div>
         <div style="font-size:10px; color:#777; margin-bottom:6px;">エリアリストから選択できます（各リストは折りたたみ式）。</div>
         <div id="area-move-content" class="area-move-scroll"></div>
       </div>
@@ -410,10 +414,12 @@
       <div class="map-list-panel" id="map-list-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <h4 style="margin:0;">📋 リスト表示</h4>
-          <button onclick="toggleMapListPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
+          <div style="display:flex; gap:4px;">
+            <button onclick="clearMapListView()" style="background:#6c757d; font-size:10px; padding:1px 5px;">選択解除</button>
+            <button onclick="toggleMapListPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
+          </div>
         </div>
         <select id="map-list-select" class="scroll-select-10" size="10" onchange="applyMapListView(this.value)" style="width:100%;">
-          <option value="">全店舗を表示</option>
         </select>
         <div id="map-list-status" style="font-size:10px; margin-top:5px; color:#666;">リストを選ぶと対象外の店舗ピンがグレーになります。</div>
         <div id="map-list-store-summary" class="map-list-store-summary" style="display:none;"></div>
@@ -426,7 +432,7 @@
         </div>
         <input type="text" id="search-name" placeholder="店舗名検索" oninput="filterStores()" style="width:100%;">
         <select id="search-list" class="scroll-select-10" size="10" onchange="filterStores()" style="width:100%;">
-          <option value="">全てのリスト</option>
+          <option value="">全店舗</option>
         </select>
         <select id="search-fav" onchange="filterStores()" style="width:100%;">
           <option value="">全てのお気に入り</option>
@@ -462,7 +468,7 @@
       <button id="auth-btn" onclick="openAuthModal()">ログイン / 登録</button>
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
       <small>【エリア管理】</small>
-      <button onclick="openAreaListModal()">🚩 エリアリスト管理</button>
+      <button onclick="openAreaListModal()">🚩 エリア管理</button>
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
       <small>【マップ管理】</small>
       <button onclick="openMapSwitchModal()">マップ切替・編集</button>
@@ -559,15 +565,15 @@
 
     const FORM_OPTIONS = [
       'レストラン', 'ビアレストラン', 'ブッフェ', 'ダイニング', 'カフェ', 
-      'カフェダイニング', 'カレー屋', 'ケーキ屋', 'パン屋', 'スイーツ', 
-      '料亭', '郷土料理屋', '小料理屋', 'ラーメン屋', '焼肉屋', 
+      'カフェダイニング', 'バル', 'カレー屋', 'ケーキ屋', 'パン屋', 'スイーツ系', 
+      '料亭', '定食屋', '郷土料理屋', '小料理屋', '寿司', '肉寿司', 'ラーメン屋', 'そば', 'うどん', 'パスタ', '焼肉屋', 'しゃぶしゃぶ', 
       '居酒屋', 'バー', 'バーダイニング', '屋台', 'キッチンカー', '野外', 'ビアガーデン', '販売店/ショップ', 'その他'
     ];
 
     const GENRE_OPTIONS = [
-      '和食', '洋食', '中華', '韓国', 'アジアン', 'エスニック', '他国料理', 
+      '和食', '洋食', '中華', '韓国', 'アジアン', 'エスニック', 'イタリアン', 'フレンチ', 'ヨーロッパ', '欧米', '北米', '南米', '他国料理', 
       '郷土料理', 'ジビエ', '寿司', '焼肉', 'ラーメン', 'カレー', '魚系', 
-      '肉系', '野菜系', 'スイーツ系', 'カフェ', '居酒屋', 'ビーガン', 'ゲテモノ', 'お土産/ギフト', 'その他'
+      '肉系', '麺系', '野菜系', 'スイーツ系', 'カフェ', '居酒屋', 'ビーガン', 'ゲテモノ', 'お土産/ギフト', 'その他'
     ];
 
     const BUDGET_OPTIONS = [
@@ -774,6 +780,7 @@
         if (!m.lists) m.lists = [];
         if (!m.areaLists) m.areaLists = [];
         if (!Array.isArray(m.areaLists)) m.areaLists = asArray(m.areaLists);
+        (m.stores || []).forEach(st => { if (st.form === 'スイーツ') st.form = 'スイーツ系'; });
         (m.areas || []).forEach(a => { if (!Array.isArray(a.listIds)) a.listIds = []; });
         m.areaLists.forEach(l => { if (!Array.isArray(l.areaIds)) l.areaIds = []; });
       });
@@ -928,6 +935,12 @@
       }).addTo(map);
 
       map.on('click', function(e) {
+        // 店舗・エリア詳細を開いている間は、地図の空白部分をクリック／タッチしても
+        // 詳細ウィンドウを消したり内容を上書きしたりしない。
+        // 店舗登録・エリア登録中だけは、従来どおり地図タップで位置を指定できる。
+        const detailArea = document.getElementById('detail-area');
+        if (detailArea && detailArea.style.display === 'block' && !pendingRegistrationType) return;
+
         const curMap = getCurrentMap();
         if (curMap.isShared) {
           alert('🔒 共有されたマップのため、ピンの作成はできません。');
@@ -1042,7 +1055,7 @@
       const select = document.getElementById('search-list');
       if (!select) return;
       const currentVal = select.value;
-      let html = '<option value="">全てのリスト</option>';
+      let html = '<option value="">全店舗</option>';
       if (cur && cur.lists) {
         cur.lists.forEach(l => { html += `<option value="${l.id}">${l.name}</option>`; });
       }
@@ -1055,7 +1068,7 @@
       const select = document.getElementById('map-list-select');
       if (!select) return;
       const currentVal = window.activeMapListId || '';
-      let html = '<option value="">全店舗を表示</option>';
+      let html = '';
       (cur && cur.lists ? cur.lists : []).forEach(l => {
         html += `<option value="${l.id}">${l.name}</option>`;
       });
@@ -1088,7 +1101,7 @@
         return;
       }
       const stores = (cur.stores || []).filter(s => (s.listIds || []).includes(list.id) || s.listId === list.id);
-      if (status) status.textContent = `「${list.name}」：${stores.length}店舗 / リスト外の店舗ピンはグレー表示`;
+      if (status) status.textContent = list ? `「${list.name}」：${stores.length}店舗 / リスト外の店舗ピンはグレー表示` : 'リストを選択すると対象外の店舗ピンがグレーになります。';
       container.style.display = 'block';
       container.innerHTML = `
         <div style="font-size:10px; font-weight:bold; margin-bottom:4px;">📍 リスト内の店舗（タップで移動）</div>
@@ -1116,6 +1129,12 @@
 
     function applyMapListView(listId) {
       window.activeMapListId = listId || '';
+      updateMapListStoreSummary();
+      renderCurrentMap();
+    }
+
+    function clearMapListView() {
+      window.activeMapListId = '';
       updateMapListStoreSummary();
       renderCurrentMap();
     }
@@ -1881,6 +1900,52 @@
     }
 
     /* 登録店舗ピン表示と共有機能 */
+    function getNearestStoreOrder(storeId) {
+      const curMap = getCurrentMap();
+      const stores = (curMap && curMap.stores ? curMap.stores : []).filter(s =>
+        s && Number.isFinite(Number(s.lat)) && Number.isFinite(Number(s.lng))
+      );
+      const current = stores.find(s => s.id === storeId);
+      if (!current) return [];
+      const lat0 = Number(current.lat) * Math.PI / 180;
+      const lng0 = Number(current.lng) * Math.PI / 180;
+      const cosLat = Math.cos(lat0);
+      return stores.map(s => {
+        const lat = Number(s.lat) * Math.PI / 180;
+        const lng = Number(s.lng) * Math.PI / 180;
+        const dx = (lng - lng0) * cosLat;
+        const dy = lat - lat0;
+        return { store:s, distance: Math.sqrt(dx*dx + dy*dy) };
+      }).sort((a,b) => a.distance - b.distance).map(x => x.store);
+    }
+
+    function switchToNearbyStore(storeId, direction) {
+      const order = getNearestStoreOrder(storeId);
+      if (order.length < 2) return;
+      const currentIndex = order.findIndex(s => s.id === storeId);
+      if (currentIndex < 0) return;
+      let nextIndex = currentIndex + (direction < 0 ? -1 : 1);
+      // 現在店は常にNo.0、そこから近い順に巡回する。
+      if (nextIndex < 0) nextIndex = order.length - 1;
+      if (nextIndex >= order.length) nextIndex = 0;
+      const nextStore = order[nextIndex];
+      if (nextStore) showStoreDetail(nextStore.id);
+    }
+
+    function getNearestStoreDistanceText(storeId) {
+      const order = getNearestStoreOrder(storeId);
+      if (order.length < 2) return '';
+      const current = order[0];
+      const next = order[1];
+      const lat1 = Number(current.lat) * Math.PI / 180;
+      const lat2 = Number(next.lat) * Math.PI / 180;
+      const dLat = lat2 - lat1;
+      const dLng = (Number(next.lng) - Number(current.lng)) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLng/2)**2;
+      const meters = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return `${Math.round(meters)}m先: ${next.name}`;
+    }
+
     function showStoreDetail(storeId) {
       const curMap = getCurrentMap();
       const store = curMap.stores.find(s => s.id === storeId);
@@ -1955,7 +2020,18 @@
         <button onclick="deleteStore('${store.id}')" style="background:#dc3545; font-size:10px; padding:2px 6px;">削除</button>
       `;
 
+      const nearbyOrder = getNearestStoreOrder(store.id);
+      const hasNearbyStore = nearbyOrder.length > 1;
+      const nearbyHint = getNearestStoreDistanceText(store.id);
+
       detailContent.innerHTML = `
+        ${hasNearbyStore ? `
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:5px; margin:-2px 0 6px; padding-bottom:5px; border-bottom:1px solid var(--border-color);">
+            <button type="button" onclick="switchToNearbyStore('${store.id}',-1)" title="近い店舗へ戻る" style="background:#6c757d; min-width:34px; font-size:16px; line-height:1; padding:4px 8px;">&lt;</button>
+            <div style="flex:1; text-align:center; font-size:9.5px; color:#777; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">↔ 近い店舗へ移動${nearbyHint ? ` / ${nearbyHint}` : ''}</div>
+            <button type="button" onclick="switchToNearbyStore('${store.id}',1)" title="近い店舗へ進む" style="background:#6c757d; min-width:34px; font-size:16px; line-height:1; padding:4px 8px;">&gt;</button>
+          </div>
+        ` : ''}
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
           <div>
             <span style="font-size:10px; color:#ff6b6b; font-weight:bold;">${store.isFavorite ? '⭐ お気に入り' : '☆ 通常'}</span>
@@ -2608,7 +2684,7 @@
       }).join('');
 
       content.innerHTML = `
-        <div class="modal-header"><h3>🚩 エリアリスト管理</h3></div>
+        <div class="modal-header"><h3>🚩 エリア管理</h3></div>
         <p style="font-size:11px;color:#666;margin-bottom:8px;">エリア専用リスト：${curMap.areaLists.length}/50</p>
         ${!curMap.isShared ? `<button onclick="createAreaListPrompt()" style="width:100%;margin-bottom:10px;">＋ 新しいエリアリストを追加</button>` : ''}
         <div style="max-height:50vh;overflow-y:auto;">${listsHtml || '<p style="color:#888;font-size:11px;">エリアリストが登録されていません。</p>'}</div>
