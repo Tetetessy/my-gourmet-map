@@ -1,18 +1,9 @@
 アドレス　：teteteshhie.ai.create@gmail.com
 パスワード：teteteshhie78
 
-fix: 地図タイルの表示エラーを修正
-
-# 変更のあったすべてのファイルをステージングに追加
 git add .
-
-# 変更内容のコメントを付けてコミット
-git commit -m "API設定反映、ログイン共有化"
-
-# リモートリポジトリ（GitHub等）へ反映
-git push
-
-git pull
+git commit -m "fix: 共有コードモーダルの関数を更新"
+git push origin main
 
 const firebaseConfig = {
   apiKey: "AIzaSyCwCvKcYkGdqsIf9srXHiX4RGKtEEi0Tj8",

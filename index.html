@@ -124,7 +124,25 @@
     .area-move-item:hover { background:rgba(0,0,0,.08); }
     .area-list-manage-box { border:1px solid var(--border-color); border-radius:8px; padding:8px; margin-bottom:8px; }
     .area-list-assigned { margin-top:5px; padding-left:6px; border-left:2px solid var(--primary-color); }
-    .area-list-row { display:flex; justify-content:space-between; align-items:center; gap:6px; background:rgba(0,0,0,.03); padding:5px 6px; margin-top:3px; border-radius:5px; font-size:10.5px; }
+    .area-list-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; background:rgba(0,0,0,.03); padding:5px 6px; margin-top:3px; border-radius:5px; font-size:10.5px; }
+    .list-manage-header { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:10px; }
+    .list-manage-actions { display:grid; grid-template-columns:repeat(5, auto); gap:3px; justify-content:end; align-items:center; }
+    .list-store-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; }
+    .list-store-actions { display:grid; grid-template-columns:repeat(2, auto); gap:3px; justify-content:end; }
+    .tag-grid { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; }
+    .choice-tag { display:inline-flex; align-items:center; justify-content:center; min-height:28px; padding:5px 9px; border:1px solid var(--border-color); border-radius:999px; background:rgba(255,255,255,.6); color:var(--text-color); cursor:pointer; user-select:none; font-size:10.5px; line-height:1.15; }
+    .choice-tag.selected { background:var(--primary-gradient); color:#fff; border-color:transparent; box-shadow:0 2px 6px rgba(0,0,0,.15); }
+    .tag-filter-box { margin:5px 0; }
+    .tag-filter-title { font-size:10px; font-weight:bold; margin-bottom:3px; }
+    .area-manage-list-body { display:none; margin-top:6px; }
+    .area-manage-list-box.open .area-manage-list-body { display:block; }
+    .area-manage-list-toggle { cursor:pointer; user-select:none; }
+    .panel-scroll-10 { max-height:340px; overflow-y:auto; }
+    .modal-content .modal-scroll { max-height:60vh; overflow-y:auto; }
+    @media (max-width:700px) {
+      .list-manage-actions { grid-template-columns:repeat(3, auto); }
+      .list-store-actions { grid-template-columns:repeat(2, auto); }
+    }
     .area-list-row-actions { white-space:nowrap; }
     .scroll-select-10 { max-height: 220px; overflow-y:auto; }
     @media (max-width:700px) {
@@ -142,7 +160,7 @@
       .map-list-panel { top:118px; left:6px; width:calc(46vw - 6px); max-width:none; }
     }
     .search-results-panel {
-      position: fixed; top: 50px; right: 10px; z-index: 999; background: var(--panel-bg); backdrop-filter: blur(8px); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 250px; max-height: 60vh; overflow-y: auto; display: none; padding-bottom: 55vh; box-sizing:border-box;
+      position: fixed; top: 50px; right: 10px; z-index: 999; background: var(--panel-bg); backdrop-filter: blur(8px); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 250px; max-height: 60vh; overflow-y: auto; display: none; padding-bottom: 70vh; box-sizing:border-box;
     }
 
     .bottom-center-area { position: absolute; top: 50px; right: 270px; z-index: 1000; width: 260px; display: none; }
@@ -439,19 +457,10 @@
           <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
         </div>
         <input type="text" id="search-name" placeholder="店舗名検索" oninput="filterStores()" style="width:100%;">
-        <select id="search-list" class="scroll-select-10" size="10" onchange="filterStores()" style="width:100%;">
-          <option value="">全店舗</option>
-        </select>
-        <select id="search-fav" onchange="filterStores()" style="width:100%;">
-          <option value="">全てのお気に入り</option>
-          <option value="fav">⭐ お気に入りのみ</option>
-        </select>
-        <select id="search-form" onchange="filterStores()" style="width:100%;">
-          <option value="">全ての形式</option>
-        </select>
-        <select id="search-genre" onchange="filterStores()" style="width:100%;">
-          <option value="">全てのジャンル</option>
-        </select>
+        <div class="tag-filter-box"><div class="tag-filter-title">リスト</div><div id="search-list-tags" class="tag-grid"></div></div>
+        <div class="tag-filter-box"><div class="tag-filter-title">お気に入り</div><div id="search-fav-tags" class="tag-grid"></div></div>
+        <div class="tag-filter-box"><div class="tag-filter-title">形式（複数選択可）</div><div id="search-form-tags" class="tag-grid"></div></div>
+        <div class="tag-filter-box"><div class="tag-filter-title">ジャンル（複数選択可）</div><div id="search-genre-tags" class="tag-grid"></div></div>
         <select id="search-budget" onchange="filterStores()" style="width:100%;">
           <option value="">全ての予算</option>
         </select>
@@ -572,10 +581,9 @@
     ];
 
     const FORM_OPTIONS = [
-      'レストラン', 'ビストロ', 'ビアレストラン', 'ブッフェ', 'ダイニング', 'カフェ', 'カフェレストラン',
-      'カフェダイニング', 'バル', 'カレー屋', 'ケーキ屋', 'パン屋', 'スイーツ系', 
+      'レストラン', 'ビストロ', 'ブッフェ', 'バイキング', 'ダイニング', 'カフェ', 'バル', 'カレー屋', 'ケーキ屋', 'パン屋', 'スイーツ系', 
       '料亭', '定食屋', '郷土料理屋', '小料理屋', '寿司', '肉寿司', 'ラーメン屋', 'そば', 'うどん', 'パスタ', '焼肉屋', 'しゃぶしゃぶ', 
-      '居酒屋', 'バー', 'バーダイニング', '屋台', 'キッチンカー', '野外', 'ビアガーデン', '販売店/ショップ', 'その他'
+      '居酒屋', 'バー', '屋台', 'キッチンカー', '野外', 'ビアガーデン', '販売店/ショップ', 'その他'
     ];
 
     const GENRE_OPTIONS = [
@@ -988,25 +996,49 @@
       renderCurrentMap();
     };
 
+    function renderChoiceTags(prefix, options, selectedValues = []) {
+      const selected = new Set(selectedValues || []);
+      return options.map(v => `<button type="button" class="choice-tag ${selected.has(v) ? 'selected' : ''}" data-tag-prefix="${prefix}" data-value="${v}" onclick="toggleChoiceTag(this)">${v}</button>`).join('');
+    }
+
+    function renderListChoiceTags(selectedIds = []) {
+      const cur = getCurrentMap();
+      const selected = new Set(selectedIds || []);
+      return `<button type="button" class="choice-tag reg-list-tag ${selected.size === 0 ? 'selected' : ''}" data-value="" onclick="toggleListChoiceTag(this)">選択なし</button>` + (cur?.lists || []).map(l => `<button type="button" class="choice-tag reg-list-tag ${selected.has(l.id) ? 'selected' : ''}" data-value="${l.id}" onclick="toggleListChoiceTag(this)">${l.name}</button>`).join('');
+    }
+
+    function toggleChoiceTag(el) { el.classList.toggle('selected'); }
+    function toggleListChoiceTag(el) {
+      const all = document.querySelectorAll('.reg-list-tag');
+      if (el.dataset.value === '') { all.forEach(x => x.classList.remove('selected')); el.classList.add('selected'); return; }
+      el.classList.toggle('selected');
+      const none = Array.from(all).find(x => x.dataset.value === '');
+      if (none) none.classList.toggle('selected', !Array.from(all).some(x => x.dataset.value && x.classList.contains('selected')));
+    }
+    function getSelectedTagValues(prefix) { return Array.from(document.querySelectorAll(`.choice-tag[data-tag-prefix="${prefix}"].selected`)).map(el => el.dataset.value); }
+    function getSelectedSearchTagValues(containerId) { return Array.from(document.querySelectorAll(`#${containerId} .choice-tag.selected`)).map(el => el.dataset.value).filter(Boolean); }
+    function getStoreForms(store) { return Array.isArray(store?.forms) ? store.forms : (store?.form ? [store.form] : []); }
+    function getStoreGenres(store) { return Array.isArray(store?.genres) ? store.genres : (store?.genre ? [store.genre] : []); }
+
     function initSearchOptions() {
-      const formSel = document.getElementById('search-form');
-      const genreSel = document.getElementById('search-genre');
+      const listBox = document.getElementById('search-list-tags');
+      const favBox = document.getElementById('search-fav-tags');
+      const formBox = document.getElementById('search-form-tags');
+      const genreBox = document.getElementById('search-genre-tags');
       const budgetSel = document.getElementById('search-budget');
-      if (formSel) {
-        formSel.innerHTML = '<option value="">全ての形式</option>' + FORM_OPTIONS.map(f => `<option>${f}</option>`).join('');
-      }
-      if (genreSel) {
-        genreSel.innerHTML = '<option value="">全てのジャンル</option>' + GENRE_OPTIONS.map(g => `<option>${g}</option>`).join('');
-      }
-      if (budgetSel) {
-        budgetSel.innerHTML = '<option value="">全ての予算</option>' + BUDGET_OPTIONS.map(b => `<option>${b}</option>`).join('');
-      }
+      const cur = getCurrentMap();
+      if (listBox) listBox.innerHTML = `<button type="button" class="choice-tag selected" data-value="" onclick="toggleSearchExclusiveTag(this,'search-list-tags')">全店舗</button>` + ((cur?.lists || []).map(l => `<button type="button" class="choice-tag" data-value="${l.id}" onclick="toggleSearchTag(this,'search-list-tags')">${l.name}</button>`).join(''));
+      if (favBox) favBox.innerHTML = `<button type="button" class="choice-tag selected" data-value="" onclick="toggleSearchExclusiveTag(this,'search-fav-tags')">すべて</button><button type="button" class="choice-tag" data-value="fav" onclick="toggleSearchExclusiveTag(this,'search-fav-tags')">★ お気に入り</button>`;
+      if (formBox) formBox.innerHTML = `<button type="button" class="choice-tag selected" data-value="" onclick="clearSearchTags('search-form-tags')">全て</button>` + FORM_OPTIONS.map(f => `<button type="button" class="choice-tag" data-value="${f}" onclick="toggleSearchTag(this,'search-form-tags')">${f}</button>`).join('');
+      if (genreBox) genreBox.innerHTML = `<button type="button" class="choice-tag selected" data-value="" onclick="clearSearchTags('search-genre-tags')">全て</button>` + GENRE_OPTIONS.map(g => `<button type="button" class="choice-tag" data-value="${g}" onclick="toggleSearchTag(this,'search-genre-tags')">${g}</button>`).join('');
+      if (budgetSel) { budgetSel.innerHTML = '<option value="">全ての予算</option>' + BUDGET_OPTIONS.map(b => `<option>${b}</option>`).join(''); }
       const optionContainer = document.getElementById('search-options-container');
-      if (optionContainer) {
-        optionContainer.innerHTML = STORE_OPTION_DEFS.map(o => `<label class="store-option-check"><input type="checkbox" class="search-option-check" value="${o.id}" onchange="filterStores()"><span>${o.label}</span></label>`).join('');
-      }
+      if (optionContainer) optionContainer.innerHTML = STORE_OPTION_DEFS.map(o => `<label class="store-option-check"><input type="checkbox" class="search-option-check" value="${o.id}" onchange="filterStores()"><span>${o.label}</span></label>`).join('');
       updateMapListDropdown();
     }
+    function toggleSearchTag(el, id) { el.classList.toggle('selected'); const all = document.querySelector(`#${id} .choice-tag[data-value=""]`); if (all) all.classList.toggle('selected', !Array.from(document.querySelectorAll(`#${id} .choice-tag`)).some(x => x.dataset.value && x.classList.contains('selected'))); filterStores(); }
+    function toggleSearchExclusiveTag(el, id) { document.querySelectorAll(`#${id} .choice-tag`).forEach(x => x.classList.remove('selected')); el.classList.add('selected'); filterStores(); }
+    function clearSearchTags(id) { document.querySelectorAll(`#${id} .choice-tag`).forEach(x => x.classList.remove('selected')); const all=document.querySelector(`#${id} .choice-tag[data-value=""]`); if(all)all.classList.add('selected'); filterStores(); }
 
     function renderCurrentMap() {
       updateIndicator();
@@ -1064,16 +1096,9 @@
     }
 
     function updateSearchListDropdown() {
-      const cur = getCurrentMap();
-      const select = document.getElementById('search-list');
-      if (!select) return;
-      const currentVal = select.value;
-      let html = '<option value="">全店舗</option>';
-      if (cur && cur.lists) {
-        cur.lists.forEach(l => { html += `<option value="${l.id}">${l.name}</option>`; });
-      }
-      select.innerHTML = html;
-      select.value = currentVal;
+      const box=document.getElementById('search-list-tags'); const cur=getCurrentMap(); if(!box||!cur)return;
+      const selected=getSelectedSearchTagValues('search-list-tags');
+      box.innerHTML=`<button type="button" class="choice-tag ${selected.length?'':'selected'}" data-value="" onclick="toggleSearchExclusiveTag(this,'search-list-tags')">全店舗</button>`+(cur.lists||[]).map(l=>`<button type="button" class="choice-tag ${selected.includes(l.id)?'selected':''}" data-value="${l.id}" onclick="toggleSearchTag(this,'search-list-tags')">${l.name}</button>`).join('');
     }
 
     function updateMapListDropdown() {
@@ -1121,7 +1146,7 @@
         ${stores.length ? stores.map(s => `
           <button type="button" class="map-list-store-item" onclick="moveToMapListStore('${s.id}')">
             <b>${s.isFavorite ? '⭐ ' : ''}${s.name}</b>
-            <small>${s.form || '-'} / ${s.genre || '-'}${s.station ? ' / 🚉 ' + s.station : ''}</small>
+            <small>${getStoreForms(s).join(' / ') || '-'} / ${getStoreGenres(s).join(' / ') || '-'}${s.station ? ' / 🚉 ' + s.station : ''}</small>
           </button>
         `).join('') : '<div style="font-size:10px; color:#888; text-align:center; padding:8px 0;">このリストには店舗がありません。</div>'}
       `;
@@ -1219,10 +1244,10 @@
       const currentZoom = map.getZoom();
       const travelZoom = Math.max(10, Math.min(12, currentZoom - 2));
       // いったんズームアウトしてから、目的地へスライド移動しつつ近づく。
-      map.flyTo(map.getCenter(), travelZoom, { duration: 0.45, easeLinearity: 0.25 });
+      map.flyTo(map.getCenter(), travelZoom, { duration: 0.9, easeLinearity: 0.2 });
       setTimeout(() => {
-        map.flyTo(target, 15, { duration: 1.15, easeLinearity: 0.25 });
-      }, 480);
+        map.flyTo(target, 15, { duration: 1.1, easeLinearity: 0.2 });
+      }, 950);
       const areaPanel = document.getElementById('area-move-panel');
       if (areaPanel) areaPanel.style.display = 'none';
     }
@@ -1298,20 +1323,7 @@
         <div class="form-group">
           <label>リスト登録 (既存リストから追加)</label>
           <div id="existing-list-container">
-            <div class="existing-list-row" style="display:flex; gap:4px; margin-bottom:4px;">
-              <select class="stylish-input existing-list-select scroll-select-10" size="10" style="flex:1;">
-                ${generateListOptionsHtml(firstSelectedId)}
-              </select>
-              <button type="button" onclick="addExistingListRow()" style="padding:4px 10px; font-weight:bold;">＋</button>
-            </div>
-            ${additionalSelectedIds.map(id => `
-              <div class="existing-list-row" style="display:flex; gap:4px; margin-bottom:4px;">
-                <select class="stylish-input existing-list-select scroll-select-10" size="10" style="flex:1;">
-                  ${generateListOptionsHtml(id)}
-                </select>
-                <button type="button" onclick="this.parentElement.remove()" style="padding:4px 8px; background:#dc3545; color:#fff;">✕</button>
-              </div>
-            `).join('')}
+            <div id="reg-store-list-tags" class="tag-grid">${renderListChoiceTags(selectedListIds)}</div>
           </div>
         </div>
 
@@ -1337,17 +1349,13 @@
         </div>
 
         <div class="form-group">
-          <label>形式</label>
-          <select id="reg-store-form" class="stylish-input">
-            ${FORM_OPTIONS.map(f => `<option ${isEdit && storeToEdit.form === f ? 'selected' : ''}>${f}</option>`).join('')}
-          </select>
+          <label>形式（複数選択可）</label>
+          <div id="reg-store-form-tags" class="tag-grid">${renderChoiceTags('reg-form', FORM_OPTIONS, isEdit ? getStoreForms(storeToEdit) : [])}</div>
         </div>
 
         <div class="form-group">
-          <label>ジャンル</label>
-          <select id="reg-store-genre" class="stylish-input">
-            ${GENRE_OPTIONS.map(g => `<option ${isEdit && storeToEdit.genre === g ? 'selected' : ''}>${g}</option>`).join('')}
-          </select>
+          <label>ジャンル（複数選択可）</label>
+          <div id="reg-store-genre-tags" class="tag-grid">${renderChoiceTags('reg-genre', GENRE_OPTIONS, isEdit ? getStoreGenres(storeToEdit) : [])}</div>
         </div>
 
         <div class="form-group">
@@ -1595,13 +1603,7 @@
       }
       if (!curMap.lists) curMap.lists = [];
 
-      const selectedListSelects = document.querySelectorAll('.existing-list-select');
-      const selectedListIds = [];
-      selectedListSelects.forEach(sel => {
-        if (sel.value && !selectedListIds.includes(sel.value)) {
-          selectedListIds.push(sel.value);
-        }
-      });
+      const selectedListIds = Array.from(document.querySelectorAll('.reg-list-tag.selected')).map(el => el.dataset.value);
 
       const newListInputs = document.querySelectorAll('.new-list-input');
       newListInputs.forEach(input => {
@@ -1620,8 +1622,10 @@
         isFavorite: document.getElementById('reg-store-fav').value === 'true',
         listIds: selectedListIds,
         images: [...currentEditingImages],
-        form: document.getElementById('reg-store-form').value,
-        genre: document.getElementById('reg-store-genre').value,
+        forms: getSelectedTagValues('reg-form'),
+        genres: getSelectedTagValues('reg-genre'),
+        form: getSelectedTagValues('reg-form')[0] || '',
+        genre: getSelectedTagValues('reg-genre')[0] || '',
         budget: document.getElementById('reg-store-budget').value,
         options: Array.from(document.querySelectorAll('.reg-store-option:checked')).map(el => el.value),
         pinShape: document.getElementById('reg-store-pin-shape').value || 'heart',
@@ -2058,7 +2062,7 @@
         ${imgHtml}
 
         <div style="font-size:11px; margin-top:4px; background:rgba(0,0,0,0.02); padding:4px; border-radius:4px;">
-          <div><b>形式:</b> ${store.form || '-'} / <b>ジャンル:</b> ${store.genre || '-'}</div>
+          <div><b>形式:</b> ${getStoreForms(store).join(' / ') || '-'} / <b>ジャンル:</b> ${getStoreGenres(store).join(' / ') || '-'}</div>
           <div style="margin-top:2px;"><b>予算:</b> ${store.budget || '-'}</div>
           <div style="margin-top:5px;"><b>オプション:</b> ${getStoreOptions(store).length ? getStoreOptions(store).map(id => (STORE_OPTION_DEFS.find(o => o.id === id) || {}).label).filter(Boolean).join(' / ') : 'なし'}</div>
         </div>
@@ -2229,10 +2233,10 @@
 
     function filterStores() {
       const nameVal = document.getElementById('search-name').value.toLowerCase();
-      const listVal = document.getElementById('search-list').value;
-      const favVal = document.getElementById('search-fav').value;
-      const formVal = document.getElementById('search-form').value;
-      const genreVal = document.getElementById('search-genre').value;
+      const listVals = getSelectedSearchTagValues('search-list-tags');
+      const favVal = getSelectedSearchTagValues('search-fav-tags')[0] || '';
+      const formVals = getSelectedSearchTagValues('search-form-tags');
+      const genreVals = getSelectedSearchTagValues('search-genre-tags');
       const budgetVal = document.getElementById('search-budget').value;
       const stationVal = document.getElementById('search-station').value.trim().toLowerCase();
       const optionVals = Array.from(document.querySelectorAll('.search-option-check:checked')).map(el => el.value);
@@ -2241,10 +2245,12 @@
       const filtered = (curMap.stores || []).filter(s => {
         if (nameVal && !s.name.toLowerCase().includes(nameVal)) return false;
         if (stationVal && !(s.station || '').toLowerCase().includes(stationVal)) return false;
-        if (listVal && !(s.listIds || []).includes(listVal) && s.listId !== listVal) return false;
+        if (listVals.length && !listVals.every(v => (s.listIds || []).includes(v) || s.listId === v)) return false;
         if (favVal === 'fav' && !s.isFavorite) return false;
-        if (formVal && s.form !== formVal) return false;
-        if (genreVal && s.genre !== genreVal) return false;
+        const storeForms = getStoreForms(s);
+        const storeGenres = getStoreGenres(s);
+        if (formVals.length && !formVals.every(v => storeForms.includes(v))) return false;
+        if (genreVals.length && !genreVals.every(v => storeGenres.includes(v))) return false;
         if (budgetVal && s.budget !== budgetVal) return false;
         const storeOptions = getStoreOptions(s);
         if (optionVals.length && !optionVals.every(v => storeOptions.includes(v))) return false;
@@ -2264,7 +2270,7 @@
       container.innerHTML = filtered.map(s => `
         <div style="padding:6px 8px; margin-top:4px; background:rgba(0,0,0,0.03); border-radius:6px; cursor:pointer; border-left:3px solid var(--primary-color);" onclick="showStoreDetail('${s.id}')">
           <b style="font-size:12px;">${s.isFavorite ? '⭐ ' : ''}${s.name}</b>
-          <div style="font-size:10px; color:#666; margin-top:2px;">${s.form || '-'} / ${s.genre || '-'}</div>
+          <div style="font-size:10px; color:#666; margin-top:2px;">${getStoreForms(s).join(' / ') || '-'} / ${getStoreGenres(s).join(' / ') || '-'}</div>
           <div style="font-size:10px; color:#666; margin-top:1px;">💰 ${s.budget || '-'}</div>
           <div style="font-size:10px; color:#777; margin-top:1px;">🚉 ${s.station || '-'}</div>
         </div>
@@ -2656,19 +2662,18 @@
       alert(`🎉 新しいマップ「${name}」を作成して切り替えました！`);
     }
 
-    function openAreaListModal() {
+    function openAreaListModal(scrollTop = null, openListId = null) {
       toggleMenu();
       const curMap = getCurrentMap();
-      if (!curMap.areaLists) curMap.areaLists = [];
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
-
-      const listsHtml = curMap.areaLists.map((l, index) => {
+      const listsHtml = (curMap.areaLists || []).map((l, index) => {
         const areaIds = Array.isArray(l.areaIds) ? l.areaIds : [];
         const assigned = areaIds.map(id => curMap.areas.find(a => a.id === id)).filter(Boolean);
+        const boxId = 'area-manage-list-' + l.id;
         const rows = assigned.map((a, i) => `
           <div class="area-list-row">
-            <span>🚩 <b>No.${i + 1}</b>　${a.name}</span>
+            <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">🚩 <b>No.${i + 1}</b>　${a.name}</span>
             ${!curMap.isShared ? `<span class="area-list-row-actions">
               <button onclick="moveAreaInList('${l.id}','${a.id}',-1)" style="padding:2px 5px;font-size:9px;">↑</button>
               <button onclick="moveAreaInList('${l.id}','${a.id}',1)" style="padding:2px 5px;font-size:9px;">↓</button>
@@ -2677,30 +2682,40 @@
             </span>` : ''}
           </div>`).join('');
         return `
-          <div class="area-list-manage-box">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-              <span style="font-size:12px;">📁 <b>No.${index + 1}　${l.name}</b> <small>(${assigned.length}件)</small></span>
-              ${!curMap.isShared ? `<span><button onclick="moveAreaListByDirection('${l.id}',-1)" style="padding:2px 5px;font-size:9px;">↑</button><button onclick="moveAreaListByDirection('${l.id}',1)" style="padding:2px 5px;font-size:9px;">↓</button> <button onclick="moveAreaListToNo('${l.id}')" style="padding:2px 6px;font-size:9px;">↕️ No.移動</button> <button onclick="editAreaListName('${l.id}')" style="padding:2px 6px;font-size:9px;background:#ff9f43;">✏️</button> <button onclick="deleteAreaList('${l.id}')" style="padding:2px 6px;font-size:9px;background:#dc3545;">削除</button></span>` : ''}
+          <div class="area-list-manage-box area-manage-list-box ${openListId === l.id ? 'open' : ''}" id="${boxId}">
+            <div class="list-manage-header area-manage-list-toggle" onclick="toggleAreaManageList('${boxId}')">
+              <span style="font-size:12px;min-width:0;">▶ 📁 <b>No.${index + 1}　${l.name}</b> <small>(${assigned.length}件)</small></span>
+              ${!curMap.isShared ? `<span class="list-manage-actions" onclick="event.stopPropagation()">
+                <button onclick="moveAreaListByDirection('${l.id}',-1)" style="padding:2px 5px;font-size:9px;">↑</button>
+                <button onclick="moveAreaListByDirection('${l.id}',1)" style="padding:2px 5px;font-size:9px;">↓</button>
+                <button onclick="moveAreaListToNo('${l.id}')" style="padding:2px 6px;font-size:9px;">No.</button>
+                <button onclick="editAreaListName('${l.id}')" style="padding:2px 6px;font-size:9px;background:#ff9f43;">✏️</button>
+                <button onclick="deleteAreaList('${l.id}')" style="padding:2px 6px;font-size:9px;background:#dc3545;">削除</button>
+              </span>` : ''}
             </div>
-            <div class="area-list-assigned">${rows || '<div style="font-size:10px;color:#888;">エリアは登録されていません。</div>'}</div>
-            ${!curMap.isShared ? `
-              <div style="display:flex;gap:4px;align-items:stretch;margin-top:6px;">
-                <select id="area-add-select-${l.id}" class="stylish-input scroll-select-10" size="10" style="flex:1;min-width:0;">
-                  <option value="">追加するエリアを選択</option>
-                  ${curMap.areas.filter(a => !assigned.some(x => x.id === a.id)).map(a => `<option value="${a.id}">🚩 ${a.name}</option>`).join('')}
-                </select>
-                <button onclick="addAreaToList('${l.id}')" style="white-space:nowrap;padding:5px 8px;">追加</button>
-              </div>` : ''}
+            <div class="area-manage-list-body">
+              <div class="area-list-assigned">${rows || '<div style="font-size:10px;color:#888;">エリアは登録されていません。</div>'}</div>
+              ${!curMap.isShared ? `
+                <div style="display:flex;gap:4px;align-items:stretch;margin-top:6px;">
+                  <select id="area-add-select-${l.id}" class="stylish-input scroll-select-10" size="10" style="flex:1;min-width:0;">
+                    <option value="">追加するエリアを選択</option>
+                    ${curMap.areas.filter(a => !assigned.some(x => x.id === a.id)).map(a => `<option value="${a.id}">🚩 ${a.name}</option>`).join('')}
+                  </select>
+                  <button onclick="addAreaToList('${l.id}')" style="white-space:nowrap;padding:5px 8px;">追加</button>
+                </div>` : ''}
+            </div>
           </div>`;
       }).join('');
-
       content.innerHTML = `
         <div class="modal-header"><h3>🚩 エリア管理</h3></div>
         <p style="font-size:11px;color:#666;margin-bottom:8px;">エリア専用リスト：${curMap.areaLists.length}/50</p>
         ${!curMap.isShared ? `<button onclick="createAreaListPrompt()" style="width:100%;margin-bottom:10px;">＋ 新しいエリアリストを追加</button>` : ''}
-        <div style="max-height:50vh;overflow-y:auto;">${listsHtml || '<p style="color:#888;font-size:11px;">エリアリストが登録されていません。</p>'}</div>
+        <div id="area-manage-scroll" class="panel-scroll-10">${listsHtml || '<p style="color:#888;font-size:11px;">エリアリストが登録されていません。</p>'}</div>
         <button onclick="closeModal()" class="btn-secondary" style="width:100%;margin-top:10px;">閉じる</button>`;
+      const scroll = document.getElementById('area-manage-scroll');
+      if (scroll && scrollTop !== null) scroll.scrollTop = scrollTop;
     }
+    function toggleAreaManageList(boxId) { const box=document.getElementById(boxId); if(box) box.classList.toggle('open'); }
 
     function createAreaListPrompt() {
       const curMap = getCurrentMap();
@@ -2738,10 +2753,10 @@
       l.areaIds.push(areaId);
       const a=c.areas.find(x=>x.id===areaId);
       if(a){if(!Array.isArray(a.listIds))a.listIds=[];if(!a.listIds.includes(listId))a.listIds.push(listId);}
-      saveStorage(); openAreaListModal();
+      const scroll=document.getElementById('area-manage-scroll'); const top=scroll?scroll.scrollTop:null; saveStorage(); openAreaListModal(top,listId);
     }
 
-    function removeAreaFromList(listId,areaId){const c=getCurrentMap();if(c.isShared)return;const l=(c.areaLists||[]).find(x=>x.id===listId);if(!l)return;l.areaIds=(l.areaIds||[]).filter(id=>id!==areaId);const a=c.areas.find(x=>x.id===areaId);if(a&&Array.isArray(a.listIds))a.listIds=a.listIds.filter(id=>id!==listId);saveStorage();openAreaListModal();}
+    function removeAreaFromList(listId,areaId){const c=getCurrentMap();if(c.isShared)return;const l=(c.areaLists||[]).find(x=>x.id===listId);if(!l)return;l.areaIds=(l.areaIds||[]).filter(id=>id!==areaId);const a=c.areas.find(x=>x.id===areaId);if(a&&Array.isArray(a.listIds))a.listIds=a.listIds.filter(id=>id!==listId);const scroll=document.getElementById('area-manage-scroll'); const top=scroll?scroll.scrollTop:null; saveStorage();openAreaListModal(top,listId);}
 
     function openCustomListModal() {
       toggleMenu();
@@ -2752,10 +2767,10 @@
       const listsHtml = (curMap.lists || []).map((l, index) => {
         const assignedStores = (curMap.stores || []).filter(s => (s.listIds || []).includes(l.id) || s.listId === l.id);
         const storesHtml = assignedStores.map((s, sIndex) => `
-          <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.7); padding:3px 6px; margin-top:2px; border-radius:4px; font-size:11px;">
-            <span>🍽️ <b>No.${sIndex + 1}</b>　${s.name}</span>
+          <div class="list-store-row" style="background:rgba(255,255,255,0.7); padding:3px 6px; margin-top:2px; border-radius:4px; font-size:11px;">
+            <span style="min-width:0;">🍽️ <b>No.${sIndex + 1}</b>　${s.name}</span>
             ${!curMap.isShared ? `
-              <div>
+              <div class="list-store-actions">
                 <button onclick="moveStoreInList('${l.id}', '${s.id}')" style="padding:2px 6px; font-size:10px;">↕️ No.移動</button>
                 <button onclick="removeStoreFromList('${l.id}', '${s.id}')" class="btn-sm-icon" style="background:#dc3545; color:#fff;">削除</button>
               </div>
@@ -2765,12 +2780,12 @@
 
         return `
           <li style="margin-bottom:8px; background:rgba(0,0,0,0.03); padding:8px; border-radius:8px; border:1px solid var(--border-color);">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:12px; cursor:pointer;" onclick="toggleListAccordion('list-stores-${l.id}')">
+            <div class="list-manage-header">
+              <span style="font-size:12px; cursor:pointer; min-width:0;" onclick="toggleListAccordion('list-stores-${l.id}')">
                 ▶ 📌 <b>No.${index + 1}　${l.name}</b> <small>(${assignedStores.length}件)</small>
               </span>
               ${!curMap.isShared ? `
-                <div>
+                <div class="list-manage-actions">
                   <button onclick="moveCustomList(${index},-1)" style="padding:2px 6px; font-size:10px;">↑</button>
                   <button onclick="moveCustomList(${index},1)" style="padding:2px 6px; font-size:10px;">↓</button>
                   <button onclick="moveCustomListToNo('${l.id}')" style="padding:2px 6px; font-size:10px;">↕️ No.移動</button>
@@ -2972,7 +2987,7 @@
       `).join('');
 
       content.innerHTML = `
-        <div class="modal-header"><h3>登録店舗一覧 (${curMap.stores.length}件)</h3><button onclick="closeModal()" class="btn-secondary" style="padding:2px 7px;font-size:10px;">閉じる</button></div>
+        <div class="modal-header"><h3>登録店舗一覧 (${curMap.stores.length}件)</h3></div>
         <div style="max-height:60vh; overflow-y:auto; margin-bottom:10px;">${listHtml || '<p style="color:#888;">登録店舗がありません</p>'}</div>
         ${curMap.isShared ? '' : '<div style="font-size:10px;color:#777;margin-bottom:6px;">★＝お気に入り　☆＝通常</div>'}
         <button onclick="closeModal()" class="btn-secondary" style="width:100%;">閉じる</button>
