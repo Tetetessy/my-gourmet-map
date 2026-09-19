@@ -157,7 +157,7 @@
     .map-list-store-item b { font-size:11px; }
     .map-list-store-item small { display:block; margin-top:2px; color:#777; font-size:9.5px; }
     @media (max-width: 700px) {
-      .map-list-panel { top:118px; left:6px; width:calc(46vw - 6px); max-width:none; }
+      .map-list-panel { top:154px; left:6px; width:calc(100vw - 12px); max-width:340px; max-height:40vh; }
     }
     .search-results-panel {
       position: fixed; top: 50px; right: 10px; z-index: 999; background: var(--panel-bg); backdrop-filter: blur(8px); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 250px; max-height: 60vh; overflow-y: auto; display: none; padding-bottom: 70vh; box-sizing:border-box;
@@ -185,7 +185,7 @@
       .top-left { top: 40px; left: 6px; gap: 4px; }
       .top-left .action-btn { width: 110px; }
       .top-right { top: 6px; right: 6px; }
-      .search-panel { width: 46vw; max-width: 260px; top: 118px; left: 6px; max-height: 34vh; }
+      .search-panel { width:calc(100vw - 12px); max-width:300px; top:154px; left:6px; max-height:36vh; }
       .search-results-panel { width: 46vw; max-width: 280px; top: 118px; right: 6px; max-height: 34vh; }
       .bottom-center-area { width: calc(100vw - 12px); max-width: none; top: auto; left: 6px; right: 6px; bottom: 8px; }
       .detail-panel { max-height: 42vh; overflow-y:auto; box-sizing:border-box; }
@@ -352,7 +352,22 @@
     html[data-theme="dark"] .leaflet-control a { background: #292e33; color: #e8ecef; border-color: #5d646a; }
 
     /* ==================== パネルの固定配置 ==================== */
-    .search-panel { position: fixed; top: 112px; left: 10px; z-index: 1002; }
+    .search-panel { position: fixed; top: 178px; left: 10px; z-index: 1002; width: 270px; max-width: calc(100vw - 20px); max-height: 42vh; overflow-y:auto; }
+    .search-panel-collapsed { max-height: none !important; overflow: visible !important; }
+    .search-panel-body { display:none; }
+    .search-panel-body.open { display:block; }
+    .search-panel-toggle { background:#6c757d; font-size:10px; padding:2px 6px; white-space:nowrap; }
+    .map-list-panel { top: 178px; left: 10px; width: 285px; max-width: calc(100vw - 20px); max-height: 48vh; overflow-y:auto; }
+    .map-list-status-badge { display:inline-flex; align-items:center; justify-content:center; min-width:92px; padding:3px 7px; border-radius:999px; font-size:10px; font-weight:bold; border:1px solid currentColor; white-space:nowrap; }
+    .map-list-status-badge.unselected { color:#dc3545; background:rgba(220,53,69,.09); }
+    .map-list-status-badge.selected { color:#198754; background:rgba(25,135,84,.10); }
+    .share-status-mini { display:block; font-size:10px; margin:1px 0 4px; padding:3px 6px; border-radius:6px; text-align:center; font-weight:bold; }
+    .share-status-mini.ready { color:#198754; background:rgba(25,135,84,.10); }
+    .share-status-mini.dirty { color:#dc3545; background:rgba(220,53,69,.10); }
+    .share-status-mini.none { color:#666; background:rgba(0,0,0,.05); }
+    .share-code-status-box.ready { border-color:#28a745 !important; background:rgba(40,167,69,.10) !important; }
+    .share-code-status-box.dirty { border-color:#dc3545 !important; background:rgba(220,53,69,.09) !important; }
+    .share-code-status-box.none { border-color:#aaa !important; background:rgba(0,0,0,.04) !important; }
     .search-results-panel { top: 62px; right: 270px; z-index: 999; }
     .bottom-center-area { top: auto; right: 270px; bottom: 18px; z-index: 1000; }
     .menu-dropdown { top: 42px; right: 0; z-index: 1003; }
@@ -439,8 +454,11 @@
       <button class="action-btn" onclick="toggleMapListPanel()">📋 リスト展開</button>
       <div class="map-list-panel" id="map-list-panel">
         <div class="simple-panel-header">
-          <h4 style="margin:0;">📋 リスト表示</h4>
-          <div style="display:flex; gap:4px;">
+          <div style="display:flex; align-items:center; gap:7px; min-width:0;">
+            <h4 style="margin:0; white-space:nowrap;">📋 リスト表示</h4>
+            <span id="map-list-status-badge" class="map-list-status-badge unselected">リスト未選択</span>
+          </div>
+          <div style="display:flex; gap:4px; flex-shrink:0;">
             <button onclick="clearMapListView()" style="background:#6c757d; font-size:10px; padding:1px 5px;">選択解除</button>
             <button onclick="toggleMapListPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
           </div>
@@ -454,21 +472,35 @@
       <div class="search-panel" id="search-panel">
         <div class="simple-panel-header">
           <h4 style="margin: 0;">🔍 条件検索</h4>
-          <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
+          <div style="display:flex; gap:4px; align-items:center;">
+            <button id="search-panel-toggle" class="search-panel-toggle" onclick="toggleSearchPanelBody()">条件を展開</button>
+            <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
+          </div>
         </div>
-        <input type="text" id="search-name" placeholder="店舗名検索" oninput="filterStores()" style="width:100%;">
-        <div class="tag-filter-box"><div class="tag-filter-title">リスト</div><div id="search-list-tags" class="tag-grid"></div></div>
-        <div class="tag-filter-box"><div class="tag-filter-title">お気に入り</div><div id="search-fav-tags" class="tag-grid"></div></div>
-        <div class="tag-filter-box"><div class="tag-filter-title">形式（複数選択可）</div><div id="search-form-tags" class="tag-grid"></div></div>
-        <div class="tag-filter-box"><div class="tag-filter-title">ジャンル（複数選択可）</div><div id="search-genre-tags" class="tag-grid"></div></div>
-        <select id="search-budget" onchange="filterStores()" style="width:100%;">
-          <option value="">全ての予算</option>
-        </select>
-        <div class="search-options-box">
-          <div class="search-options-title">オプション（複数選択可）</div>
-          <div id="search-options-container" class="store-options-grid search-options-grid"></div>
+        <div id="search-panel-body" class="search-panel-body">
+          <input type="text" id="search-name" placeholder="店舗名検索" oninput="filterStores()" style="width:100%;">
+          <select id="search-list" class="scroll-select-10" size="1" onchange="filterStores()" style="width:100%;">
+            <option value="">全店舗</option>
+          </select>
+          <select id="search-fav" onchange="filterStores()" style="width:100%;">
+            <option value="">全てのお気に入り</option>
+            <option value="fav">★ お気に入りのみ</option>
+          </select>
+          <select id="search-form" onchange="filterStores()" style="width:100%;">
+            <option value="">全ての形式</option>
+          </select>
+          <select id="search-genre" onchange="filterStores()" style="width:100%;">
+            <option value="">全てのジャンル</option>
+          </select>
+          <select id="search-budget" onchange="filterStores()" style="width:100%;">
+            <option value="">全ての予算</option>
+          </select>
+          <div class="search-options-box">
+            <div class="search-options-title">オプション（複数選択可）</div>
+            <div id="search-options-container" class="store-options-grid search-options-grid"></div>
+          </div>
+          <input type="text" id="search-station" placeholder="最寄り駅検索" oninput="filterStores()" style="width:100%;">
         </div>
-        <input type="text" id="search-station" placeholder="最寄り駅検索" oninput="filterStores()" style="width:100%;">
       </div>
     </div>
   </div>
@@ -494,6 +526,7 @@
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
       <small>【共有】</small>
       <button onclick="exportCode()">共有コード設定・表示</button>
+      <div id="menu-share-status" class="share-status-mini none">⚪ 未発行</div>
       <button onclick="importCodePrompt()">共有コード読み込み</button>
       <button onclick="refreshSharedMap()">🔄 マップ情報を更新</button>
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
@@ -819,6 +852,41 @@
       });
     }
 
+    function getShareCodeStatus(mapObj = getCurrentMap()) {
+      if (!mapObj || mapObj.isShared) return { type:'none', text:'共有マップ' };
+      const code = mapObj.shareCode || '';
+      const dirty = !!code && (!mapObj.shareSnapshot || getShareSnapshot(mapObj) !== mapObj.shareSnapshot);
+      if (code && dirty) return { type:'dirty', text:'未発行 / 更新あり', code };
+      if (code) return { type:'ready', text:'発行済み / 更新なし', code };
+      return { type:'none', text:'未発行', code:'' };
+    }
+
+    function updateShareCodeStatus() {
+      const cur = getCurrentMap();
+      const st = getShareCodeStatus(cur);
+      const menu = document.getElementById('menu-share-status');
+      if (menu) {
+        menu.className = `share-status-mini ${st.type}`;
+        menu.textContent = st.type === 'ready' ? `🟢 ${st.text}：${st.code}` : st.type === 'dirty' ? '🔴 未発行 / 更新あり' : (cur && cur.isShared ? '🔵 共有マップ' : '⚪ 未発行');
+      }
+      const box = document.getElementById('share-code-status-box');
+      const text = document.getElementById('share-code-status-text');
+      const note = box ? box.querySelector('[data-share-status-note]') : null;
+      if (box && text) {
+        box.className = `share-code-status-box ${st.type}`;
+        if (st.type === 'ready') {
+          text.textContent = '現在の状態：🟢 発行済み / 更新なし';
+          if (note) note.innerHTML = `発行済みコード：<b>${st.code}</b>`;
+        } else if (st.type === 'dirty') {
+          text.textContent = '現在の状態：🔴 未発行 / 更新あり';
+          if (note) note.textContent = `発行済みコード「${st.code}」があります。変更内容を反映するには「コードを再発行・更新」を押してください。`;
+        } else {
+          text.textContent = '現在の状態：⚪ 未発行';
+          if (note) note.textContent = 'まだ共有コードは発行されていません。';
+        }
+      }
+    }
+
     function invalidateShareCode(mapObj, reason = 'マップ情報が更新されたため、この共有コードは無効になりました。') {
       if (!mapObj || mapObj.isShared || !mapObj.shareCode || !currentUser.uid) return Promise.resolve();
       const code = mapObj.shareCode;
@@ -885,6 +953,9 @@
     // 複数操作が連続しても保存順序が逆転しないよう直列化する。
     function saveStorage(renderAfterSave = true) {
       const curMap = getCurrentMap();
+      // 保存対象のマップ情報が変わった場合だけ共有状態を更新する。
+      // 地図上のクリック・タッチで一時ピンを置くだけではsaveStorage()が呼ばれないため、誤操作では「更新あり」にならない。
+      updateShareCodeStatus();
 
       // 共有コードは、発行後にマップ情報を変更しても自動失効させない。
       // 所有者が「コード再発行・更新」を押した時点で同じコードの共有データを更新する。
@@ -1021,27 +1092,29 @@
     function getStoreGenres(store) { return Array.isArray(store?.genres) ? store.genres : (store?.genre ? [store.genre] : []); }
 
     function initSearchOptions() {
-      const listBox = document.getElementById('search-list-tags');
-      const favBox = document.getElementById('search-fav-tags');
-      const formBox = document.getElementById('search-form-tags');
-      const genreBox = document.getElementById('search-genre-tags');
+      const formSel = document.getElementById('search-form');
+      const genreSel = document.getElementById('search-genre');
       const budgetSel = document.getElementById('search-budget');
-      const cur = getCurrentMap();
-      if (listBox) listBox.innerHTML = `<button type="button" class="choice-tag selected" data-value="" onclick="toggleSearchExclusiveTag(this,'search-list-tags')">全店舗</button>` + ((cur?.lists || []).map(l => `<button type="button" class="choice-tag" data-value="${l.id}" onclick="toggleSearchTag(this,'search-list-tags')">${l.name}</button>`).join(''));
-      if (favBox) favBox.innerHTML = `<button type="button" class="choice-tag selected" data-value="" onclick="toggleSearchExclusiveTag(this,'search-fav-tags')">すべて</button><button type="button" class="choice-tag" data-value="fav" onclick="toggleSearchExclusiveTag(this,'search-fav-tags')">★ お気に入り</button>`;
-      if (formBox) formBox.innerHTML = `<button type="button" class="choice-tag selected" data-value="" onclick="clearSearchTags('search-form-tags')">全て</button>` + FORM_OPTIONS.map(f => `<button type="button" class="choice-tag" data-value="${f}" onclick="toggleSearchTag(this,'search-form-tags')">${f}</button>`).join('');
-      if (genreBox) genreBox.innerHTML = `<button type="button" class="choice-tag selected" data-value="" onclick="clearSearchTags('search-genre-tags')">全て</button>` + GENRE_OPTIONS.map(g => `<button type="button" class="choice-tag" data-value="${g}" onclick="toggleSearchTag(this,'search-genre-tags')">${g}</button>`).join('');
-      if (budgetSel) { budgetSel.innerHTML = '<option value="">全ての予算</option>' + BUDGET_OPTIONS.map(b => `<option>${b}</option>`).join(''); }
+      if (formSel) formSel.innerHTML = '<option value="">全ての形式</option>' + FORM_OPTIONS.map(f => `<option>${f}</option>`).join('');
+      if (genreSel) genreSel.innerHTML = '<option value="">全てのジャンル</option>' + GENRE_OPTIONS.map(g => `<option>${g}</option>`).join('');
+      if (budgetSel) budgetSel.innerHTML = '<option value="">全ての予算</option>' + BUDGET_OPTIONS.map(b => `<option>${b}</option>`).join('');
       const optionContainer = document.getElementById('search-options-container');
       if (optionContainer) optionContainer.innerHTML = STORE_OPTION_DEFS.map(o => `<label class="store-option-check"><input type="checkbox" class="search-option-check" value="${o.id}" onchange="filterStores()"><span>${o.label}</span></label>`).join('');
-      updateMapListDropdown();
+      updateSearchListDropdown();
+      updateShareCodeStatus();
     }
-    function toggleSearchTag(el, id) { el.classList.toggle('selected'); const all = document.querySelector(`#${id} .choice-tag[data-value=""]`); if (all) all.classList.toggle('selected', !Array.from(document.querySelectorAll(`#${id} .choice-tag`)).some(x => x.dataset.value && x.classList.contains('selected'))); filterStores(); }
-    function toggleSearchExclusiveTag(el, id) { document.querySelectorAll(`#${id} .choice-tag`).forEach(x => x.classList.remove('selected')); el.classList.add('selected'); filterStores(); }
-    function clearSearchTags(id) { document.querySelectorAll(`#${id} .choice-tag`).forEach(x => x.classList.remove('selected')); const all=document.querySelector(`#${id} .choice-tag[data-value=""]`); if(all)all.classList.add('selected'); filterStores(); }
+
+    function toggleSearchPanelBody() {
+      const body = document.getElementById('search-panel-body');
+      const btn = document.getElementById('search-panel-toggle');
+      if (!body || !btn) return;
+      const open = body.classList.toggle('open');
+      btn.textContent = open ? '条件を閉じる' : '条件を展開';
+    }
 
     function renderCurrentMap() {
       updateIndicator();
+      updateShareCodeStatus();
       updateSearchListDropdown();
       updateMapListDropdown();
       updateAreaDropdown();
@@ -1096,9 +1169,15 @@
     }
 
     function updateSearchListDropdown() {
-      const box=document.getElementById('search-list-tags'); const cur=getCurrentMap(); if(!box||!cur)return;
-      const selected=getSelectedSearchTagValues('search-list-tags');
-      box.innerHTML=`<button type="button" class="choice-tag ${selected.length?'':'selected'}" data-value="" onclick="toggleSearchExclusiveTag(this,'search-list-tags')">全店舗</button>`+(cur.lists||[]).map(l=>`<button type="button" class="choice-tag ${selected.includes(l.id)?'selected':''}" data-value="${l.id}" onclick="toggleSearchTag(this,'search-list-tags')">${l.name}</button>`).join('');
+      const cur = getCurrentMap();
+      const select = document.getElementById('search-list');
+      if (!select) return;
+      const currentVal = select.value;
+      let html = '<option value="">全店舗</option>';
+      if (cur && cur.lists) cur.lists.forEach(l => { html += `<option value="${l.id}">${l.name}</option>`; });
+      select.innerHTML = html;
+      select.value = currentVal;
+      if (select.value !== currentVal) select.value = '';
     }
 
     function updateMapListDropdown() {
@@ -1132,14 +1211,17 @@
       const cur = getCurrentMap();
       const listId = window.activeMapListId || '';
       const list = (cur && cur.lists ? cur.lists : []).find(l => l.id === listId);
+      const badge = document.getElementById('map-list-status-badge');
       if (!list) {
         container.style.display = 'none';
         container.innerHTML = '';
         if (status) status.textContent = 'リストを選ぶと対象外の店舗ピンがグレーになります。';
+        if (badge) { badge.textContent = 'リスト未選択'; badge.className = 'map-list-status-badge unselected'; }
         return;
       }
       const stores = (cur.stores || []).filter(s => (s.listIds || []).includes(list.id) || s.listId === list.id);
-      if (status) status.textContent = list ? `「${list.name}」：${stores.length}店舗 / リスト外の店舗ピンはグレー表示` : 'リストを選択すると対象外の店舗ピンがグレーになります。';
+      if (status) status.textContent = `「${list.name}」：${stores.length}店舗 / リスト外の店舗ピンはグレー表示`;
+      if (badge) { badge.textContent = 'リスト選択中'; badge.className = 'map-list-status-badge selected'; }
       container.style.display = 'block';
       container.innerHTML = `
         <div style="font-size:10px; font-weight:bold; margin-bottom:4px;">📍 リスト内の店舗（タップで移動）</div>
@@ -2233,10 +2315,10 @@
 
     function filterStores() {
       const nameVal = document.getElementById('search-name').value.toLowerCase();
-      const listVals = getSelectedSearchTagValues('search-list-tags');
-      const favVal = getSelectedSearchTagValues('search-fav-tags')[0] || '';
-      const formVals = getSelectedSearchTagValues('search-form-tags');
-      const genreVals = getSelectedSearchTagValues('search-genre-tags');
+      const listVal = document.getElementById('search-list').value;
+      const favVal = document.getElementById('search-fav').value;
+      const formVal = document.getElementById('search-form').value;
+      const genreVal = document.getElementById('search-genre').value;
       const budgetVal = document.getElementById('search-budget').value;
       const stationVal = document.getElementById('search-station').value.trim().toLowerCase();
       const optionVals = Array.from(document.querySelectorAll('.search-option-check:checked')).map(el => el.value);
@@ -2245,12 +2327,12 @@
       const filtered = (curMap.stores || []).filter(s => {
         if (nameVal && !s.name.toLowerCase().includes(nameVal)) return false;
         if (stationVal && !(s.station || '').toLowerCase().includes(stationVal)) return false;
-        if (listVals.length && !listVals.every(v => (s.listIds || []).includes(v) || s.listId === v)) return false;
+        if (listVal && !(s.listIds || []).includes(listVal) && s.listId !== listVal) return false;
         if (favVal === 'fav' && !s.isFavorite) return false;
         const storeForms = getStoreForms(s);
         const storeGenres = getStoreGenres(s);
-        if (formVals.length && !formVals.every(v => storeForms.includes(v))) return false;
-        if (genreVals.length && !genreVals.every(v => storeGenres.includes(v))) return false;
+        if (formVal && !storeForms.includes(formVal)) return false;
+        if (genreVal && !storeGenres.includes(genreVal)) return false;
         if (budgetVal && s.budget !== budgetVal) return false;
         const storeOptions = getStoreOptions(s);
         if (optionVals.length && !optionVals.every(v => storeOptions.includes(v))) return false;
@@ -2310,16 +2392,16 @@
           <div id="share-code-error" class="error-msg"></div>
           <div id="share-code-success" class="success-msg"></div>
         </div>
-        <div id="share-code-status-box" style="margin:8px 0; padding:8px; border-radius:8px; border:2px solid ${activeCode ? '#28a745' : (curMap.shareInvalidated ? '#f0ad4e' : '#aaa')}; background:${activeCode ? 'rgba(40,167,69,.10)' : (curMap.shareInvalidated ? 'rgba(240,173,78,.14)' : 'rgba(0,0,0,.04)')};">
-          <div id="share-code-status-text" style="font-size:12px; font-weight:bold;">現在の状態：${activeCode ? '🟢 発行済み・利用可能' : (curMap.shareInvalidated ? '🟠 マップ更新のため再発行が必要' : '⚪ 未発行')}</div>
-          ${activeCode ? `<div data-share-status-note style="font-size:10.5px; margin-top:3px;">このコード <b>${activeCode}</b> は現在利用できます。</div>` : `<div data-share-status-note style="font-size:10.5px; margin-top:3px; color:#666;"></div>`}
-          ${curMap.shareInvalidated ? `<div style="font-size:10.5px; margin-top:3px; color:#9a6500;">${curMap.shareInvalidationReason || 'マップ情報が更新されたため、以前のコードは無効です。'}<br>新しいコードを発行してください。</div>` : ''}
+        <div id="share-code-status-box" class="share-code-status-box" style="margin:8px 0; padding:8px; border-radius:8px; border:2px solid #aaa;">
+          <div id="share-code-status-text" style="font-size:12px; font-weight:bold;">現在の状態：⚪ 未発行</div>
+          <div data-share-status-note style="font-size:10.5px; margin-top:3px; color:#666;"></div>
         </div>
         <div class="btn-group">
           <button onclick="saveCustomShareCode()">${activeCode ? 'コードを再発行・更新' : '共有コードを発行'}</button>
           <button onclick="closeModal()" class="btn-secondary">閉じる</button>
         </div>
       `;
+      updateShareCodeStatus();
     }
 
     async function copyShareCode() {
@@ -2430,16 +2512,17 @@
           } catch (localError) { console.warn('共有コード状態のローカル保存にも失敗:', localError); }
         }
 
-        successEl.textContent = `🎉 共有コード「${curMap.shareCode}」を更新しました。現在「発行済み・利用可能」です。複数人で同じコードを利用できます。${userSaveWarning}`;
+        successEl.textContent = `🎉 共有コード「${curMap.shareCode}」を更新しました。現在「発行済み・更新なし」です。複数人で同じコードを利用できます。${userSaveWarning}`;
         successEl.style.display = 'block';
         errorEl.style.display = 'none';
         const statusBox = document.getElementById('share-code-status-box');
         const statusText = document.getElementById('share-code-status-text');
         if (statusBox) { statusBox.style.borderColor = '#28a745'; statusBox.style.background = 'rgba(40,167,69,.10)'; }
-        if (statusText) statusText.textContent = '現在の状態：🟢 発行済み・利用可能';
+        if (statusText) statusText.textContent = '現在の状態：🟢 発行済み / 更新なし';
         const statusNote = statusBox ? statusBox.querySelector('[data-share-status-note]') : null;
-        if (statusNote) statusNote.textContent = `このコード ${curMap.shareCode} は現在利用できます。`;
-        input.value = curMap.shareCode; 
+        if (statusNote) statusNote.innerHTML = `発行済みコード：<b>${curMap.shareCode}</b>`;
+        input.value = curMap.shareCode;
+        updateShareCodeStatus();
       } catch (e) {
         console.error('共有コード発行失敗:', e);
         errorEl.textContent = '⚠️ ' + getJapaneseFirebaseError(e, '共有コードの発行に失敗しました。');
