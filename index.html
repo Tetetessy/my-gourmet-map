@@ -111,7 +111,7 @@
     .search-results-header { top:-10px; margin:-10px -10px 8px; }
 
 
-    .map-list-panel { position:fixed; top:112px; left:10px; width:260px; max-width:calc(100vw - 20px); background:var(--panel-bg); border:2px solid var(--border-color); border-radius:var(--radius); padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.18); z-index:1003; display:none; backdrop-filter:blur(8px); }
+    .map-list-panel { position:fixed; top:62px; right:270px; left:auto; width:360px; max-width:calc(100vw - 290px); max-height:34vh; overflow-y:auto; background:var(--panel-bg); border:2px solid var(--border-color); border-radius:var(--radius); padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.18); z-index:1003; display:none; backdrop-filter:blur(8px); box-sizing:border-box; }
     .area-move-wrap { position:relative; }
     .area-move-btn { min-width:150px; max-width:260px; text-align:center; }
     .area-move-panel { position:fixed; top:48px; left:50%; transform:translateX(-50%); width:280px; max-width:calc(100vw - 20px); background:var(--panel-bg); backdrop-filter:blur(10px); border:1px solid var(--border-color); border-radius:var(--radius); box-shadow:0 8px 24px rgba(0,0,0,.18); padding:8px; display:none; z-index:1004; }
@@ -157,7 +157,7 @@
     .map-list-store-item b { font-size:11px; }
     .map-list-store-item small { display:block; margin-top:2px; color:#777; font-size:9.5px; }
     @media (max-width: 700px) {
-      .map-list-panel { top:154px; left:6px; width:calc(100vw - 12px); max-width:340px; max-height:40vh; }
+      .map-list-panel { top:118px; right:6px; left:auto; width:min(62vw,360px); max-width:calc(100vw - 12px); max-height:34vh; }
     }
     .search-results-panel {
       position: fixed; top: 50px; right: 10px; z-index: 999; background: var(--panel-bg); backdrop-filter: blur(8px); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 250px; max-height: 60vh; overflow-y: auto; display: none; padding-bottom: 70vh; box-sizing:border-box;
@@ -357,10 +357,13 @@
     .search-panel-body { display:none; }
     .search-panel-body.open { display:block; }
     .search-panel-toggle { background:#6c757d; font-size:10px; padding:2px 6px; white-space:nowrap; }
-    .map-list-panel { top: 178px; left: 10px; width: 285px; max-width: calc(100vw - 20px); max-height: 48vh; overflow-y:auto; }
+    .map-list-panel { top:62px; right:270px; left:auto; width:360px; max-width:calc(100vw - 290px); max-height:34vh; overflow-y:auto; }
     .map-list-status-badge { display:inline-flex; align-items:center; justify-content:center; min-width:92px; padding:3px 7px; border-radius:999px; font-size:10px; font-weight:bold; border:1px solid currentColor; white-space:nowrap; }
     .map-list-status-badge.unselected { color:#dc3545; background:rgba(220,53,69,.09); }
     .map-list-status-badge.selected { color:#198754; background:rgba(25,135,84,.10); }
+    .map-list-header-main { display:flex; align-items:center; gap:8px; min-width:0; flex:1 1 auto; }
+    .map-list-header-actions { display:flex; gap:5px; align-items:center; flex:0 0 auto; }
+    .map-list-header-actions button { white-space:nowrap; }
     .share-status-mini { display:block; font-size:10px; margin:1px 0 4px; padding:3px 6px; border-radius:6px; text-align:center; font-weight:bold; }
     .share-status-mini.ready { color:#198754; background:rgba(25,135,84,.10); }
     .share-status-mini.dirty { color:#dc3545; background:rgba(220,53,69,.10); }
@@ -454,13 +457,13 @@
       <button class="action-btn" onclick="toggleMapListPanel()">📋 リスト展開</button>
       <div class="map-list-panel" id="map-list-panel">
         <div class="simple-panel-header">
-          <div style="display:flex; align-items:center; gap:7px; min-width:0;">
+          <div class="map-list-header-main">
             <h4 style="margin:0; white-space:nowrap;">📋 リスト表示</h4>
             <span id="map-list-status-badge" class="map-list-status-badge unselected">リスト未選択</span>
           </div>
-          <div style="display:flex; gap:4px; flex-shrink:0;">
-            <button onclick="clearMapListView()" style="background:#6c757d; font-size:10px; padding:1px 5px;">選択解除</button>
-            <button onclick="toggleMapListPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
+          <div class="map-list-header-actions">
+            <button onclick="clearMapListView()" style="background:#6c757d; font-size:10px; padding:2px 7px;">選択解除</button>
+            <button onclick="toggleMapListPanel()" style="background:#6c757d; font-size:10px; padding:2px 7px;">閉じる</button>
           </div>
         </div>
         <select id="map-list-select" class="scroll-select-10" size="10" onchange="applyMapListView(this.value)" style="width:100%;">
@@ -473,7 +476,7 @@
         <div class="simple-panel-header">
           <h4 style="margin: 0;">🔍 条件検索</h4>
           <div style="display:flex; gap:4px; align-items:center;">
-            <button id="search-panel-toggle" class="search-panel-toggle" onclick="toggleSearchPanelBody()">条件を展開</button>
+            <button id="search-panel-toggle" class="search-panel-toggle" onclick="toggleSearchPanelBody()" title="検索条件を展開・折りたたみ">▼</button>
             <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
           </div>
         </div>
@@ -1109,7 +1112,7 @@
       const btn = document.getElementById('search-panel-toggle');
       if (!body || !btn) return;
       const open = body.classList.toggle('open');
-      btn.textContent = open ? '条件を閉じる' : '条件を展開';
+      btn.textContent = open ? '▲' : '▼';
     }
 
     function renderCurrentMap() {
@@ -2470,6 +2473,14 @@
       }
 
       try {
+        // ボタン押下直後に状態表示を更新し、発行処理の完了後に「発行済み / 更新なし」へ切り替える。
+        const statusBox = document.getElementById('share-code-status-box');
+        const statusText = document.getElementById('share-code-status-text');
+        const statusNote = statusBox ? statusBox.querySelector('[data-share-status-note]') : null;
+        if (statusBox) statusBox.className = 'share-code-status-box dirty';
+        if (statusText) statusText.textContent = '現在の状態：🟠 更新処理中…';
+        if (statusNote) statusNote.textContent = '共有データを最新状態へ更新しています。';
+
         // コード変更時は旧コードを無効化してから、新コードを発行する。
         if (curMap.shareCode && curMap.shareCode !== newCode) {
           const oldCode = curMap.shareCode;
@@ -2515,11 +2526,8 @@
         successEl.textContent = `🎉 共有コード「${curMap.shareCode}」を更新しました。現在「発行済み・更新なし」です。複数人で同じコードを利用できます。${userSaveWarning}`;
         successEl.style.display = 'block';
         errorEl.style.display = 'none';
-        const statusBox = document.getElementById('share-code-status-box');
-        const statusText = document.getElementById('share-code-status-text');
         if (statusBox) { statusBox.style.borderColor = '#28a745'; statusBox.style.background = 'rgba(40,167,69,.10)'; }
         if (statusText) statusText.textContent = '現在の状態：🟢 発行済み / 更新なし';
-        const statusNote = statusBox ? statusBox.querySelector('[data-share-status-note]') : null;
         if (statusNote) statusNote.innerHTML = `発行済みコード：<b>${curMap.shareCode}</b>`;
         input.value = curMap.shareCode;
         updateShareCodeStatus();
