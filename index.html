@@ -151,13 +151,18 @@
     }
 
     .store-pin-dimmed { filter: grayscale(1) saturate(0) opacity(.38); }
-    .map-list-store-summary { margin-top:7px; border-top:1px solid var(--border-color); padding-top:7px; max-height:38vh; overflow-y:auto; }
+    .map-list-store-summary { margin-top:7px; border-top:1px solid var(--border-color); padding-top:7px; max-height:48vh; overflow-y:auto; }
     .map-list-store-item { display:block; width:100%; text-align:left; margin:4px 0 0; padding:7px 8px; border:1px solid var(--border-color); border-radius:8px; background:rgba(0,0,0,.035); color:var(--text-color,#333); cursor:pointer; box-sizing:border-box; }
     .map-list-store-item:hover { background:rgba(0,0,0,.08); }
     .map-list-store-item b { font-size:11px; }
     .map-list-store-item small { display:block; margin-top:2px; color:#777; font-size:9.5px; }
     @media (max-width: 700px) {
-      .map-list-panel { top:118px; right:6px; left:auto; width:min(62vw,360px); max-width:calc(100vw - 12px); max-height:34vh; }
+      .map-list-panel { top:118px; right:6px; left:auto; width:min(78vw,390px); max-width:calc(100vw - 12px); max-height:60vh; }
+      .map-list-header-main { gap:6px; }
+      .map-list-header-actions { gap:4px; }
+      .map-list-header-actions button { min-width:54px; padding-left:5px !important; padding-right:5px !important; }
+      .map-list-status-badge { min-width:88px; }
+      .map-list-store-summary { max-height:46vh; }
     }
     .search-results-panel {
       position: fixed; top: 50px; right: 10px; z-index: 999; background: var(--panel-bg); backdrop-filter: blur(8px); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 250px; max-height: 60vh; overflow-y: auto; display: none; padding-bottom: 70vh; box-sizing:border-box;
@@ -185,8 +190,8 @@
       .top-left { top: 40px; left: 6px; gap: 4px; }
       .top-left .action-btn { width: 110px; }
       .top-right { top: 6px; right: 6px; }
-      .search-panel { width:calc(100vw - 12px); max-width:300px; top:154px; left:6px; max-height:36vh; }
-      .search-results-panel { width: 46vw; max-width: 280px; top: 118px; right: 6px; max-height: 34vh; }
+      .search-panel { width:calc(100vw - 12px); max-width:300px; top:154px; left:6px; max-height:42vh; }
+      .search-results-panel { width:min(78vw,390px); max-width:calc(100vw - 12px); top:118px; right:6px; max-height:60vh; }
       .bottom-center-area { width: calc(100vw - 12px); max-width: none; top: auto; left: 6px; right: 6px; bottom: 8px; }
       .detail-panel { max-height: 42vh; overflow-y:auto; box-sizing:border-box; }
       .modal-overlay { align-items:flex-start; padding:10px 6px; overflow-y:auto; box-sizing:border-box; }
@@ -352,24 +357,22 @@
     html[data-theme="dark"] .leaflet-control a { background: #292e33; color: #e8ecef; border-color: #5d646a; }
 
     /* ==================== パネルの固定配置 ==================== */
-    .search-panel { position: fixed; top: 178px; left: 10px; z-index: 1002; width: 270px; max-width: calc(100vw - 20px); max-height: 42vh; overflow-y:auto; }
-    .search-panel-collapsed { max-height: none !important; overflow: visible !important; }
-    .search-panel-body { display:none; }
-    .search-panel-body.open { display:block; }
-    .search-panel-toggle { background:#6c757d; font-size:10px; padding:2px 6px; white-space:nowrap; }
-    .map-list-panel { top:62px; right:270px; left:auto; width:360px; max-width:calc(100vw - 290px); max-height:34vh; overflow-y:auto; }
+    .search-panel { position: fixed; top: 154px; left: 10px; z-index: 1002; width: 270px; max-width: calc(100vw - 20px); max-height: 42vh; overflow-y:auto; }
+    .search-panel-body { display:block; }
+    .map-list-panel { top: 62px; right: 270px; left:auto; width: 390px; max-width: calc(100vw - 290px); max-height: 60vh; overflow-y:auto; }
     .map-list-status-badge { display:inline-flex; align-items:center; justify-content:center; min-width:92px; padding:3px 7px; border-radius:999px; font-size:10px; font-weight:bold; border:1px solid currentColor; white-space:nowrap; }
     .map-list-status-badge.unselected { color:#dc3545; background:rgba(220,53,69,.09); }
     .map-list-status-badge.selected { color:#198754; background:rgba(25,135,84,.10); }
-    .map-list-header-main { display:flex; align-items:center; gap:8px; min-width:0; flex:1 1 auto; }
-    .map-list-header-actions { display:flex; gap:5px; align-items:center; flex:0 0 auto; }
-    .map-list-header-actions button { white-space:nowrap; }
+    .map-list-header-main { display:flex; align-items:center; gap:10px; min-width:0; flex:1 1 auto; }
+    .map-list-header-actions { display:grid; grid-template-columns:auto auto; gap:6px; align-items:center; flex:0 0 auto; }
+    .map-list-header-actions button { white-space:nowrap; min-width:58px; }
     .share-status-mini { display:block; font-size:10px; margin:1px 0 4px; padding:3px 6px; border-radius:6px; text-align:center; font-weight:bold; }
     .share-status-mini.ready { color:#198754; background:rgba(25,135,84,.10); }
     .share-status-mini.dirty { color:#dc3545; background:rgba(220,53,69,.10); }
     .share-status-mini.none { color:#666; background:rgba(0,0,0,.05); }
     .share-code-status-box.ready { border-color:#28a745 !important; background:rgba(40,167,69,.10) !important; }
     .share-code-status-box.dirty { border-color:#dc3545 !important; background:rgba(220,53,69,.09) !important; }
+    .share-code-status-box.updating { border-color:#f0ad4e !important; background:rgba(240,173,78,.10) !important; }
     .share-code-status-box.none { border-color:#aaa !important; background:rgba(0,0,0,.04) !important; }
     .search-results-panel { top: 62px; right: 270px; z-index: 999; }
     .bottom-center-area { top: auto; right: 270px; bottom: 18px; z-index: 1000; }
@@ -475,12 +478,9 @@
       <div class="search-panel" id="search-panel">
         <div class="simple-panel-header">
           <h4 style="margin: 0;">🔍 条件検索</h4>
-          <div style="display:flex; gap:4px; align-items:center;">
-            <button id="search-panel-toggle" class="search-panel-toggle" onclick="toggleSearchPanelBody()" title="検索条件を展開・折りたたみ">▼</button>
-            <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
-          </div>
+          <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
         </div>
-        <div id="search-panel-body" class="search-panel-body">
+        <div id="search-panel-body" class="search-panel-body open">
           <input type="text" id="search-name" placeholder="店舗名検索" oninput="filterStores()" style="width:100%;">
           <select id="search-list" class="scroll-select-10" size="1" onchange="filterStores()" style="width:100%;">
             <option value="">全店舗</option>
@@ -1107,14 +1107,6 @@
       updateShareCodeStatus();
     }
 
-    function toggleSearchPanelBody() {
-      const body = document.getElementById('search-panel-body');
-      const btn = document.getElementById('search-panel-toggle');
-      if (!body || !btn) return;
-      const open = body.classList.toggle('open');
-      btn.textContent = open ? '▲' : '▼';
-    }
-
     function renderCurrentMap() {
       updateIndicator();
       updateShareCodeStatus();
@@ -1242,6 +1234,7 @@
       if (!panel) return;
       const isVisible = panel.style.display === 'block';
       closeSimplePanels();
+      closeSearchResultsPanel();
       if (!isVisible) {
         panel.style.display = 'block';
         updateMapListDropdown();
@@ -2477,7 +2470,7 @@
         const statusBox = document.getElementById('share-code-status-box');
         const statusText = document.getElementById('share-code-status-text');
         const statusNote = statusBox ? statusBox.querySelector('[data-share-status-note]') : null;
-        if (statusBox) statusBox.className = 'share-code-status-box dirty';
+        if (statusBox) statusBox.className = 'share-code-status-box updating';
         if (statusText) statusText.textContent = '現在の状態：🟠 更新処理中…';
         if (statusNote) statusNote.textContent = '共有データを最新状態へ更新しています。';
 
