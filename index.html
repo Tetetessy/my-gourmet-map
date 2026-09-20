@@ -152,7 +152,15 @@
 
     .store-pin-dimmed { filter: grayscale(1) saturate(0) opacity(.38); }
     .map-list-store-summary { margin-top:7px; border-top:1px solid var(--border-color); padding-top:7px; max-height:none; flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
-    .map-list-status-text { min-height:30px; line-height:1.45; white-space:normal; }
+    .map-list-status-text { min-height:30px; line-height:1.45; white-space:normal; margin:0 0 7px !important; padding:7px 9px; border:1px solid rgba(25,135,84,.35); border-left:4px solid #198754; border-radius:7px; background:rgba(25,135,84,.08); color:var(--text-color); font-size:11px !important; font-weight:600; box-sizing:border-box; }
+    .map-list-selected-summary { margin:0 0 6px; padding:6px 9px; border-radius:7px; background:rgba(0,0,0,.045); border:1px solid var(--border-color); font-size:11px; font-weight:700; line-height:1.35; }
+    .search-results-count { margin-top:8px; padding:7px 9px; border-top:1px solid var(--border-color); background:rgba(0,0,0,.045); border-radius:6px; text-align:center; font-size:11px; font-weight:700; }
+    .list-manage-modal-content { width:min(92vw, 560px) !important; max-width:560px !important; }
+    .list-manage-row-main { min-width:0; }
+    .list-manage-name { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:1.25; font-size:12px; }
+    .list-manage-count { display:block; margin-top:3px; font-size:10.5px; color:#666; font-weight:600; }
+    .store-register-footer { position:sticky; bottom:0; z-index:20; margin:14px -18px -18px; padding:10px 18px 12px; background:var(--panel-bg); border-top:1px solid var(--border-color); box-shadow:0 -5px 14px rgba(0,0,0,.08); }
+    .store-register-footer .btn-group { margin-top:0; }
     .map-list-select-fixed { display:block; width:100%; height:220px; max-height:220px; overflow-y:auto; flex:0 0 auto; }
     .map-list-store-item { display:block; width:100%; text-align:left; margin:4px 0 0; padding:7px 8px; border:1px solid var(--border-color); border-radius:8px; background:rgba(0,0,0,.035); color:var(--text-color,#333); cursor:pointer; box-sizing:border-box; }
     .map-list-store-item:hover { background:rgba(0,0,0,.08); }
@@ -473,13 +481,13 @@
             <span id="map-list-status-badge" class="map-list-status-badge unselected">リスト未選択</span>
           </div>
           <div class="map-list-header-actions">
-            <button onclick="clearMapListView()" style="background:#6c757d; font-size:10px; padding:2px 7px;">選択解除</button>
-            <button onclick="toggleMapListPanel()" style="background:#6c757d; font-size:10px; padding:2px 7px;">閉じる</button>
+            <button type="button" onclick="clearMapListView(); event.stopPropagation();" style="background:#6c757d; font-size:10px; padding:2px 7px;">選択解除</button>
+            <button type="button" onclick="closeMapListPanel(event)" style="background:#6c757d; font-size:10px; padding:2px 7px;">閉じる</button>
           </div>
         </div>
+        <div id="map-list-status" class="map-list-status-text">リストを選ぶと対象外の店舗ピンがグレーになります。</div>
         <select id="map-list-select" class="scroll-select-10 map-list-select-fixed" size="10" onchange="applyMapListView(this.value)" style="width:100%;">
         </select>
-        <div id="map-list-status" class="map-list-status-text" style="font-size:10px; margin-top:5px; color:#666;">リストを選ぶと対象外の店舗ピンがグレーになります。</div>
         <div id="map-list-store-summary" class="map-list-store-summary" style="display:none;"></div>
       </div>
       <button class="action-btn" onclick="toggleSearchPanel()">🔍 絞り込み</button>
@@ -559,6 +567,7 @@
       <button onclick="closeSearchResultsPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
     </div>
     <div id="search-results-container"></div>
+    <div id="search-results-count" class="search-results-count">一致：0店舗</div>
   </div>
 
   <!-- 店舗・ピン詳細パネル -->
@@ -737,6 +746,8 @@
     }
 
     function closeModal() {
+      const modalContent = document.getElementById('modal-content');
+      if (modalContent) modalContent.classList.remove('list-manage-modal-content');
       document.getElementById('modal-overlay').style.display = 'none';
     }
 
@@ -1223,11 +1234,12 @@
         return;
       }
       const stores = (cur.stores || []).filter(s => (s.listIds || []).includes(list.id) || s.listId === list.id);
-      if (status) status.textContent = `「${list.name}」：${stores.length}店舗 / リスト外の店舗ピンはグレー表示`;
+      if (status) status.textContent = 'リストを選ぶと対象外の店舗ピンがグレーになります。';
       if (badge) { badge.textContent = 'リスト選択中'; badge.className = 'map-list-status-badge selected'; }
       container.style.display = 'block';
       container.innerHTML = `
-        <div style="font-size:10px; font-weight:bold; margin-bottom:4px;">📍 リスト内の店舗（タップで移動）</div>
+        <div style="font-size:11px; font-weight:bold; margin-bottom:4px;">📍 リスト内の店舗（タップで移動）</div>
+        <div class="map-list-selected-summary">「${list.name}」：${stores.length}店舗</div>
         ${stores.length ? stores.map(s => `
           <button type="button" class="map-list-store-item" onclick="moveToMapListStore('${s.id}')">
             <b>${s.isFavorite ? '⭐ ' : ''}${s.name}</b>
@@ -1237,10 +1249,16 @@
       `;
     }
 
+    function closeMapListPanel(event) {
+      if (event) { event.preventDefault(); event.stopPropagation(); }
+      const panel = document.getElementById('map-list-panel');
+      if (panel) panel.style.display = 'none';
+    }
+
     function toggleMapListPanel() {
       const panel = document.getElementById('map-list-panel');
       if (!panel) return;
-      const isVisible = panel.style.display === 'block';
+      const isVisible = panel.style.display !== 'none' && panel.style.display !== '';
       closeSimplePanels();
       closeSearchResultsPanel();
       if (!isVisible) {
@@ -1330,10 +1348,10 @@
       const currentZoom = map.getZoom();
       const travelZoom = Math.max(10, Math.min(12, currentZoom - 2));
       // いったんズームアウトしてから、目的地へスライド移動しつつ近づく。
-      map.flyTo(map.getCenter(), travelZoom, { duration: 0.9, easeLinearity: 0.2 });
+      map.flyTo(map.getCenter(), travelZoom, { duration: 1.4, easeLinearity: 0.2 });
       setTimeout(() => {
-        map.flyTo(target, 15, { duration: 1.1, easeLinearity: 0.2 });
-      }, 950);
+        map.flyTo(target, 15, { duration: 1.6, easeLinearity: 0.2 });
+      }, 1400);
       const areaPanel = document.getElementById('area-move-panel');
       if (areaPanel) areaPanel.style.display = 'none';
     }
@@ -1547,9 +1565,11 @@
           <textarea id="reg-store-memo" class="stylish-input" rows="4" placeholder="">${isEdit ? (storeToEdit.memo || '') : ''}</textarea>
         </div>
 
-        <div class="btn-group">
-          <button onclick="saveStoreData('${isEdit ? storeToEdit.id : ''}')">${isEdit ? '更新保存' : '登録保存'}</button>
-          <button onclick="closeModal()" class="btn-secondary">キャンセル</button>
+        <div class="store-register-footer">
+          <div class="btn-group">
+            <button onclick="saveStoreData('${isEdit ? storeToEdit.id : ''}')">${isEdit ? '更新保存' : '登録保存'}</button>
+            <button onclick="closeModal()" class="btn-secondary">キャンセル</button>
+          </div>
         </div>
       `;
       renderImagePreviews();
@@ -2347,6 +2367,8 @@
       const container = document.getElementById('search-results-container');
       
       resultsPanel.style.display = 'block';
+      const countEl = document.getElementById('search-results-count');
+      if (countEl) countEl.textContent = `一致：${filtered.length}店舗`;
 
       if (filtered.length === 0) {
         container.innerHTML = `<p style="font-size:11px; color:#888; text-align:center; padding:10px 0;">該当する店舗が見つかりません</p>`;
@@ -2857,6 +2879,7 @@
       toggleMenu();
       const curMap = getCurrentMap();
       const content = document.getElementById('modal-content');
+      content.classList.add('list-manage-modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
 
       const listsHtml = (curMap.lists || []).map((l, index) => {
@@ -2876,9 +2899,10 @@
         return `
           <li style="margin-bottom:8px; background:rgba(0,0,0,0.03); padding:8px; border-radius:8px; border:1px solid var(--border-color);">
             <div class="list-manage-header">
-              <span style="font-size:12px; cursor:pointer; min-width:0;" onclick="toggleListAccordion('list-stores-${l.id}')">
-                ▶ 📌 <b>No.${index + 1}　${l.name}</b> <small>(${assignedStores.length}件)</small>
-              </span>
+              <div class="list-manage-row-main" onclick="toggleListAccordion('list-stores-${l.id}')" style="cursor:pointer;">
+                <span class="list-manage-name ${String(l.name || "").length > 18 ? "long" : ""} ${String(l.name || "").length > 28 ? "very-long" : ""}">▶ 📌 No.${index + 1}　${l.name}</span>
+                <span class="list-manage-count">店舗数：${assignedStores.length}件</span>
+              </div>
               ${!curMap.isShared ? `
                 <div class="list-manage-actions">
                   <button onclick="moveCustomList(${index},-1)" style="padding:2px 6px; font-size:10px;">↑</button>
