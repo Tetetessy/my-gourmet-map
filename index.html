@@ -152,7 +152,7 @@
 
     .store-pin-dimmed { filter: grayscale(1) saturate(0) opacity(.38); }
     .map-list-store-summary { margin-top:7px; border-top:1px solid var(--border-color); padding-top:7px; max-height:none; flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
-    .map-list-status-text { min-height:30px; line-height:1.45; white-space:normal; margin:0 0 7px !important; padding:7px 9px; border:1px solid rgba(25,135,84,.35); border-left:4px solid #198754; border-radius:7px; background:rgba(25,135,84,.08); color:var(--text-color); font-size:11px !important; font-weight:600; box-sizing:border-box; }
+    .map-list-status-text { min-height:30px; line-height:1.45; white-space:normal; margin:0 0 7px !important; padding:7px 9px; border:1px solid rgba(111,78,55,.38); border-left:4px solid #8a6d3b; border-radius:7px; background:rgba(240,214,170,.28); color:var(--text-color); font-size:11px !important; font-weight:700; box-sizing:border-box; }
     .map-list-selected-summary { margin:0 0 6px; padding:6px 9px; border-radius:7px; background:rgba(0,0,0,.045); border:1px solid var(--border-color); font-size:11px; font-weight:700; line-height:1.35; }
     .search-results-count { margin-top:8px; padding:7px 9px; border-top:1px solid var(--border-color); background:rgba(0,0,0,.045); border-radius:6px; text-align:center; font-size:11px; font-weight:700; }
     .list-manage-modal-content { width:min(92vw, 560px) !important; max-width:560px !important; }
@@ -193,6 +193,20 @@
     .search-options-box { margin:4px 0; padding:5px; border:1px solid var(--border-color); border-radius:6px; }
     .search-options-title { font-size:10px; font-weight:bold; margin-bottom:4px; color:var(--text-color,#444); }
     .search-options-grid .store-option-check { padding:4px 5px; font-size:10px; }
+
+    .search-filter-section { margin:5px 0; border:1px solid var(--border-color); border-radius:7px; overflow:hidden; background:rgba(255,255,255,.18); }
+    .search-filter-title { font-size:10px; font-weight:700; margin-bottom:4px; }
+    .search-filter-name-section { padding:6px; }
+    .search-filter-toggle { width:100%; display:flex; justify-content:space-between; align-items:center; text-align:left; border:0; border-radius:0; padding:7px 9px; margin:0; background:rgba(0,0,0,.045); color:var(--text-color); font-size:11px; font-weight:700; box-shadow:none; }
+    .search-filter-toggle:hover { transform:none; }
+    .search-filter-body { display:none; padding:6px; }
+    .search-filter-section.open .search-filter-body { display:block; }
+    .search-filter-arrow { font-size:9px; opacity:.75; }
+    .search-fav-check { display:flex; align-items:center; gap:5px; margin-top:6px; padding:5px 6px; border:1px solid var(--border-color); border-radius:6px; background:rgba(255,215,0,.12); font-size:10px; font-weight:700; cursor:pointer; }
+    .search-fav-check input { width:15px; height:15px; margin:0; accent-color:#f0ad4e; }
+    .search-results-count { margin-top:3px; font-size:10px; font-weight:700; color:var(--text-color); background:rgba(240,173,78,.14); border:1px solid rgba(240,173,78,.4); border-radius:5px; padding:3px 6px; display:inline-block; }
+    .map-list-selected-summary { margin:4px 0 6px; padding:5px 7px; border:1px solid rgba(111,78,55,.35); border-radius:6px; background:rgba(240,214,170,.22); color:var(--text-color); font-size:11px; font-weight:700; }
+
     @media (max-width: 768px) {
       :root { --font-size: 11px; }
       button, input, select, textarea { padding: 4px 6px; font-size: 11px; }
@@ -497,28 +511,57 @@
           <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
         </div>
         <div id="search-panel-body" class="search-panel-body open">
-          <input type="text" id="search-name" placeholder="店舗名検索" oninput="filterStores()" style="width:100%;">
-          <select id="search-list" class="scroll-select-10 search-filter-select" size="10" onchange="filterStores()" style="width:100%;">
-            <option value="">全店舗</option>
-          </select>
-          <select id="search-fav" class="scroll-select-10 search-filter-select" size="10" onchange="filterStores()" style="width:100%;">
-            <option value="">全てのお気に入り</option>
-            <option value="fav">★ お気に入りのみ</option>
-          </select>
-          <select id="search-form" class="scroll-select-10 search-filter-select" size="10" onchange="filterStores()" style="width:100%;">
-            <option value="">全ての形式</option>
-          </select>
-          <select id="search-genre" class="scroll-select-10 search-filter-select" size="10" onchange="filterStores()" style="width:100%;">
-            <option value="">全てのジャンル</option>
-          </select>
-          <select id="search-budget" class="scroll-select-10 search-filter-select" size="10" onchange="filterStores()" style="width:100%;">
-            <option value="">全ての予算</option>
-          </select>
-          <div class="search-options-box">
-            <div class="search-options-title">オプション（複数選択可）</div>
-            <div id="search-options-container" class="store-options-grid search-options-grid"></div>
+          <div class="search-filter-section search-filter-name-section">
+            <div class="search-filter-title">店舗名検索</div>
+            <input type="text" id="search-name" placeholder="店舗名を入力" oninput="filterStores()" style="width:100%;">
+            <label class="search-fav-check"><input type="checkbox" id="search-fav-only" onchange="filterStores()"> <span>★ お気に入り店舗のみ表示</span></label>
           </div>
-          <input type="text" id="search-station" placeholder="最寄り駅検索" oninput="filterStores()" style="width:100%;">
+          <div class="search-filter-section">
+            <button type="button" class="search-filter-toggle" onclick="toggleSearchFilterSection(this)"><span>リスト</span><span class="search-filter-arrow">▼</span></button>
+            <div class="search-filter-body">
+              <select id="search-list" class="scroll-select-10 search-filter-select" size="10" onchange="filterStores()" style="width:100%;">
+                <option value="">全店舗</option>
+              </select>
+            </div>
+          </div>
+          <div class="search-filter-section">
+            <button type="button" class="search-filter-toggle" onclick="toggleSearchFilterSection(this)"><span>形式</span><span class="search-filter-arrow">▼</span></button>
+            <div class="search-filter-body">
+              <select id="search-form" class="scroll-select-10 search-filter-select" size="10" onchange="filterStores()" style="width:100%;">
+                <option value="">全ての形式</option>
+              </select>
+            </div>
+          </div>
+          <div class="search-filter-section">
+            <button type="button" class="search-filter-toggle" onclick="toggleSearchFilterSection(this)"><span>ジャンル</span><span class="search-filter-arrow">▼</span></button>
+            <div class="search-filter-body">
+              <select id="search-genre" class="scroll-select-10 search-filter-select" size="10" onchange="filterStores()" style="width:100%;">
+                <option value="">全てのジャンル</option>
+              </select>
+            </div>
+          </div>
+          <div class="search-filter-section">
+            <button type="button" class="search-filter-toggle" onclick="toggleSearchFilterSection(this)"><span>予算</span><span class="search-filter-arrow">▼</span></button>
+            <div class="search-filter-body">
+              <select id="search-budget" class="scroll-select-10 search-filter-select" size="10" onchange="filterStores()" style="width:100%;">
+                <option value="">全ての予算</option>
+              </select>
+            </div>
+          </div>
+          <div class="search-filter-section">
+            <button type="button" class="search-filter-toggle" onclick="toggleSearchFilterSection(this)"><span>オプション（複数選択可）</span><span class="search-filter-arrow">▼</span></button>
+            <div class="search-filter-body">
+              <div class="search-options-box" style="margin:0; border:0; padding:0;">
+                <div id="search-options-container" class="store-options-grid search-options-grid"></div>
+              </div>
+            </div>
+          </div>
+          <div class="search-filter-section">
+            <button type="button" class="search-filter-toggle" onclick="toggleSearchFilterSection(this)"><span>最寄り駅</span><span class="search-filter-arrow">▼</span></button>
+            <div class="search-filter-body">
+              <input type="text" id="search-station" placeholder="最寄り駅を入力" oninput="filterStores()" style="width:100%;">
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -563,11 +606,13 @@
   <!-- 右側別枠：絞り込み結果表示パネル -->
   <div class="search-results-panel" id="search-results-panel">
     <div class="simple-panel-header search-results-header">
-      <h4 style="margin:0; font-size:12px;">📋 検索結果一覧</h4>
+      <div style="min-width:0; flex:1;">
+        <h4 style="margin:0; font-size:12px;">📋 検索結果一覧</h4>
+        <div id="search-results-count" class="search-results-count">一致：0店舗</div>
+      </div>
       <button onclick="closeSearchResultsPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
     </div>
     <div id="search-results-container"></div>
-    <div id="search-results-count" class="search-results-count">一致：0店舗</div>
   </div>
 
   <!-- 店舗・ピン詳細パネル -->
@@ -735,6 +780,16 @@
       const isVisible = panel.style.display === 'block';
       closeSimplePanels();
       if (!isVisible) { panel.style.display = 'block'; filterStores(); }
+    }
+
+    function toggleSearchFilterSection(button) {
+      const section = button.closest('.search-filter-section');
+      if (!section) return;
+      const body = section.querySelector('.search-filter-body');
+      const arrow = button.querySelector('.search-filter-arrow');
+      const isOpen = section.classList.toggle('open');
+      if (body) body.style.display = isOpen ? 'block' : 'none';
+      if (arrow) arrow.textContent = isOpen ? '▲' : '▼';
     }
 
     function closeSearchResultsPanel() {
@@ -2340,7 +2395,7 @@
     function filterStores() {
       const nameVal = document.getElementById('search-name').value.toLowerCase();
       const listVal = document.getElementById('search-list').value;
-      const favVal = document.getElementById('search-fav').value;
+      const favOnly = document.getElementById('search-fav-only')?.checked || false;
       const formVal = document.getElementById('search-form').value;
       const genreVal = document.getElementById('search-genre').value;
       const budgetVal = document.getElementById('search-budget').value;
@@ -2352,7 +2407,7 @@
         if (nameVal && !s.name.toLowerCase().includes(nameVal)) return false;
         if (stationVal && !(s.station || '').toLowerCase().includes(stationVal)) return false;
         if (listVal && !(s.listIds || []).includes(listVal) && s.listId !== listVal) return false;
-        if (favVal === 'fav' && !s.isFavorite) return false;
+        if (favOnly && !s.isFavorite) return false;
         const storeForms = getStoreForms(s);
         const storeGenres = getStoreGenres(s);
         if (formVal && !storeForms.includes(formVal)) return false;
