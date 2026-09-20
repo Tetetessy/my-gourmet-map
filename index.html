@@ -151,7 +151,9 @@
     }
 
     .store-pin-dimmed { filter: grayscale(1) saturate(0) opacity(.38); }
-    .map-list-store-summary { margin-top:7px; border-top:1px solid var(--border-color); padding-top:7px; max-height:48vh; overflow-y:auto; }
+    .map-list-store-summary { margin-top:7px; border-top:1px solid var(--border-color); padding-top:7px; max-height:none; flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+    .map-list-status-text { min-height:30px; line-height:1.45; white-space:normal; }
+    .map-list-select-fixed { display:block; width:100%; height:220px; max-height:220px; overflow-y:auto; flex:0 0 auto; }
     .map-list-store-item { display:block; width:100%; text-align:left; margin:4px 0 0; padding:7px 8px; border:1px solid var(--border-color); border-radius:8px; background:rgba(0,0,0,.035); color:var(--text-color,#333); cursor:pointer; box-sizing:border-box; }
     .map-list-store-item:hover { background:rgba(0,0,0,.08); }
     .map-list-store-item b { font-size:11px; }
@@ -162,7 +164,7 @@
       .map-list-header-actions { gap:4px; }
       .map-list-header-actions button { min-width:54px; padding-left:5px !important; padding-right:5px !important; }
       .map-list-status-badge { min-width:88px; }
-      .map-list-store-summary { max-height:46vh; }
+      .map-list-store-summary { max-height:none; }
     }
     .search-results-panel {
       position: fixed; top: 50px; right: 10px; z-index: 999; background: var(--panel-bg); backdrop-filter: blur(8px); padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.15); width: 250px; max-height: 60vh; overflow-y: auto; display: none; padding-bottom: 70vh; box-sizing:border-box;
@@ -359,7 +361,7 @@
     /* ==================== パネルの固定配置 ==================== */
     .search-panel { position: fixed; top: 154px; left: 10px; z-index: 1002; width: 270px; max-width: calc(100vw - 20px); max-height: 42vh; overflow-y:auto; }
     .search-panel-body { display:block; }
-    .map-list-panel { top: 62px; right: 270px; left:auto; width: 390px; max-width: calc(100vw - 290px); max-height: 60vh; overflow-y:auto; }
+    .map-list-panel { top: 62px; right: 270px; left:auto; width: 390px; max-width: calc(100vw - 290px); max-height: 60vh; overflow:hidden; display:none; flex-direction:column; box-sizing:border-box; }
     .map-list-status-badge { display:inline-flex; align-items:center; justify-content:center; min-width:92px; padding:3px 7px; border-radius:999px; font-size:10px; font-weight:bold; border:1px solid currentColor; white-space:nowrap; }
     .map-list-status-badge.unselected { color:#dc3545; background:rgba(220,53,69,.09); }
     .map-list-status-badge.selected { color:#198754; background:rgba(25,135,84,.10); }
@@ -382,6 +384,12 @@
       display: none; position: absolute; right: 0; top: 36px; background: var(--panel-bg); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 8px; width: 210px; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 1001;
     }
     .menu-dropdown button { display: block; width: 100%; text-align: left; margin: 2px 0; }
+    .map-manage-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; background:rgba(0,0,0,.03); padding:6px 8px; margin-bottom:4px; border-radius:6px; }
+    .map-manage-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:1.25; }
+    .map-manage-actions { display:grid; grid-template-columns:32px 32px 48px 42px; gap:3px; align-items:center; }
+    .map-manage-btn { width:100%; min-width:0; height:26px; padding:2px 3px !important; font-size:10px !important; line-height:1; white-space:nowrap; }
+    .map-manage-name.long { font-size:10px !important; }
+    .map-manage-name.very-long { font-size:9px !important; }
 
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(4px); z-index: 2000; display: none; justify-content: center; align-items: center; animation: fadeIn 0.2s ease-out;
@@ -469,9 +477,9 @@
             <button onclick="toggleMapListPanel()" style="background:#6c757d; font-size:10px; padding:2px 7px;">閉じる</button>
           </div>
         </div>
-        <select id="map-list-select" class="scroll-select-10" size="10" onchange="applyMapListView(this.value)" style="width:100%;">
+        <select id="map-list-select" class="scroll-select-10 map-list-select-fixed" size="10" onchange="applyMapListView(this.value)" style="width:100%;">
         </select>
-        <div id="map-list-status" style="font-size:10px; margin-top:5px; color:#666;">リストを選ぶと対象外の店舗ピンがグレーになります。</div>
+        <div id="map-list-status" class="map-list-status-text" style="font-size:10px; margin-top:5px; color:#666;">リストを選ぶと対象外の店舗ピンがグレーになります。</div>
         <div id="map-list-store-summary" class="map-list-store-summary" style="display:none;"></div>
       </div>
       <button class="action-btn" onclick="toggleSearchPanel()">🔍 絞り込み</button>
@@ -482,20 +490,20 @@
         </div>
         <div id="search-panel-body" class="search-panel-body open">
           <input type="text" id="search-name" placeholder="店舗名検索" oninput="filterStores()" style="width:100%;">
-          <select id="search-list" class="scroll-select-10" size="1" onchange="filterStores()" style="width:100%;">
+          <select id="search-list" class="scroll-select-10 search-filter-select" size="10" onchange="filterStores()" style="width:100%;">
             <option value="">全店舗</option>
           </select>
-          <select id="search-fav" onchange="filterStores()" style="width:100%;">
+          <select id="search-fav" class="scroll-select-10 search-filter-select" size="10" onchange="filterStores()" style="width:100%;">
             <option value="">全てのお気に入り</option>
             <option value="fav">★ お気に入りのみ</option>
           </select>
-          <select id="search-form" onchange="filterStores()" style="width:100%;">
+          <select id="search-form" class="scroll-select-10 search-filter-select" size="10" onchange="filterStores()" style="width:100%;">
             <option value="">全ての形式</option>
           </select>
-          <select id="search-genre" onchange="filterStores()" style="width:100%;">
+          <select id="search-genre" class="scroll-select-10 search-filter-select" size="10" onchange="filterStores()" style="width:100%;">
             <option value="">全てのジャンル</option>
           </select>
-          <select id="search-budget" onchange="filterStores()" style="width:100%;">
+          <select id="search-budget" class="scroll-select-10 search-filter-select" size="10" onchange="filterStores()" style="width:100%;">
             <option value="">全ての予算</option>
           </select>
           <div class="search-options-box">
@@ -533,7 +541,7 @@
       <button onclick="importCodePrompt()">共有コード読み込み</button>
       <button onclick="refreshSharedMap()">🔄 マップ情報を更新</button>
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
-      <small>【設定】</small>
+      <small>【テーマ】</small>
       <select onchange="changeTheme(this.value)" style="width:100%;">
         <option value="casual">☁️ カジュアル</option>
         <option value="simple">▦ シンプル</option>
@@ -1236,7 +1244,7 @@
       closeSimplePanels();
       closeSearchResultsPanel();
       if (!isVisible) {
-        panel.style.display = 'block';
+        panel.style.display = 'flex';
         updateMapListDropdown();
         updateMapListStoreSummary();
       }
@@ -2625,17 +2633,20 @@
         <option value="${m.id}" ${m.id === currentMapId ? 'selected' : ''}>${m.name}${m.isShared ? ' [共有]' : ''}</option>
       `).join('');
 
-      const mapListItems = maps.map((m, index) => `
-        <li style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.03); padding:6px 8px; margin-bottom:4px; border-radius:6px;">
-          <span style="font-size:12px;">🗺️ <b>${m.name}</b> ${m.id === currentMapId ? '<small style="color:var(--primary-color);">(選択中)</small>' : ''}</span>
-          <div>
-            <button onclick="moveMapOrder(${index}, -1)" class="btn-sm-icon">▲</button>
-            <button onclick="moveMapOrder(${index}, 1)" class="btn-sm-icon">▼</button>
-            <button onclick="editMapName('${m.id}')" style="background:#ff9f43; padding:2px 6px; font-size:10px;">✏️ 編集</button>
-            <button onclick="deleteMap('${m.id}')" style="background:#dc3545; padding:2px 6px; font-size:10px;">削除</button>
+      const mapListItems = maps.map((m, index) => {
+        const nameLen = String(m.name || '').length;
+        const nameClass = nameLen >= 20 ? 'very-long' : (nameLen >= 12 ? 'long' : '');
+        return `
+        <li class="map-manage-row">
+          <span class="map-manage-name ${nameClass}" title="${m.name}">🗺️ <b>${m.name}</b> ${m.id === currentMapId ? '<small style="color:var(--primary-color);">(選択中)</small>' : ''}</span>
+          <div class="map-manage-actions">
+            <button onclick="moveMapOrder(${index}, -1)" class="map-manage-btn">▲</button>
+            <button onclick="moveMapOrder(${index}, 1)" class="map-manage-btn">▼</button>
+            <button onclick="editMapName('${m.id}')" class="map-manage-btn" style="background:#ff9f43;">✏️ 編集</button>
+            <button onclick="deleteMap('${m.id}')" class="map-manage-btn" style="background:#dc3545;">削除</button>
           </div>
-        </li>
-      `).join('');
+        </li>`;
+      }).join('');
 
       content.innerHTML = `
         <div class="modal-header"><h3>🗺️ マップの切替・編集</h3></div>
@@ -3072,8 +3083,8 @@
 
       content.innerHTML = `
         <div class="modal-header"><h3>登録店舗一覧 (${curMap.stores.length}件)</h3></div>
+        ${curMap.isShared ? '' : '<div style="font-size:10px;color:#777;margin:-4px 0 7px; padding:4px 6px; border:1px solid var(--border-color); border-radius:6px; background:rgba(0,0,0,.03);">★＝お気に入り　☆＝通常</div>'}
         <div style="max-height:60vh; overflow-y:auto; margin-bottom:10px;">${listHtml || '<p style="color:#888;">登録店舗がありません</p>'}</div>
-        ${curMap.isShared ? '' : '<div style="font-size:10px;color:#777;margin-bottom:6px;">★＝お気に入り　☆＝通常</div>'}
         <button onclick="closeModal()" class="btn-secondary" style="width:100%;">閉じる</button>
       `;
     }

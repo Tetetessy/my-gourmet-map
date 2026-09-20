@@ -2,7 +2,7 @@
 パスワード：teteteshhie78
 
 git add .
-git commit -m "fix: 共有コードモーダルの関数を更新"
+git commit -m "fix: 絞り込み、ウィンドウUIの修正"
 git push origin main
 
 const firebaseConfig = {
