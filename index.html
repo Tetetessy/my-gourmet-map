@@ -117,12 +117,39 @@
     .area-move-btn { min-width:150px; max-width:260px; text-align:center; }
     .area-move-panel { position:fixed; top:140px; left:50%; transform:translateX(-50%); width:390px; max-width:calc(100vw - 20px); max-height:calc(100vh - 160px); overflow:hidden; background:var(--panel-bg); backdrop-filter:blur(10px); border:2px solid var(--border-color); border-radius:var(--radius); box-shadow:0 8px 24px rgba(0,0,0,.22); padding:10px; display:none; z-index:1004; box-sizing:border-box; }
     .area-move-scroll { max-height:calc(100vh - 225px); overflow-y:auto; padding-right:2px; }
-    .area-move-section { border:1px solid var(--border-color); border-radius:9px; margin-bottom:8px; overflow:hidden; background:var(--panel-solid-bg); }
+    /* エリア移動：添付の「リスト表示」と同じ、シンプルな一覧→下方向展開レイアウト */
+    .area-move-section { margin:0 0 0; overflow:hidden; background:transparent; }
     .area-move-section:last-child { margin-bottom:0; }
-    .area-move-section-title { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:9px 10px; font-size:12px; font-weight:800; cursor:pointer; user-select:none; background:var(--primary-gradient); color:#fff !important; }
-    .area-move-items { display:none; padding:8px; border-top:1px solid var(--border-color); background:var(--panel-solid-bg); }
-    .area-move-item { display:block; width:100%; text-align:left; margin:3px 0; padding:8px 10px; border:1px solid var(--border-color); border-radius:7px; background:var(--panel-bg); color:var(--text-color); cursor:pointer; font-size:11px; font-weight:700; box-sizing:border-box; }
-    .area-move-item:hover { background:var(--primary-gradient); color:#fff; border-color:transparent; }
+    .area-move-section-title {
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+      width:100%; min-height:34px; padding:7px 10px;
+      border:0; border-bottom:1px solid var(--border-color);
+      border-radius:0; background:transparent !important; color:var(--text-color) !important;
+      font-size:12px; font-weight:700; cursor:pointer; user-select:none; box-sizing:border-box;
+    }
+    .area-move-section-title:hover { background:color-mix(in srgb, var(--primary-color) 7%, var(--panel-solid-bg)) !important; }
+    .area-move-section-title * { color:var(--text-color) !important; }
+    .area-move-section-title .area-move-list-label { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .area-move-section-title .area-move-list-count { font-size:10px; font-weight:600; opacity:.72; margin-left:3px; }
+    .area-move-section-title .area-move-arrow { flex:0 0 auto; font-size:10px; font-weight:800; color:var(--primary-color) !important; }
+    .area-move-items { display:none; padding:3px 8px 7px 22px; border:0; background:var(--panel-solid-bg); }
+    .area-move-item {
+      display:block; width:100%; text-align:left; margin:0; padding:7px 8px;
+      border:0; border-bottom:1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+      border-radius:0; background:transparent; color:var(--text-color) !important;
+      cursor:pointer; font-size:11px; font-weight:600; box-sizing:border-box;
+    }
+    .area-move-item:last-child { border-bottom:0; }
+    .area-move-item:hover, .area-move-item:active {
+      background:color-mix(in srgb, var(--primary-color) 9%, var(--panel-solid-bg));
+      color:var(--text-color) !important;
+    }
+    .area-move-empty { padding:7px 8px; font-size:10px; color:var(--text-color); opacity:.62; }
+    .area-move-list-container {
+      border:1px solid var(--border-color); border-radius:9px; overflow:hidden;
+      background:var(--panel-solid-bg); margin-bottom:8px;
+    }
+    .area-move-list-container:last-child { margin-bottom:0; }
     .area-list-manage-box { border:1px solid var(--border-color); border-radius:8px; padding:8px; margin-bottom:8px; }
     .area-list-assigned { margin-top:5px; padding-left:6px; border-left:2px solid var(--primary-color); }
     .area-list-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; background:rgba(0,0,0,.03); padding:5px 6px; margin-top:3px; border-radius:5px; font-size:10.5px; }
@@ -681,17 +708,22 @@
       color: #fff !important;
     }
 
-    /* 折りたたみ式の項目見出しもテーマの標準ボタン色＋白文字 */
-    .search-filter-toggle,
-    .area-move-section-title {
+    /* 検索の折りたたみ見出しはテーマボタン。エリア移動の一覧見出しは画像と同じ本文色の行表示。 */
+    .search-filter-toggle {
       background: var(--primary-gradient) !important;
       color: #fff !important;
       border-color: transparent !important;
       box-shadow: none !important;
     }
-    .search-filter-toggle *,
-    .area-move-section-title * {
-      color: #fff !important;
+    .search-filter-toggle * { color: #fff !important; }
+    .area-move-panel .area-move-section-title,
+    .area-move-panel .area-move-section-title * {
+      background: transparent !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color);
+    }
+    .area-move-panel .area-move-section-title .area-move-arrow {
+      color: var(--primary-color) !important;
     }
 
     /* 子ウィンドウ内の通常ボタンはテーマ色に統一。
@@ -721,6 +753,16 @@
     }
     .area-move-panel .area-move-item:hover {
       background: color-mix(in srgb, var(--primary-color) 10%, var(--panel-solid-bg));
+    }
+    .area-move-panel .area-move-item,
+    .area-move-panel .area-move-item:hover,
+    .area-move-panel .area-move-item:active {
+      background: transparent !important;
+      color: var(--text-color) !important;
+      border-color: color-mix(in srgb, var(--border-color) 70%, transparent) !important;
+    }
+    .area-move-panel .area-move-section-title:hover {
+      background: color-mix(in srgb, var(--primary-color) 7%, var(--panel-solid-bg)) !important;
     }
     .search-panel .search-filter-section {
       background: var(--panel-solid-bg);
@@ -1736,11 +1778,11 @@
         html += `
           <div class="area-move-section">
             <div class="area-move-section-title" onclick="toggleAreaMoveSection('${sectionId}')">
-              <span>📁 No.${index + 1}　${list.name} <small>(${assigned.length}件)</small></span>
-              <span data-area-section-arrow="${sectionId}">▶</span>
+              <span class="area-move-list-label">📁 No.${index + 1}　${list.name}<span class="area-move-list-count">(${assigned.length}件)</span></span>
+              <span class="area-move-arrow" data-area-section-arrow="${sectionId}">▶</span>
             </div>
             <div id="${sectionId}" class="area-move-items">
-              ${assigned.length ? assigned.map((a,i) => `<button class="area-move-item" onclick="moveToArea('${a.id}')">🚩 No.${i + 1}　${a.name}</button>`).join('') : '<div style="font-size:10px;color:#888;padding:6px;">このリストにはエリアがありません。</div>'}
+              ${assigned.length ? assigned.map((a,i) => `<button type="button" class="area-move-item" onclick="moveToArea('${a.id}')">🚩 No.${i + 1}　${a.name}</button>`).join('') : '<div class="area-move-empty">このリストにはエリアがありません。</div>'}
             </div>
           </div>`;
       });
@@ -1749,11 +1791,11 @@
       html += `
         <div class="area-move-section">
           <div class="area-move-section-title" onclick="toggleAreaMoveSection('${allId}')">
-            <span>📍 すべてのエリア <small>(${cur.areas.length}件)</small></span>
-            <span data-area-section-arrow="${allId}">▶</span>
+            <span class="area-move-list-label">📍 すべてのエリア<span class="area-move-list-count">(${cur.areas.length}件)</span></span>
+            <span class="area-move-arrow" data-area-section-arrow="${allId}">▶</span>
           </div>
           <div id="${allId}" class="area-move-items">
-            ${cur.areas.length ? cur.areas.map((a,i) => `<button class="area-move-item" onclick="moveToArea('${a.id}')">🚩 No.${i + 1}　${a.name}</button>`).join('') : '<div style="font-size:10px;color:#888;padding:6px;">登録エリアはありません。</div>'}
+            ${cur.areas.length ? cur.areas.map((a,i) => `<button type="button" class="area-move-item" onclick="moveToArea('${a.id}')">🚩 No.${i + 1}　${a.name}</button>`).join('') : '<div class="area-move-empty">登録エリアはありません。</div>'}
           </div>
         </div>`;
       container.innerHTML = html;
