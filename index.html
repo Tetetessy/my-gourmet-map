@@ -103,6 +103,7 @@
     }
     .simple-panel-header {
       position: sticky; top: -10px; z-index: 20;
+      box-shadow: 0 -12px 0 var(--panel-bg);
       display:flex; justify-content:space-between; align-items:center; gap:6px;
       margin:-10px -10px 8px; padding:8px 10px 7px;
       background:var(--panel-bg); backdrop-filter:blur(10px);
@@ -456,12 +457,10 @@
     }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    /* 操作メニュー内の標準ボタンをテーマ共通の背景色に統一 */
+    /* 操作メニュー内の標準ボタンは、ログアウトボタンと同じ各テーマの標準ボタン色を使用 */
     .menu-dropdown .menu-standard-btn,
     .menu-dropdown button[onclick="openAreaListModal()"] {
-      background: var(--primary-gradient) !important;
       color: #fff !important;
-      border: none !important;
     }
 
     /* 店舗登録モーダル：上部固定ヘッダー＋下部ボタンをヘッダー右側へ */
@@ -477,6 +476,7 @@
       padding: 18px 18px 8px;
       background: var(--panel-solid-bg);
       border-bottom: 1px solid var(--border-color);
+      box-shadow: 0 -22px 0 var(--panel-solid-bg);
       opacity: 1;
     }
     .store-register-sticky-header .modal-header {
@@ -507,6 +507,7 @@
       position:sticky; top:-1px; z-index:30;
       margin:-18px -18px 10px; padding:18px 18px 8px;
       background:var(--panel-solid-bg); border-bottom:1px solid var(--border-color);
+      box-shadow:0 -22px 0 var(--panel-solid-bg);
       opacity:1;
     }
     .area-register-header-row { margin-bottom:0; padding-bottom:6px; border-bottom:none; }
@@ -518,7 +519,7 @@
 
     /* リスト表示の店舗見出し・店舗数を固定し、店舗一覧だけをスクロール */
     .map-list-store-summary { display:flex; flex-direction:column; min-height:0; max-height:none; overflow:hidden; }
-    .map-list-store-summary-head { flex:0 0 auto; background:var(--panel-solid-bg); position:sticky; top:0; z-index:15; padding-bottom:6px; }
+    .map-list-store-summary-head { flex:0 0 auto; background:var(--panel-solid-bg); position:sticky; top:0; z-index:15; padding-bottom:6px; box-shadow:0 -10px 0 var(--panel-solid-bg); }
     .map-list-store-summary-list { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
 
     /* リスト表示・条件検索・検索結果一覧は各テーマで同じパネル質感に統一 */
@@ -528,6 +529,7 @@
     .search-results-panel .simple-panel-header {
       background:var(--primary-gradient); color:#fff; border-bottom-color:transparent;
       backdrop-filter:none;
+      box-shadow:0 -12px 0 var(--panel-bg);
     }
     .map-list-panel .simple-panel-header h4,
     .search-panel .simple-panel-header h4,
