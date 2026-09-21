@@ -855,7 +855,8 @@
   <!-- 店舗・ピン詳細パネル -->
   <div class="bottom-center-area" id="detail-area">
     <div class="detail-panel">
-      <div style="display:flex; justify-content:flex-end; margin-bottom: 4px;">
+      <div id="detail-actions-row" style="display:flex; justify-content:flex-end; gap:4px; margin-bottom:4px;">
+        <button id="detail-move-btn" onclick="startPinMoveFromDetail()" style="display:none; font-size:10px; padding:2px 6px;">📍 移動</button>
         <button onclick="closeDetailPanel()" style="background:#6c757d; font-size:10px; padding:2px 6px;">閉じる ✕</button>
       </div>
       <div id="detail-content"></div>
@@ -964,6 +965,7 @@
     let tempPinLocation = null; 
     let tempMarker = null;
     let pendingRegistrationType = null;
+    let pendingMoveTarget = null;
 
     let mapStoreMarkers = [];
     let mapAreaMarkers = [];
@@ -1045,6 +1047,9 @@
     }
 
     function closeDetailPanel() {
+      pendingMoveTarget = null;
+      const btn = document.getElementById('detail-move-btn');
+      if (btn) { btn.style.display = 'none'; btn.dataset.type = ''; btn.dataset.id = ''; }
       document.getElementById('detail-area').style.display = 'none';
     }
 
@@ -1352,13 +1357,44 @@
       }).addTo(map);
 
       map.on('click', function(e) {
+        const curMap = getCurrentMap();
+
+        // 詳細ウィンドウの「📍 移動」を押した後は、次の地図タップ／クリック位置へ
+        // 対象ピンを移動する。店舗・エリアの双方に対応する。
+        if (pendingMoveTarget) {
+          if (curMap.isShared) {
+            pendingMoveTarget = null;
+            alert('🔒 共有されたマップのため、ピンの移動はできません。');
+            return;
+          }
+          const target = pendingMoveTarget;
+          pendingMoveTarget = null;
+          if (target.type === 'store') {
+            const store = (curMap.stores || []).find(s => s.id === target.id);
+            if (!store) return;
+            store.lat = e.latlng.lat;
+            store.lng = e.latlng.lng;
+            saveStorage();
+            renderCurrentMap();
+            showStoreDetail(store.id);
+          } else if (target.type === 'area') {
+            const area = (curMap.areas || []).find(a => a.id === target.id);
+            if (!area) return;
+            area.lat = e.latlng.lat;
+            area.lng = e.latlng.lng;
+            saveStorage();
+            renderCurrentMap();
+            showAreaDetail(area.id);
+          }
+          return;
+        }
+
         // 店舗・エリア詳細を開いている間は、地図の空白部分をクリック／タッチしても
         // 詳細ウィンドウを消したり内容を上書きしたりしない。
         // 店舗登録・エリア登録中だけは、従来どおり地図タップで位置を指定できる。
         const detailArea = document.getElementById('detail-area');
         if (detailArea && detailArea.style.display === 'block' && !pendingRegistrationType) return;
 
-        const curMap = getCurrentMap();
         if (curMap.isShared) {
           alert('🔒 共有されたマップのため、ピンの作成はできません。');
           return;
@@ -2266,6 +2302,49 @@
       openAreaRegisterModalPrompt();
     }
 
+    function startPinMoveFromDetail() {
+      const btn = document.getElementById('detail-move-btn');
+      const type = btn ? btn.dataset.type : '';
+      const id = btn ? btn.dataset.id : '';
+      if (type && id) startPinMove(type, id);
+    }
+
+    function setDetailMoveButton(type, id, disabled) {
+      const btn = document.getElementById('detail-move-btn');
+      if (!btn) return;
+      if (disabled) {
+        btn.style.display = 'none';
+        btn.dataset.type = '';
+        btn.dataset.id = '';
+        return;
+      }
+      btn.style.display = 'inline-block';
+      btn.dataset.type = type;
+      btn.dataset.id = id;
+      btn.textContent = '📍 移動';
+    }
+
+    function startPinMove(type, id) {
+      const curMap = getCurrentMap();
+      if (curMap.isShared) {
+        alert('🔒 共有されたマップのため、ピンの移動はできません。');
+        return;
+      }
+      const collection = type === 'store' ? (curMap.stores || []) : (curMap.areas || []);
+      const target = collection.find(item => item.id === id);
+      if (!target) return;
+      pendingMoveTarget = { type, id };
+      const detailContent = document.getElementById('detail-content');
+      if (detailContent) {
+        const label = type === 'store' ? '店舗' : 'エリア';
+        const name = target.name || label;
+        const notice = document.createElement('div');
+        notice.style.cssText = 'margin:0 0 6px; padding:6px 8px; border-radius:6px; background:var(--primary-gradient); color:#fff; font-size:10.5px; font-weight:bold; text-align:center;';
+        notice.textContent = `📍 「${name}」の新しい場所を地図上でタップしてください`;
+        detailContent.prepend(notice);
+      }
+    }
+
     /* エリアピンの詳細情報 */
     function showAreaDetail(areaId) {
       const curMap = getCurrentMap();
@@ -2275,6 +2354,7 @@
       const detailPanel = document.getElementById('detail-area');
       const detailContent = document.getElementById('detail-content');
       detailPanel.style.display = 'block';
+      setDetailMoveButton('area', area.id, curMap.isShared);
 
       const colorBtnsHtml = AREA_COLORS.map(c => `
         <div class="color-btn" style="background:${c.bg}; border: ${area.color === c.id ? '3px solid #000' : '2px solid #fff'};" 
@@ -2298,7 +2378,10 @@
 
         <div style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
           ${actionButtons}
-          <button onclick="closeDetailPanel()" class="btn-secondary" style="font-size:11px; padding:6px; width:100%;">閉じる</button>
+          <div style="display:flex; gap:4px; margin-top:0;">
+            ${curMap.isShared ? '' : `<button onclick="startPinMove('area','${area.id}')" style="flex:1; font-size:11px; padding:6px;">📍 移動</button>`}
+            <button onclick="closeDetailPanel()" class="btn-secondary" style="flex:1; font-size:11px; padding:6px;">閉じる</button>
+          </div>
         </div>
       `;
       map.setView([area.lat, area.lng], 15);
@@ -2431,6 +2514,7 @@
       const detailPanel = document.getElementById('detail-area');
       const detailContent = document.getElementById('detail-content');
       detailPanel.style.display = 'block';
+      setDetailMoveButton('store', store.id, curMap.isShared);
 
       const currentShape = STORE_PIN_SHAPES.find(x => x.id === store.pinShape) || STORE_PIN_SHAPES[0];
       const currentColor = STORE_PIN_COLORS.find(x => x.id === store.pinColor) || STORE_PIN_COLORS[0];
@@ -2477,6 +2561,7 @@
             <h3 style="margin:2px 0 0 0; color:var(--primary-color); font-size:14px;">${store.name}</h3>
           </div>
           <div style="display:flex; gap:4px;">
+            ${curMap.isShared ? '' : `<button onclick="startPinMove('store','${store.id}')" title="地図上をタップして場所を変更" style="font-size:10px; padding:2px 6px;">📍 移動</button>`}
             ${actionButtons}
           </div>
         </div>
