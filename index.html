@@ -582,6 +582,118 @@
     .color-btn { height: 30px; border-radius: 6px; border: 2px solid #fff; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
     .btn-sm-icon { padding: 1px 5px; font-size: 10px; margin-left: 2px; }
+
+    /* ==================== テーマカラー統一レイヤー ====================
+       すべての展開パネル／折りたたみ見出し／パネル内の標準操作を、
+       現在選択中のテーマカラー（--primary-gradient / --panel-bg）に統一する。 */
+    html[data-theme="casual"] {
+      --primary-color: #2e86de;
+      --primary-gradient: linear-gradient(135deg, #54a0ff, #2e86de);
+    }
+
+    .area-move-panel,
+    .map-list-panel,
+    .search-panel,
+    .search-results-panel,
+    .menu-dropdown {
+      color: var(--text-color);
+    }
+
+    /* 左上ボタンから開く子ウィンドウの見出しを共通化 */
+    .area-move-panel .simple-panel-header,
+    .map-list-panel .simple-panel-header,
+    .search-panel .simple-panel-header,
+    .search-results-panel .simple-panel-header {
+      background: var(--primary-gradient) !important;
+      color: #fff !important;
+      border-bottom-color: transparent !important;
+      backdrop-filter: none !important;
+      box-shadow: 0 -12px 0 var(--panel-bg);
+    }
+    .area-move-panel .simple-panel-header *,
+    .map-list-panel .simple-panel-header *,
+    .search-panel .simple-panel-header *,
+    .search-results-panel .simple-panel-header * {
+      color: #fff !important;
+    }
+
+    /* 折りたたみ式の項目見出しもテーマの標準ボタン色＋白文字 */
+    .search-filter-toggle,
+    .area-move-section-title {
+      background: var(--primary-gradient) !important;
+      color: #fff !important;
+      border-color: transparent !important;
+      box-shadow: none !important;
+    }
+    .search-filter-toggle *,
+    .area-move-section-title * {
+      color: #fff !important;
+    }
+
+    /* 子ウィンドウ内の通常ボタンはテーマ色に統一。
+       削除などの意味色は既存の指定を優先する。 */
+    .area-move-panel button:not([style*="dc3545"]):not(.btn-secondary),
+    .map-list-panel button:not([style*="dc3545"]):not(.btn-secondary),
+    .search-panel button:not([style*="dc3545"]):not(.btn-secondary),
+    .search-results-panel button:not([style*="dc3545"]):not(.btn-secondary),
+    .menu-dropdown button:not([style*="dc3545"]):not(.btn-secondary) {
+      background: var(--primary-gradient) !important;
+      color: #fff !important;
+      border-color: transparent !important;
+    }
+
+    /* 子ウィンドウ内の入力・選択欄はテーマのパネル面に合わせる */
+    .area-move-panel .area-move-item,
+    .search-panel .search-filter-section,
+    .search-panel .search-filter-body,
+    .map-list-panel .map-list-status-text,
+    .map-list-panel .map-list-selected-summary,
+    .search-results-panel #search-results-container {
+      color: var(--text-color);
+    }
+    .area-move-panel .area-move-item {
+      background: var(--panel-solid-bg);
+      border-color: var(--border-color);
+    }
+    .area-move-panel .area-move-item:hover {
+      background: color-mix(in srgb, var(--primary-color) 10%, var(--panel-solid-bg));
+    }
+    .search-panel .search-filter-section {
+      background: var(--panel-solid-bg);
+      border-color: var(--border-color);
+    }
+    .search-panel .search-filter-body {
+      background: var(--panel-solid-bg);
+    }
+
+    /* 展開先の文字色もテーマ本文色に固定（白背景で黒／テーマ外色になるのを防止） */
+    .area-move-panel .area-move-scroll,
+    .map-list-panel,
+    .search-panel,
+    .search-results-panel {
+      color: var(--text-color);
+    }
+    .area-move-panel .area-move-scroll *:not(button),
+    .map-list-panel *:not(button),
+    .search-panel *:not(button),
+    .search-results-panel *:not(button) {
+      color: inherit;
+    }
+    .map-list-panel .map-list-store-item,
+    .map-list-panel .map-list-store-item *,
+    .search-panel .search-filter-toggle,
+    .search-panel .search-filter-toggle * {
+      color: #fff !important;
+    }
+
+    /* テーマによって暗色パネルになる場合も、白文字を維持 */
+    html[data-theme="dark"] .area-move-panel .area-move-item,
+    html[data-theme="dark"] .search-panel .search-filter-section,
+    html[data-theme="dark"] .search-panel .search-filter-body {
+      background: var(--panel-solid-bg);
+      color: var(--text-color);
+    }
+
   </style>
 </head>
 <body>
