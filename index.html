@@ -716,14 +716,29 @@
       box-shadow: none !important;
     }
     .search-filter-toggle * { color: #fff !important; }
-    .area-move-panel .area-move-section-title,
+    /* エリア移動：リスト名と展開エリアの背景色を入れ替え
+       リスト名＝テーマ色＋白文字、展開エリア＝パネル色＋本文色 */
+    .area-move-panel .area-move-section-title {
+      background: var(--primary-gradient) !important;
+      color: #fff !important;
+      border-color: transparent !important;
+      border-radius: 7px;
+      margin: 3px 0;
+    }
     .area-move-panel .area-move-section-title * {
       background: transparent !important;
-      color: var(--text-color) !important;
-      border-color: var(--border-color);
+      color: #fff !important;
+      border-color: transparent !important;
     }
     .area-move-panel .area-move-section-title .area-move-arrow {
-      color: var(--primary-color) !important;
+      color: #fff !important;
+    }
+    .area-move-panel .area-move-items {
+      background: var(--panel-solid-bg) !important;
+      color: var(--text-color) !important;
+      border-radius: 0 0 7px 7px;
+      padding-top: 3px;
+      padding-bottom: 7px;
     }
 
     /* 子ウィンドウ内の通常ボタンはテーマ色に統一。
@@ -757,12 +772,12 @@
     .area-move-panel .area-move-item,
     .area-move-panel .area-move-item:hover,
     .area-move-panel .area-move-item:active {
-      background: transparent !important;
+      background: var(--panel-solid-bg) !important;
       color: var(--text-color) !important;
       border-color: color-mix(in srgb, var(--border-color) 70%, transparent) !important;
     }
     .area-move-panel .area-move-section-title:hover {
-      background: color-mix(in srgb, var(--primary-color) 7%, var(--panel-solid-bg)) !important;
+      background: var(--primary-gradient) !important;
     }
     .search-panel .search-filter-section {
       background: var(--panel-solid-bg);
