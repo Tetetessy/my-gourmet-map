@@ -815,6 +815,46 @@
       color: var(--text-color);
     }
 
+    /* エリア移動：リスト名と展開エリアの背景色を明確に分離
+       リスト名＝テーマカラー＋白文字
+       展開エリア＝白／薄色のパネル背景＋本文色
+       （後段の共通ボタンテーマ指定より優先） */
+    .area-move-panel .area-move-section-title,
+    .area-move-panel .area-move-section-title:hover,
+    .area-move-panel .area-move-section-title:active {
+      background: var(--primary-gradient) !important;
+      color: #fff !important;
+      border-color: transparent !important;
+    }
+    .area-move-panel .area-move-section-title *,
+    .area-move-panel .area-move-section-title .area-move-arrow {
+      color: #fff !important;
+    }
+    .area-move-panel .area-move-items,
+    .area-move-panel .area-move-items:hover {
+      background: var(--panel-solid-bg) !important;
+      color: var(--text-color) !important;
+      border: 0 !important;
+    }
+    .area-move-panel .area-move-items .area-move-item,
+    .area-move-panel .area-move-items .area-move-item:hover,
+    .area-move-panel .area-move-items .area-move-item:active,
+    .area-move-panel .area-move-items .area-move-item:focus {
+      background: var(--panel-solid-bg) !important;
+      color: var(--text-color) !important;
+      border-color: color-mix(in srgb, var(--border-color) 70%, transparent) !important;
+      box-shadow: none !important;
+    }
+    .area-move-panel .area-move-items .area-move-item:hover,
+    .area-move-panel .area-move-items .area-move-item:active {
+      background: color-mix(in srgb, var(--primary-color) 8%, var(--panel-solid-bg)) !important;
+    }
+    .area-move-panel .area-move-empty {
+      background: var(--panel-solid-bg) !important;
+      color: var(--text-color) !important;
+    }
+
+
   </style>
 </head>
 <body>
