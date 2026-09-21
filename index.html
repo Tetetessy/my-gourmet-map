@@ -141,16 +141,36 @@
     .panel-scroll-10 { max-height:340px; overflow-y:auto; }
     .modal-content .modal-scroll { max-height:60vh; overflow-y:auto; }
     @media (max-width:700px) {
-      .active-map-list-banner {
-        top:54px;
-        max-width:72vw;
-        font-size:10px;
-        padding:5px 10px;
-      }
+
 
       .list-manage-actions { grid-template-columns:repeat(3, auto); }
       .list-store-actions { grid-template-columns:repeat(2, auto); }
     }
+    /* リスト選択中表示：店舗数・エリア移動の直下。表示自体は目立たせつつマップ操作を遮らない */
+    .active-map-list-banner {
+      position:absolute;
+      top:50px;
+      left:50%;
+      transform:translateX(-50%);
+      z-index:998;
+      max-width:min(76vw, 560px);
+      padding:7px 16px;
+      border-radius:999px;
+      background:var(--primary-gradient);
+      color:#fff !important;
+      border:2px solid rgba(255,255,255,.82);
+      box-shadow:0 4px 14px rgba(0,0,0,.22);
+      font-size:12px;
+      line-height:1.35;
+      font-weight:800;
+      text-align:center;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      pointer-events:none;
+      user-select:none;
+    }
+
     .area-list-row-actions { white-space:nowrap; }
     .scroll-select-10 { max-height: 220px; overflow-y:auto; }
     @media (max-width:700px) {
@@ -198,8 +218,6 @@
     .list-manage-row-main { min-width:0; }
     .list-manage-name { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:1.25; font-size:12px; }
     .list-manage-count { display:block; margin-top:3px; font-size:10.5px; color:#666; font-weight:600; }
-    .store-register-footer { position:sticky; bottom:0; z-index:20; margin:14px -18px -18px; padding:10px 18px 12px; background:var(--panel-bg); border-top:1px solid var(--border-color); box-shadow:0 -5px 14px rgba(0,0,0,.08); }
-    .store-register-footer .btn-group { margin-top:0; }
     .map-list-select-fixed { display:block; width:100%; height:220px; max-height:220px; overflow-y:auto; flex:0 0 auto; }
     .map-list-store-item { display:block; width:100%; text-align:left; margin:4px 0 0; padding:7px 8px; border:1px solid transparent; border-radius:8px; background:var(--primary-gradient) !important; color:#fff !important; cursor:pointer; box-sizing:border-box; box-shadow:0 2px 5px rgba(0,0,0,.12); }
     .map-list-store-item:hover { opacity:.92; transform:translateY(-1px); }
@@ -258,34 +276,21 @@
       .bottom-center-area { width: calc(100vw - 12px); max-width: none; top: auto; left: 6px; right: 6px; bottom: 8px; }
       .detail-panel { max-height: 42vh; overflow-y:auto; box-sizing:border-box; }
       .modal-overlay { align-items:flex-start; padding:10px 6px; overflow-y:auto; box-sizing:border-box; }
-      /* リスト選択中バナー：中央上部に固定し、マップ操作を遮らない */
-    .active-map-list-banner {
-      position:absolute;
-      top:54px;
-      left:50%;
-      transform:translateX(-50%);
-      z-index:999;
-      max-width:min(70vw, 520px);
-      padding:5px 14px;
-      border-radius:999px;
-      background:var(--primary-gradient);
-      color:#fff !important;
-      border:1px solid rgba(255,255,255,.65);
-      box-shadow:0 4px 12px rgba(0,0,0,.18);
-      font-size:11px;
-      font-weight:800;
-      line-height:1.35;
-      text-align:center;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      pointer-events:none;
-    }
+      /* リスト選択中バナー：店舗数／エリア移動の直下。マップ操作は遮らない */
+      .active-map-list-banner {
+        top:50px;
+        max-width:76vw;
+        padding:6px 12px;
+        font-size:10.5px;
+      }
 
     .store-register-title-wrap,
     .area-register-title-wrap {
       min-width:0;
       flex:1;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
     }
     .store-register-title-wrap h3,
     .area-register-title-wrap h3 {
@@ -293,11 +298,20 @@
     }
     .store-register-limit-text,
     .area-register-limit-text {
+      display:block;
+      width:fit-content;
+      max-width:100%;
+      margin-top:4px;
+      padding:3px 7px;
+      border:1px solid var(--border-color);
+      border-radius:6px;
+      background:var(--primary-gradient);
+      color:#fff !important;
+      opacity:1;
       font-size:10px;
       font-weight:700;
-      color:var(--text-color);
-      opacity:.78;
-      line-height:1.25;
+      line-height:1.3;
+      box-sizing:border-box;
     }
 
     .modal-content { width:min(94vw, 520px); max-width:94vw; max-height:calc(100vh - 20px); overflow-y:auto; box-sizing:border-box; margin:auto; }
@@ -532,6 +546,7 @@
       margin-bottom: 0;
       padding-bottom: 6px;
       border-bottom: none;
+      align-items:flex-start;
     }
     .store-register-header-actions {
       display: flex;
@@ -559,7 +574,7 @@
       box-shadow:0 -22px 0 var(--panel-solid-bg);
       opacity:1;
     }
-    .area-register-header-row { margin-bottom:0; padding-bottom:6px; border-bottom:none; }
+    .area-register-header-row { margin-bottom:0; padding-bottom:6px; border-bottom:none; align-items:flex-start; }
     .area-register-header-row h3 { min-width:0; }
     .area-register-close-btn { flex-shrink:0; padding:6px 10px; font-size:10px; }
 
