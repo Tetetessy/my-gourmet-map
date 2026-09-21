@@ -155,7 +155,38 @@
     .map-list-status-text { min-height:30px; line-height:1.45; white-space:normal; margin:0 0 7px !important; padding:7px 9px; border:1px solid rgba(111,78,55,.38); border-left:4px solid #8a6d3b; border-radius:7px; background:rgba(240,214,170,.28); color:var(--text-color); font-size:11px !important; font-weight:700; box-sizing:border-box; }
     .map-list-selected-summary { margin:0 0 6px; padding:6px 9px; border-radius:7px; background:rgba(0,0,0,.045); border:1px solid var(--border-color); font-size:11px; font-weight:700; line-height:1.35; }
     .search-results-count { margin-top:8px; padding:7px 9px; border-top:1px solid var(--border-color); background:rgba(0,0,0,.045); border-radius:6px; text-align:center; font-size:11px; font-weight:700; }
-    .list-manage-modal-content { width:min(92vw, 560px) !important; max-width:560px !important; }
+    .list-manage-modal-content { width:min(94vw, 620px) !important; max-width:620px !important; }
+    .store-list-modal-content { width:min(94vw, 620px) !important; max-width:620px !important; }
+    .registered-store-legend { margin:-2px 0 8px; padding:7px 10px; border:1px solid rgba(111,78,55,.32); border-radius:7px; background:rgba(240,214,170,.24); font-size:11px; font-weight:700; line-height:1.4; }
+    .registered-store-row { display:grid; grid-template-columns:34px minmax(0,1fr) auto; align-items:center; gap:7px; padding:7px 6px; border-bottom:1px solid var(--border-color); }
+    .registered-store-name { font-weight:700; font-size:12px; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .registered-store-meta { margin-top:2px; font-size:10px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-color); opacity:.78; }
+    .registered-store-fav { width:30px; text-align:center; font-size:20px; font-weight:800; }
+    /* リスト展開・絞り込み：青系ヘッダー／白文字をテーマ共通化 */
+    .map-list-panel .simple-panel-header,
+    .search-panel .simple-panel-header {
+      background: var(--primary-gradient);
+      color: #fff;
+      border-bottom-color: transparent;
+    }
+    .map-list-panel .simple-panel-header h4,
+    .search-panel .simple-panel-header h4 {
+      color: #fff;
+    }
+    .map-list-panel .simple-panel-header button,
+    .search-panel .simple-panel-header button {
+      color: #fff;
+    }
+    .search-filter-toggle {
+      background: var(--primary-gradient) !important;
+      color: #fff !important;
+    }
+    .search-filter-toggle .search-filter-arrow {
+      color: #fff;
+      opacity: 1;
+    }
+    .search-panel { height:42vh; max-height:42vh; min-height:320px; overflow-y:scroll; scrollbar-gutter:stable; box-sizing:border-box; }
+    @media (max-width:700px) { .search-panel { height:42vh; min-height:300px; max-height:42vh; overflow-y:scroll; scrollbar-gutter:stable; } }
     .list-manage-row-main { min-width:0; }
     .list-manage-name { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:1.25; font-size:12px; }
     .list-manage-count { display:block; margin-top:3px; font-size:10.5px; color:#666; font-weight:600; }
@@ -508,7 +539,10 @@
       <div class="search-panel" id="search-panel">
         <div class="simple-panel-header">
           <h4 style="margin: 0;">🔍 条件検索</h4>
-          <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
+          <div style="display:flex; gap:4px; align-items:center;">
+            <button onclick="clearSearchFilters()" style="background:#d97706; font-size:10px; padding:1px 5px;">絞り込み解除</button>
+            <button onclick="toggleSearchPanel()" style="background:#6c757d; font-size:10px; padding:1px 5px;">閉じる</button>
+          </div>
         </div>
         <div id="search-panel-body" class="search-panel-body open">
           <div class="search-filter-section search-filter-name-section">
@@ -780,6 +814,17 @@
       const isVisible = panel.style.display === 'block';
       closeSimplePanels();
       if (!isVisible) { panel.style.display = 'block'; filterStores(); }
+    }
+
+    function clearSearchFilters() {
+      const name = document.getElementById('search-name');
+      const fav = document.getElementById('search-fav-only');
+      const ids = ['search-list','search-form','search-genre','search-budget','search-station'];
+      if (name) name.value = '';
+      if (fav) fav.checked = false;
+      ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      document.querySelectorAll('.search-option-check').forEach(cb => { cb.checked = false; });
+      filterStores();
     }
 
     function toggleSearchFilterSection(button) {
@@ -3145,10 +3190,11 @@
       document.getElementById('modal-overlay').style.display = 'flex';
 
       let listHtml = (curMap.stores || []).map((s, index) => `
-        <div style="display:flex; align-items:center; gap:6px; padding:6px; border-bottom:1px solid var(--border-color);">
-          <span style="display:inline-flex; width:24px; justify-content:center; font-size:16px; font-weight:bold; color:${s.isFavorite ? '#111' : '#999'};" title="${s.isFavorite ? 'お気に入り' : '通常'}">${s.isFavorite ? '★' : '☆'}</span>
-          <div style="flex:1; min-width:0; cursor:pointer;" onclick="closeModal(); showStoreDetail('${s.id}');">
-            <b style="font-size:11px;">No.${index + 1}　${s.name}</b> <small>(${s.genre || '-'})</small>
+        <div class="registered-store-row">
+          <span class="registered-store-fav" style="color:${s.isFavorite ? '#111' : '#999'};" title="${s.isFavorite ? 'お気に入り' : '通常'}">${s.isFavorite ? '★' : '☆'}</span>
+          <div style="min-width:0; cursor:pointer;" onclick="closeModal(); showStoreDetail('${s.id}');">
+            <div class="registered-store-name">No.${index + 1}　${s.name}</div>
+            <div class="registered-store-meta">${s.genre || '-'} / ${s.station || '-'}</div>
           </div>
           ${!curMap.isShared ? `
             <div style="display:flex; gap:2px; flex-shrink:0;">
@@ -3162,7 +3208,7 @@
 
       content.innerHTML = `
         <div class="modal-header"><h3>登録店舗一覧 (${curMap.stores.length}件)</h3></div>
-        ${curMap.isShared ? '' : '<div style="font-size:10px;color:#777;margin:-4px 0 7px; padding:4px 6px; border:1px solid var(--border-color); border-radius:6px; background:rgba(0,0,0,.03);">★＝お気に入り　☆＝通常</div>'}
+        ${curMap.isShared ? '' : '<div class="registered-store-legend">★＝お気に入り　☆＝通常</div>'}
         <div style="max-height:60vh; overflow-y:auto; margin-bottom:10px;">${listHtml || '<p style="color:#888;">登録店舗がありません</p>'}</div>
         <button onclick="closeModal()" class="btn-secondary" style="width:100%;">閉じる</button>
       `;
