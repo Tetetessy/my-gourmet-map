@@ -854,6 +854,68 @@
       color: var(--text-color) !important;
     }
 
+    /* v20: 「🚩 エリア移動」ウィンドウ専用。リスト名と展開エリアを明確に分離。
+       リスト名=テーマカラー、展開エリア=通常の白/薄色パネル。
+       area-move-item は button ではなく一覧行として描画し、共通ボタンCSSの影響を受けない。 */
+    .area-move-panel .area-move-section-title,
+    .area-move-panel .area-move-section-title:hover,
+    .area-move-panel .area-move-section-title:active,
+    .area-move-panel .area-move-section-title:focus {
+      background: var(--primary-gradient) !important;
+      color: #fff !important;
+      border: 0 !important;
+      box-shadow: none !important;
+    }
+    .area-move-panel .area-move-section-title *,
+    .area-move-panel .area-move-section-title .area-move-arrow {
+      background: transparent !important;
+      color: #fff !important;
+    }
+    .area-move-panel .area-move-items {
+      background: var(--panel-solid-bg) !important;
+      color: var(--text-color) !important;
+      border: 1px solid var(--border-color) !important;
+      border-top: 0 !important;
+      border-radius: 0 0 7px 7px !important;
+      padding: 3px 8px 7px 22px !important;
+    }
+    .area-move-panel .area-move-items .area-move-item,
+    .area-move-panel .area-move-items .area-move-item:hover,
+    .area-move-panel .area-move-items .area-move-item:active,
+    .area-move-panel .area-move-items .area-move-item:focus {
+      display: block !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      margin: 0 !important;
+      padding: 7px 8px !important;
+      min-height: 30px !important;
+      background: var(--panel-solid-bg) !important;
+      color: var(--text-color) !important;
+      border: 0 !important;
+      border-bottom: 1px solid var(--border-color) !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      font: inherit !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      text-align: left !important;
+      cursor: pointer !important;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .area-move-panel .area-move-items .area-move-item:last-child {
+      border-bottom: 0 !important;
+    }
+    .area-move-panel .area-move-items .area-move-item:hover,
+    .area-move-panel .area-move-items .area-move-item:active,
+    .area-move-panel .area-move-items .area-move-item:focus {
+      background: color-mix(in srgb, var(--primary-color) 8%, var(--panel-solid-bg)) !important;
+      outline: none !important;
+    }
+    .area-move-panel .area-move-empty {
+      background: var(--panel-solid-bg) !important;
+      color: var(--text-color) !important;
+    }
+
 
   </style>
 </head>
@@ -1837,7 +1899,7 @@
               <span class="area-move-arrow" data-area-section-arrow="${sectionId}">▶</span>
             </div>
             <div id="${sectionId}" class="area-move-items">
-              ${assigned.length ? assigned.map((a,i) => `<button type="button" class="area-move-item" onclick="moveToArea('${a.id}')">🚩 No.${i + 1}　${a.name}</button>`).join('') : '<div class="area-move-empty">このリストにはエリアがありません。</div>'}
+              ${assigned.length ? assigned.map((a,i) => `<div class="area-move-item" role="button" tabindex="0" onclick="moveToArea('${a.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();moveToArea('${a.id}')}">🚩 No.${i + 1}　${a.name}</div>`).join('') : '<div class="area-move-empty">このリストにはエリアがありません。</div>'}
             </div>
           </div>`;
       });
@@ -1850,7 +1912,7 @@
             <span class="area-move-arrow" data-area-section-arrow="${allId}">▶</span>
           </div>
           <div id="${allId}" class="area-move-items">
-            ${cur.areas.length ? cur.areas.map((a,i) => `<button type="button" class="area-move-item" onclick="moveToArea('${a.id}')">🚩 No.${i + 1}　${a.name}</button>`).join('') : '<div class="area-move-empty">登録エリアはありません。</div>'}
+            ${cur.areas.length ? cur.areas.map((a,i) => `<div class="area-move-item" role="button" tabindex="0" onclick="moveToArea('${a.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();moveToArea('${a.id}')}">🚩 No.${i + 1}　${a.name}</div>`).join('') : '<div class="area-move-empty">登録エリアはありません。</div>'}
           </div>
         </div>`;
       container.innerHTML = html;
