@@ -115,14 +115,14 @@
     .map-list-panel { position:fixed; top:62px; right:270px; left:auto; width:360px; max-width:calc(100vw - 290px); max-height:34vh; overflow-y:auto; background:var(--panel-bg); border:2px solid var(--border-color); border-radius:var(--radius); padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.18); z-index:1003; display:none; backdrop-filter:blur(8px); box-sizing:border-box; }
     .area-move-wrap { position:relative; }
     .area-move-btn { min-width:150px; max-width:260px; text-align:center; }
-    .area-move-panel { position:fixed; top:48px; left:50%; transform:translateX(-50%); width:280px; max-width:calc(100vw - 20px); background:var(--panel-bg); backdrop-filter:blur(10px); border:1px solid var(--border-color); border-radius:var(--radius); box-shadow:0 8px 24px rgba(0,0,0,.18); padding:8px; display:none; z-index:1004; }
-    .area-move-scroll { max-height:calc(10 * 34px); overflow-y:auto; }
-    .area-move-section { border:1px solid var(--border-color); border-radius:8px; margin-bottom:6px; overflow:hidden; }
+    .area-move-panel { position:fixed; top:140px; left:50%; transform:translateX(-50%); width:390px; max-width:calc(100vw - 20px); max-height:calc(100vh - 160px); overflow:hidden; background:var(--panel-bg); backdrop-filter:blur(10px); border:2px solid var(--border-color); border-radius:var(--radius); box-shadow:0 8px 24px rgba(0,0,0,.22); padding:10px; display:none; z-index:1004; box-sizing:border-box; }
+    .area-move-scroll { max-height:calc(100vh - 225px); overflow-y:auto; padding-right:2px; }
+    .area-move-section { border:1px solid var(--border-color); border-radius:9px; margin-bottom:8px; overflow:hidden; background:var(--panel-solid-bg); }
     .area-move-section:last-child { margin-bottom:0; }
-    .area-move-section-title { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:7px 8px; font-size:11px; font-weight:bold; cursor:pointer; user-select:none; background:rgba(0,0,0,.035); }
-    .area-move-items { display:none; padding:4px; border-top:1px solid var(--border-color); }
-    .area-move-item { display:block; width:100%; text-align:left; margin:2px 0; padding:7px 8px; border:1px solid var(--border-color); border-radius:7px; background:rgba(255,255,255,.5); color:var(--text-color); cursor:pointer; }
-    .area-move-item:hover { background:rgba(0,0,0,.08); }
+    .area-move-section-title { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:9px 10px; font-size:12px; font-weight:800; cursor:pointer; user-select:none; background:var(--primary-gradient); color:#fff !important; }
+    .area-move-items { display:none; padding:8px; border-top:1px solid var(--border-color); background:var(--panel-solid-bg); }
+    .area-move-item { display:block; width:100%; text-align:left; margin:3px 0; padding:8px 10px; border:1px solid var(--border-color); border-radius:7px; background:var(--panel-bg); color:var(--text-color); cursor:pointer; font-size:11px; font-weight:700; box-sizing:border-box; }
+    .area-move-item:hover { background:var(--primary-gradient); color:#fff; border-color:transparent; }
     .area-list-manage-box { border:1px solid var(--border-color); border-radius:8px; padding:8px; margin-bottom:8px; }
     .area-list-assigned { margin-top:5px; padding-left:6px; border-left:2px solid var(--primary-color); }
     .area-list-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; background:rgba(0,0,0,.03); padding:5px 6px; margin-top:3px; border-radius:5px; font-size:10.5px; }
@@ -174,7 +174,7 @@
     .area-list-row-actions { white-space:nowrap; }
     .scroll-select-10 { max-height: 220px; overflow-y:auto; }
     @media (max-width:700px) {
-      .area-move-panel { width:calc(100vw - 20px); left:50%; transform:translateX(-50%); top:48px; }
+      .area-move-panel { width:calc(100vw - 20px); left:50%; transform:translateX(-50%); top:132px; max-height:calc(100vh - 145px); }
       .area-move-btn { min-width:120px; max-width:46vw; }
     }
 
@@ -1707,9 +1707,18 @@
     function toggleAreaMoveSection(sectionId) {
       const el = document.getElementById(sectionId);
       if (!el) return;
-      el.style.display = el.style.display === 'block' ? 'none' : 'block';
-      const arrow = document.querySelector(`[data-area-section-arrow="${sectionId}"]`);
-      if (arrow) arrow.textContent = el.style.display === 'block' ? '▼' : '▶';
+      const willOpen = el.style.display !== 'block';
+      document.querySelectorAll('#area-move-content .area-move-items').forEach(item => {
+        item.style.display = 'none';
+      });
+      document.querySelectorAll('#area-move-content [data-area-section-arrow]').forEach(arrow => {
+        arrow.textContent = '▶';
+      });
+      if (willOpen) {
+        el.style.display = 'block';
+        const arrow = document.querySelector(`[data-area-section-arrow="${sectionId}"]`);
+        if (arrow) arrow.textContent = '▼';
+      }
     }
 
     function updateAreaMovePanel() {
@@ -2629,7 +2638,6 @@
             <h3 style="margin:2px 0 0 0; color:var(--primary-color); font-size:14px;">${store.name}</h3>
           </div>
           <div style="display:flex; gap:4px;">
-            ${curMap.isShared ? '' : `<button onclick="startPinMove('store','${store.id}')" title="地図上をタップして場所を変更" style="font-size:10px; padding:2px 6px;">📍 移動</button>`}
             ${actionButtons}
           </div>
         </div>
