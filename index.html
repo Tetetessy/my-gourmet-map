@@ -456,6 +456,48 @@
     }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+    /* 操作メニュー内の標準ボタンをテーマ共通の背景色に統一 */
+    .menu-dropdown .menu-standard-btn {
+      background: var(--primary-gradient) !important;
+      color: #fff !important;
+    }
+
+    /* 店舗登録モーダル：上部固定ヘッダー＋下部ボタンをヘッダー右側へ */
+    .store-register-modal-content {
+      position: relative;
+      padding-top: 0;
+    }
+    .store-register-sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      margin: 0 -18px 10px;
+      padding: 12px 18px 8px;
+      background: var(--panel-bg);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .store-register-sticky-header .modal-header {
+      margin-bottom: 0;
+      padding-bottom: 6px;
+      border-bottom: none;
+    }
+    .store-register-header-actions {
+      display: flex;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+    .store-register-header-actions button {
+      padding: 6px 9px;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+    .store-register-top-fav {
+      margin-top: 4px;
+    }
+    .store-register-top-fav button {
+      width: 100%;
+    }
+
     .modal-content {
       background: var(--panel-bg); color: var(--text-color); border-radius: calc(var(--radius) * 1.2); padding: 18px; max-width: 460px; width: 92%; max-height: 85vh; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
     }
@@ -1515,18 +1557,26 @@
 
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
+      content.classList.add('store-register-modal-content');
 
       const firstSelectedId = selectedListIds.length > 0 ? selectedListIds[0] : '';
       const additionalSelectedIds = selectedListIds.slice(1);
 
       content.innerHTML = `
-        <div class="modal-header"><h3>${isEdit ? '✏️ 店舗情報の編集' : '📍 店舗情報の登録'}</h3></div>
-        
-        <div class="form-group" style="margin-bottom: 10px;">
-          <button type="button" id="reg-fav-btn" onclick="toggleFavBtn()" style="background:${isFav ? '#ff6b6b' : '#6c757d'}; color:#fff; padding:6px 12px; border:none; border-radius:var(--radius); font-weight:bold; cursor:pointer;">
-            ${isFav ? '⭐ お気に入り（登録済み）' : '☆ お気に入りに追加'}
-          </button>
-          <input type="hidden" id="reg-store-fav" value="${isFav}">
+        <div class="store-register-sticky-header">
+          <div class="modal-header" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <h3>${isEdit ? '✏️ 店舗情報の編集' : '📍 店舗情報の登録'}</h3>
+            <div class="store-register-header-actions">
+              <button type="button" onclick="saveStoreData('${isEdit ? storeToEdit.id : ''}')">${isEdit ? '更新保存' : '登録保存'}</button>
+              <button type="button" onclick="closeModal()" class="btn-secondary">キャンセル</button>
+            </div>
+          </div>
+          <div class="store-register-top-fav">
+            <button type="button" id="reg-fav-btn" onclick="toggleFavBtn()" style="background:${isFav ? '#ff6b6b' : '#6c757d'}; color:#fff; padding:6px 12px; border:none; border-radius:var(--radius); font-weight:bold; cursor:pointer;">
+              ${isFav ? '⭐ お気に入り（登録済み）' : '☆ お気に入りに追加'}
+            </button>
+            <input type="hidden" id="reg-store-fav" value="${isFav}">
+          </div>
         </div>
 
         <div class="form-group">
