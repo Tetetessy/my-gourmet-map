@@ -25,32 +25,32 @@
       --accent-color: #4ecdc4;
       --border-color: #dee2e6;
       --radius: 12px;
-      --font-size: 13px;
+      --font-size: 13px; --panel-solid-bg: #ffffff;
     }
     html[data-theme="casual"] {
       --bg-color: #fff8f0; --panel-bg: rgba(255, 248, 240, 0.95); --text-color: #4a3e3d;
       --primary-color: #ff7e67; --primary-gradient: linear-gradient(135deg, #ff7e67, #ffa885);
-      --accent-color: #a3deba; --border-color: #e8d5c4; --radius: 14px;
+      --accent-color: #a3deba; --border-color: #e8d5c4; --radius: 14px; --panel-solid-bg:#fffdf9;
     }
     html[data-theme="simple"] {
       --bg-color: #ffffff; --panel-bg: rgba(255, 255, 255, 0.98); --text-color: #333333;
       --primary-color: #4a5568; --primary-gradient: linear-gradient(135deg, #4a5568, #718096);
-      --accent-color: #718096; --border-color: #e2e8f0; --radius: 6px;
+      --accent-color: #718096; --border-color: #e2e8f0; --radius: 6px; --panel-solid-bg:#f8fafc;
     }
     html[data-theme="pop"] {
       --bg-color: #fff0f5; --panel-bg: rgba(255, 255, 255, 0.95); --text-color: #1a1a1a;
       --primary-color: #ff007f; --primary-gradient: linear-gradient(135deg, #ff007f, #ff70b5);
-      --accent-color: #00e5ff; --border-color: #ffb6c1; --radius: 16px;
+      --accent-color: #00e5ff; --border-color: #ffb6c1; --radius: 16px; --panel-solid-bg:#fffafd;
     }
     html[data-theme="light"] {
       --bg-color: #f0f4f8; --panel-bg: rgba(255, 255, 255, 0.95); --text-color: #102a43;
       --primary-color: #0066cc; --primary-gradient: linear-gradient(135deg, #0066cc, #3385ff);
-      --accent-color: #38bec9; --border-color: #bccadc; --radius: 8px;
+      --accent-color: #38bec9; --border-color: #bccadc; --radius: 8px; --panel-solid-bg:#ffffff;
     }
     html[data-theme="dark"] {
       --bg-color: #121212; --panel-bg: rgba(30, 30, 30, 0.95); --text-color: #e0e0e0;
       --primary-color: #bb86fc; --primary-gradient: linear-gradient(135deg, #bb86fc, #9955e8);
-      --accent-color: #03dac6; --border-color: #444444; --radius: 8px;
+      --accent-color: #03dac6; --border-color: #444444; --radius: 8px; --panel-solid-bg:#1e1e1e;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -421,7 +421,7 @@
     /* ==================== パネルの固定配置 ==================== */
     .search-panel { position: fixed; top: 154px; left: 10px; z-index: 1002; width: 270px; max-width: calc(100vw - 20px); max-height: 42vh; overflow-y:auto; }
     .search-panel-body { display:block; }
-    .map-list-panel { top: 62px; right: 270px; left:auto; width: 390px; max-width: calc(100vw - 290px); max-height: 60vh; overflow:hidden; display:none; flex-direction:column; box-sizing:border-box; }
+    .map-list-panel { top: 62px; right: 270px; left:auto; width: 390px; max-width: calc(100vw - 290px); height: 60vh; max-height: 60vh; overflow:hidden; display:none; flex-direction:column; box-sizing:border-box; }
     .map-list-status-badge { display:inline-flex; align-items:center; justify-content:center; min-width:92px; padding:3px 7px; border-radius:999px; font-size:10px; font-weight:bold; border:1px solid currentColor; white-space:nowrap; }
     .map-list-status-badge.unselected { color:#dc3545; background:rgba(220,53,69,.09); }
     .map-list-status-badge.selected { color:#198754; background:rgba(25,135,84,.10); }
@@ -457,9 +457,11 @@
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
     /* 操作メニュー内の標準ボタンをテーマ共通の背景色に統一 */
-    .menu-dropdown .menu-standard-btn {
+    .menu-dropdown .menu-standard-btn,
+    .menu-dropdown button[onclick="openAreaListModal()"] {
       background: var(--primary-gradient) !important;
       color: #fff !important;
+      border: none !important;
     }
 
     /* 店舗登録モーダル：上部固定ヘッダー＋下部ボタンをヘッダー右側へ */
@@ -469,12 +471,13 @@
     }
     .store-register-sticky-header {
       position: sticky;
-      top: 0;
+      top: -1px;
       z-index: 20;
-      margin: 0 -18px 10px;
-      padding: 12px 18px 8px;
-      background: var(--panel-bg);
+      margin: -18px -18px 10px;
+      padding: 18px 18px 8px;
+      background: var(--panel-solid-bg);
       border-bottom: 1px solid var(--border-color);
+      opacity: 1;
     }
     .store-register-sticky-header .modal-header {
       margin-bottom: 0;
@@ -497,6 +500,43 @@
     .store-register-top-fav button {
       width: 100%;
     }
+
+    /* エリア登録モーダル：上部固定ヘッダー＋不透明背景 */
+    .area-register-modal-content { position:relative; padding-top:0; }
+    .area-register-sticky-header {
+      position:sticky; top:-1px; z-index:30;
+      margin:-18px -18px 10px; padding:18px 18px 8px;
+      background:var(--panel-solid-bg); border-bottom:1px solid var(--border-color);
+      opacity:1;
+    }
+    .area-register-header-row { margin-bottom:0; padding-bottom:6px; border-bottom:none; }
+    .area-register-header-row h3 { min-width:0; }
+    .area-register-close-btn { flex-shrink:0; padding:6px 10px; font-size:10px; }
+
+    /* 店舗登録・エリア登録の固定ヘッダーは常に不透明 */
+    .store-register-sticky-header { background:var(--panel-solid-bg); opacity:1; }
+
+    /* リスト表示の店舗見出し・店舗数を固定し、店舗一覧だけをスクロール */
+    .map-list-store-summary { display:flex; flex-direction:column; min-height:0; max-height:none; overflow:hidden; }
+    .map-list-store-summary-head { flex:0 0 auto; background:var(--panel-solid-bg); position:sticky; top:0; z-index:15; padding-bottom:6px; }
+    .map-list-store-summary-list { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+
+    /* リスト表示・条件検索・検索結果一覧は各テーマで同じパネル質感に統一 */
+    .map-list-panel, .search-panel, .search-results-panel { background:var(--panel-bg); color:var(--text-color); }
+    .map-list-panel .simple-panel-header,
+    .search-panel .simple-panel-header,
+    .search-results-panel .simple-panel-header {
+      background:var(--primary-gradient); color:#fff; border-bottom-color:transparent;
+      backdrop-filter:none;
+    }
+    .map-list-panel .simple-panel-header h4,
+    .search-panel .simple-panel-header h4,
+    .search-results-panel .simple-panel-header h4 { color:#fff; }
+    .map-list-panel .simple-panel-header button,
+    .search-panel .simple-panel-header button,
+    .search-results-panel .simple-panel-header button { color:#fff; }
+    .map-list-panel .map-list-store-summary-head,
+    .search-panel .search-filter-name-section { background:var(--panel-solid-bg); }
 
     .modal-content {
       background: var(--panel-bg); color: var(--text-color); border-radius: calc(var(--radius) * 1.2); padding: 18px; max-width: 460px; width: 92%; max-height: 85vh; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
@@ -663,7 +703,7 @@
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
       <small>【各種管理】</small>
       <button onclick="openAreaListModal()">🚩 エリア管理</button>
-      <button onclick="openCustomListModal()" class="theme-blue-action">📋 リスト管理</button>
+      <button onclick="openCustomListModal()" class="menu-standard-btn">📋 リスト管理</button>
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
       <small>【マップ管理】</small>
       <button onclick="openMapSwitchModal()">マップ切替・編集</button>
@@ -896,7 +936,7 @@
 
     function closeModal() {
       const modalContent = document.getElementById('modal-content');
-      if (modalContent) modalContent.classList.remove('list-manage-modal-content');
+      if (modalContent) modalContent.classList.remove('list-manage-modal-content', 'store-register-modal-content', 'area-register-modal-content');
       document.getElementById('modal-overlay').style.display = 'none';
     }
 
@@ -1385,14 +1425,18 @@
       if (badge) { badge.textContent = 'リスト選択中'; badge.className = 'map-list-status-badge selected'; }
       container.style.display = 'block';
       container.innerHTML = `
-        <div style="font-size:11px; font-weight:bold; margin-bottom:4px;">📍 リスト内の店舗（タップで移動）</div>
-        <div class="map-list-selected-summary">「${list.name}」：${stores.length}店舗</div>
-        ${stores.length ? stores.map(s => `
-          <button type="button" class="map-list-store-item" onclick="moveToMapListStore('${s.id}')">
-            <b>${s.isFavorite ? '⭐ ' : ''}${s.name}</b>
-            <small>${getStoreForms(s).join(' / ') || '-'} / ${getStoreGenres(s).join(' / ') || '-'}${s.station ? ' / 🚉 ' + s.station : ''}</small>
-          </button>
-        `).join('') : '<div style="font-size:10px; color:#888; text-align:center; padding:8px 0;">このリストには店舗がありません。</div>'}
+        <div class="map-list-store-summary-head">
+          <div style="font-size:11px; font-weight:bold; margin-bottom:4px;">📍 リスト内の店舗（タップで移動）</div>
+          <div class="map-list-selected-summary">「${list.name}」：${stores.length}店舗</div>
+        </div>
+        <div class="map-list-store-summary-list">
+          ${stores.length ? stores.map(s => `
+            <button type="button" class="map-list-store-item" onclick="moveToMapListStore('${s.id}')">
+              <b>${s.isFavorite ? '⭐ ' : ''}${s.name}</b>
+              <small>${getStoreForms(s).join(' / ') || '-'} / ${getStoreGenres(s).join(' / ') || '-'}${s.station ? ' / 🚉 ' + s.station : ''}</small>
+            </button>
+          `).join('') : '<div style="font-size:10px; color:#888; text-align:center; padding:8px 0;">このリストには店舗がありません。</div>'}
+        </div>
       `;
     }
 
@@ -1952,8 +1996,14 @@
         </li>
       `).join('');
 
+      content.classList.add('area-register-modal-content');
       content.innerHTML = `
-        <div class="modal-header"><h3>🚩 エリアの登録・管理</h3></div>
+        <div class="area-register-sticky-header">
+          <div class="modal-header area-register-header-row">
+            <h3>🚩 エリアの登録・管理</h3>
+            <button type="button" onclick="closeModal()" class="btn-secondary area-register-close-btn">閉じる</button>
+          </div>
+        </div>
         <p style="font-size:11px; color:#666; margin-bottom:8px;">登録上限数: ${curMap.areas.length}/100</p>
         
         <div style="margin-bottom:12px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
@@ -1977,7 +2027,6 @@
         <ul style="list-style:none; padding:0; max-height:40vh; overflow-y:auto; margin-top:4px;">
           ${areasHtml.length > 0 ? areasHtml : '<p style="color:#888; font-size:11px;">登録エリアはありません。</p>'}
         </ul>
-        <button onclick="closeModal()" class="btn-secondary" style="width:100%; margin-top:10px;">閉じる</button>
       `;
     }
 
