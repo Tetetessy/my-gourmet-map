@@ -141,6 +141,13 @@
     .panel-scroll-10 { max-height:340px; overflow-y:auto; }
     .modal-content .modal-scroll { max-height:60vh; overflow-y:auto; }
     @media (max-width:700px) {
+      .active-map-list-banner {
+        top:54px;
+        max-width:72vw;
+        font-size:10px;
+        padding:5px 10px;
+      }
+
       .list-manage-actions { grid-template-columns:repeat(3, auto); }
       .list-store-actions { grid-template-columns:repeat(2, auto); }
     }
@@ -251,7 +258,49 @@
       .bottom-center-area { width: calc(100vw - 12px); max-width: none; top: auto; left: 6px; right: 6px; bottom: 8px; }
       .detail-panel { max-height: 42vh; overflow-y:auto; box-sizing:border-box; }
       .modal-overlay { align-items:flex-start; padding:10px 6px; overflow-y:auto; box-sizing:border-box; }
-      .modal-content { width:min(94vw, 520px); max-width:94vw; max-height:calc(100vh - 20px); overflow-y:auto; box-sizing:border-box; margin:auto; }
+      /* リスト選択中バナー：中央上部に固定し、マップ操作を遮らない */
+    .active-map-list-banner {
+      position:absolute;
+      top:54px;
+      left:50%;
+      transform:translateX(-50%);
+      z-index:999;
+      max-width:min(70vw, 520px);
+      padding:5px 14px;
+      border-radius:999px;
+      background:var(--primary-gradient);
+      color:#fff !important;
+      border:1px solid rgba(255,255,255,.65);
+      box-shadow:0 4px 12px rgba(0,0,0,.18);
+      font-size:11px;
+      font-weight:800;
+      line-height:1.35;
+      text-align:center;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      pointer-events:none;
+    }
+
+    .store-register-title-wrap,
+    .area-register-title-wrap {
+      min-width:0;
+      flex:1;
+    }
+    .store-register-title-wrap h3,
+    .area-register-title-wrap h3 {
+      margin-bottom:2px;
+    }
+    .store-register-limit-text,
+    .area-register-limit-text {
+      font-size:10px;
+      font-weight:700;
+      color:var(--text-color);
+      opacity:.78;
+      line-height:1.25;
+    }
+
+    .modal-content { width:min(94vw, 520px); max-width:94vw; max-height:calc(100vh - 20px); overflow-y:auto; box-sizing:border-box; margin:auto; }
       .menu-dropdown { max-width:calc(100vw - 12px); box-sizing:border-box; }
       .search-panel, .search-results-panel { box-sizing:border-box; overflow-y:auto; }
     }
@@ -715,6 +764,9 @@
       </div>
     </div>
   </div>
+
+  <!-- リスト選択状態：マップ操作を邪魔しない非操作バナー -->
+  <div id="active-map-list-banner" class="active-map-list-banner" aria-live="polite" style="display:none;"></div>
 
   <!-- 画面左上：登録ボタン群 ＆ 絞り込みボタン -->
   <div class="top-left">
@@ -1563,16 +1615,19 @@
       const listId = window.activeMapListId || '';
       const list = (cur && cur.lists ? cur.lists : []).find(l => l.id === listId);
       const badge = document.getElementById('map-list-status-badge');
+      const banner = document.getElementById('active-map-list-banner');
       if (!list) {
         container.style.display = 'none';
         container.innerHTML = '';
         if (status) status.textContent = 'リストを選ぶと対象外の店舗ピンがグレーになります。';
         if (badge) { badge.textContent = 'リスト未選択'; badge.className = 'map-list-status-badge unselected'; }
+        if (banner) { banner.style.display = 'none'; banner.textContent = ''; }
         return;
       }
       const stores = (cur.stores || []).filter(s => (s.listIds || []).includes(list.id) || s.listId === list.id);
       if (status) status.textContent = 'リストを選ぶと対象外の店舗ピンがグレーになります。';
       if (badge) { badge.textContent = 'リスト選択中'; badge.className = 'map-list-status-badge selected'; }
+      if (banner) { banner.style.display = 'block'; banner.textContent = `📋 リスト選択中：${list.name}`; }
       container.style.display = 'block';
       container.innerHTML = `
         <div class="map-list-store-summary-head">
@@ -1759,7 +1814,10 @@
       content.innerHTML = `
         <div class="store-register-sticky-header">
           <div class="modal-header" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-            <h3>${isEdit ? '✏️ 店舗情報の編集' : '📍 店舗情報の登録'}</h3>
+            <div class="store-register-title-wrap">
+              <h3>${isEdit ? '✏️ 店舗情報の編集' : '📍 店舗情報の登録'}</h3>
+              <div class="store-register-limit-text">リスト登録上限数: ${curMap.lists ? curMap.lists.length : 0}/50</div>
+            </div>
             <div class="store-register-header-actions">
               <button type="button" onclick="saveStoreData('${isEdit ? storeToEdit.id : ''}')">${isEdit ? '更新保存' : '登録保存'}</button>
               <button type="button" onclick="closeModal()" class="btn-secondary">キャンセル</button>
@@ -1914,12 +1972,6 @@
           <textarea id="reg-store-memo" class="stylish-input" rows="4" placeholder="">${isEdit ? (storeToEdit.memo || '') : ''}</textarea>
         </div>
 
-        <div class="store-register-footer">
-          <div class="btn-group">
-            <button onclick="saveStoreData('${isEdit ? storeToEdit.id : ''}')">${isEdit ? '更新保存' : '登録保存'}</button>
-            <button onclick="closeModal()" class="btn-secondary">キャンセル</button>
-          </div>
-        </div>
       `;
       renderImagePreviews();
     }
@@ -2150,12 +2202,13 @@
       content.innerHTML = `
         <div class="area-register-sticky-header">
           <div class="modal-header area-register-header-row">
-            <h3>🚩 エリアの登録・管理</h3>
+            <div class="area-register-title-wrap">
+              <h3>🚩 エリアの登録・管理</h3>
+              <div class="area-register-limit-text">登録上限数: ${curMap.areas.length}/100</div>
+            </div>
             <button type="button" onclick="closeModal()" class="btn-secondary area-register-close-btn">閉じる</button>
           </div>
         </div>
-        <p style="font-size:11px; color:#666; margin-bottom:8px;">登録上限数: ${curMap.areas.length}/100</p>
-        
         <div style="margin-bottom:12px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
           <label style="font-weight:bold; font-size:11.5px;">新規エリア追加</label>
           <div style="display:flex; gap:4px; margin-top:4px;">
