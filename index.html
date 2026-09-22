@@ -977,6 +977,42 @@
     }
     .map-list-panel .map-list-store-summary-list .map-list-store-item b,
     .map-list-panel .map-list-store-summary-list .map-list-store-item small { color:var(--text-color) !important; }
+
+    /* v22: リスト表示ウィンドウの配色を強制固定。
+       リスト名＝テーマカラー＋白文字／展開店舗＝白・薄色。
+       共通button指定やテーマ別button指定より優先。 */
+    .map-list-panel #map-list-select .map-list-choice,
+    .map-list-panel #map-list-select .map-list-choice:hover,
+    .map-list-panel #map-list-select .map-list-choice:active,
+    .map-list-panel #map-list-select .map-list-choice:focus {
+      background: var(--primary-gradient) !important;
+      background-image: var(--primary-gradient) !important;
+      color: #fff !important;
+      border: 0 !important;
+    }
+    .map-list-panel #map-list-select .map-list-choice *,
+    .map-list-panel #map-list-select .map-list-choice .arrow { color:#fff !important; }
+
+    .map-list-panel #map-list-store-summary .map-list-store-summary-list .map-list-store-item,
+    .map-list-panel #map-list-store-summary .map-list-store-summary-list .map-list-store-item:hover,
+    .map-list-panel #map-list-store-summary .map-list-store-summary-list .map-list-store-item:active,
+    .map-list-panel #map-list-store-summary .map-list-store-summary-list .map-list-store-item:focus {
+      background: var(--panel-solid-bg) !important;
+      background-image: none !important;
+      color: var(--text-color) !important;
+      border: 1px solid var(--border-color) !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+    .map-list-panel #map-list-store-summary .map-list-store-summary-list .map-list-store-item *,
+    .map-list-panel #map-list-store-summary .map-list-store-summary-list .map-list-store-item b,
+    .map-list-panel #map-list-store-summary .map-list-store-summary-list .map-list-store-item small {
+      color: var(--text-color) !important;
+    }
+    .map-list-panel #map-list-store-summary .map-list-store-summary-list .map-list-store-item:hover {
+      background: color-mix(in srgb, var(--primary-color) 8%, var(--panel-solid-bg)) !important;
+      background-image: none !important;
+    }
 </style>
 </head>
 <body>
@@ -1870,7 +1906,7 @@
         </div>
         <div class="map-list-store-summary-list">
           ${stores.length ? stores.map(s => `
-            <button type="button" class="map-list-store-item" onclick="moveToMapListStore('${s.id}')">
+            <button type="button" class="map-list-store-item" style="background:var(--panel-solid-bg) !important;background-image:none !important;color:var(--text-color) !important;border:1px solid var(--border-color) !important;box-shadow:none !important;" onclick="moveToMapListStore('${s.id}')">
               <b>${s.isFavorite ? '⭐ ' : ''}${s.name}</b>
               <small>${getStoreForms(s).join(' / ') || '-'} / ${getStoreGenres(s).join(' / ') || '-'}${s.station ? ' / 🚉 ' + s.station : ''}</small>
             </button>
