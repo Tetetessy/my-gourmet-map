@@ -245,7 +245,29 @@
     .list-manage-row-main { min-width:0; }
     .list-manage-name { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:1.25; font-size:12px; }
     .list-manage-count { display:block; margin-top:3px; font-size:10.5px; color:#666; font-weight:600; }
-    .map-list-select-fixed { display:block; width:100%; height:220px; max-height:220px; overflow-y:auto; flex:0 0 auto; }
+    .map-list-select-fixed { display:flex; flex-direction:column; gap:3px; width:100%; height:220px; max-height:220px; overflow-y:auto; flex:0 0 auto; padding:2px; box-sizing:border-box; }
+    /* リスト表示：リスト名＝テーマカラー＋白文字、選択後の店舗＝白／薄色 */
+    .map-list-choice {
+      display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;
+      min-height:30px; padding:6px 9px; box-sizing:border-box;
+      border:0; border-radius:7px; cursor:pointer; text-align:left;
+      background:var(--primary-gradient) !important; color:#fff !important;
+      font-size:11px; font-weight:700; box-shadow:none;
+    }
+    .map-list-choice:hover, .map-list-choice:focus { filter:brightness(1.04); outline:none; }
+    .map-list-choice.selected { box-shadow:inset 0 0 0 2px rgba(255,255,255,.78); }
+    .map-list-choice .arrow { color:#fff !important; font-size:10px; flex:0 0 auto; }
+    .map-list-store-summary-list .map-list-store-item {
+      background:var(--panel-solid-bg) !important; color:var(--text-color) !important;
+      border:1px solid var(--border-color) !important; box-shadow:none !important;
+      border-radius:7px;
+    }
+    .map-list-store-summary-list .map-list-store-item b,
+    .map-list-store-summary-list .map-list-store-item small { color:var(--text-color) !important; }
+    .map-list-store-summary-list .map-list-store-item:hover,
+    .map-list-store-summary-list .map-list-store-item:active {
+      background:color-mix(in srgb, var(--primary-color) 8%, var(--panel-solid-bg)) !important;
+    }
     .map-list-store-item { display:block; width:100%; text-align:left; margin:4px 0 0; padding:7px 8px; border:1px solid transparent; border-radius:8px; background:var(--primary-gradient) !important; color:#fff !important; cursor:pointer; box-sizing:border-box; box-shadow:0 2px 5px rgba(0,0,0,.12); }
     .map-list-store-item:hover { opacity:.92; transform:translateY(-1px); }
     .map-list-store-item b { font-size:11px; color:#fff !important; }
@@ -854,6 +876,34 @@
       color: var(--text-color) !important;
     }
 
+    /* v21: 「📋 リスト表示」ウィンドウもエリア移動と同じ配色構造に統一。
+       リスト名＝テーマカラー＋白文字／展開される店舗＝白・薄色。
+       共通の「子ウィンドウ内ボタン＝青」指定より優先する。 */
+    .map-list-panel .map-list-choice,
+    .map-list-panel .map-list-choice:hover,
+    .map-list-panel .map-list-choice:active,
+    .map-list-panel .map-list-choice:focus {
+      background:var(--primary-gradient) !important;
+      color:#fff !important;
+      border:0 !important;
+      box-shadow:none;
+    }
+    .map-list-panel .map-list-choice * { color:#fff !important; }
+    .map-list-panel .map-list-store-summary-list .map-list-store-item,
+    .map-list-panel .map-list-store-summary-list .map-list-store-item:hover,
+    .map-list-panel .map-list-store-summary-list .map-list-store-item:active,
+    .map-list-panel .map-list-store-summary-list .map-list-store-item:focus {
+      background:var(--panel-solid-bg) !important;
+      color:var(--text-color) !important;
+      border:1px solid var(--border-color) !important;
+      box-shadow:none !important;
+    }
+    .map-list-panel .map-list-store-summary-list .map-list-store-item *,
+    .map-list-panel .map-list-store-summary-list .map-list-store-item b,
+    .map-list-panel .map-list-store-summary-list .map-list-store-item small {
+      color:var(--text-color) !important;
+    }
+
     /* v20: 「🚩 エリア移動」ウィンドウ専用。リスト名と展開エリアを明確に分離。
        リスト名=テーマカラー、展開エリア=通常の白/薄色パネル。
        area-move-item は button ではなく一覧行として描画し、共通ボタンCSSの影響を受けない。 */
@@ -917,7 +967,17 @@
     }
 
 
-  </style>
+  
+    /* v21 final override: リスト表示の展開店舗は常に白／薄色面 */
+    .map-list-panel .map-list-store-summary-list .map-list-store-item {
+      background:var(--panel-solid-bg) !important;
+      color:var(--text-color) !important;
+      border:1px solid var(--border-color) !important;
+      box-shadow:none !important;
+    }
+    .map-list-panel .map-list-store-summary-list .map-list-store-item b,
+    .map-list-panel .map-list-store-summary-list .map-list-store-item small { color:var(--text-color) !important; }
+</style>
 </head>
 <body>
 
@@ -960,8 +1020,7 @@
           </div>
         </div>
         <div id="map-list-status" class="map-list-status-text">リストを選ぶと対象外の店舗ピンがグレーになります。</div>
-        <select id="map-list-select" class="scroll-select-10 map-list-select-fixed" size="10" onchange="applyMapListView(this.value)" style="width:100%;">
-        </select>
+        <div id="map-list-select" class="map-list-select-fixed" role="listbox" aria-label="リスト一覧"></div>
         <div id="map-list-store-summary" class="map-list-store-summary" style="display:none;"></div>
       </div>
       <button class="action-btn theme-blue-action" onclick="toggleSearchPanel()">🔍 絞り込み</button>
@@ -1759,16 +1818,17 @@
 
     function updateMapListDropdown() {
       const cur = getCurrentMap();
-      const select = document.getElementById('map-list-select');
-      if (!select) return;
+      const container = document.getElementById('map-list-select');
+      if (!container) return;
       const currentVal = window.activeMapListId || '';
-      let html = '';
-      (cur && cur.lists ? cur.lists : []).forEach(l => {
-        html += `<option value="${l.id}">${l.name}</option>`;
-      });
-      select.innerHTML = html;
-      select.value = currentVal;
-      if (select.value !== currentVal) window.activeMapListId = '';
+      const lists = (cur && cur.lists ? cur.lists : []);
+      container.innerHTML = lists.length ? lists.map(l => `
+        <button type="button" class="map-list-choice ${l.id === currentVal ? 'selected' : ''}"
+          role="option" aria-selected="${l.id === currentVal ? 'true' : 'false'}"
+          onclick="applyMapListView('${l.id}')">
+          <span>📋 ${l.name}</span><span class="arrow">${l.id === currentVal ? '▼' : '▶'}</span>
+        </button>
+      `).join('') : '<div style="padding:12px 8px; text-align:center; color:var(--text-color); font-size:11px;">登録されたリストはありません。</div>';
       updateMapListStoreSummary();
     }
 
@@ -1840,6 +1900,7 @@
 
     function applyMapListView(listId) {
       window.activeMapListId = listId || '';
+      updateMapListDropdown();
       updateMapListStoreSummary();
       renderCurrentMap();
     }
