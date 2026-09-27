@@ -1149,6 +1149,7 @@
       <div id="menu-share-status" class="share-status-mini none">⚪ 未発行</div>
       <button onclick="importCodePrompt()">共有コード読み込み</button>
       <button onclick="refreshSharedMap()">🔄 マップ情報を更新</button>
+      <button onclick="openSharedImportModal()">📥 共有データを取り込む</button>
       <hr style="margin:5px 0; border:none; border-top:1px dashed var(--border-color);">
       <small>【テーマ】</small>
       <select onchange="changeTheme(this.value)" style="width:100%;">
@@ -1293,6 +1294,8 @@
     let currentEditingImages = [];
     let cloudDataReady = false;
     let cloudSaveInProgress = Promise.resolve();
+    let sharedMapListeners = {};
+    let shareSyncInProgress = Promise.resolve();
 
     // Firebase Authentication 状態変化リスナー
     // ログイン後はFirebase Realtime Databaseを正本として読み込む
@@ -1312,6 +1315,7 @@
       }
 
       await loadCurrentUserData();
+      startAllSharedMapListeners();
       cloudDataReady = true;
       updateAuthUI();
       if (map) {
@@ -1489,9 +1493,12 @@
         (m.areas || []).forEach(a => { if (!Array.isArray(a.listIds)) a.listIds = []; });
         m.areaLists.forEach(l => { if (!Array.isArray(l.areaIds)) l.areaIds = []; });
       });
+      if (typeof startAllSharedMapListeners === 'function') startAllSharedMapListeners();
     }
 
     // ==================== 共有コード管理 ====================
+    // 共有マップは「共有元を正本」とし、共有先は閲覧専用でリアルタイム同期する。
+    // 共有コード自体には有効期限を設けない。同じコードを複数人で利用できる。
     function getShareSnapshot(mapObj) {
       if (!mapObj) return '';
       return JSON.stringify({
@@ -1506,10 +1513,10 @@
     function getShareCodeStatus(mapObj = getCurrentMap()) {
       if (!mapObj || mapObj.isShared) return { type:'none', text:'共有マップ' };
       const code = mapObj.shareCode || '';
-      const dirty = !!code && (!mapObj.shareSnapshot || getShareSnapshot(mapObj) !== mapObj.shareSnapshot);
-      if (code && dirty) return { type:'dirty', text:'未発行 / 更新あり', code };
-      if (code) return { type:'ready', text:'発行済み / 更新なし', code };
-      return { type:'none', text:'未発行', code:'' };
+      if (!code) return { type:'none', text:'未発行', code:'' };
+      const dirty = !mapObj.shareSnapshot || getShareSnapshot(mapObj) !== mapObj.shareSnapshot;
+      if (dirty) return { type:'syncing', text:'同期中', code };
+      return { type:'ready', text:'発行済み / 更新なし', code };
     }
 
     function updateShareCodeStatus() {
@@ -1518,43 +1525,44 @@
       const menu = document.getElementById('menu-share-status');
       if (menu) {
         menu.className = `share-status-mini ${st.type}`;
-        menu.textContent = st.type === 'ready' ? `🟢 ${st.text}：${st.code}` : st.type === 'dirty' ? '🔴 未発行 / 更新あり' : (cur && cur.isShared ? '🔵 共有マップ' : '⚪ 未発行');
+        menu.textContent = st.type === 'ready'
+          ? `🟢 ${st.text}：${st.code}`
+          : st.type === 'syncing'
+            ? `🟠 ${st.text}：${st.code}`
+            : (cur && cur.isShared ? '🔵 共有マップ' : '⚪ 未発行');
       }
       const box = document.getElementById('share-code-status-box');
       const text = document.getElementById('share-code-status-text');
       const note = box ? box.querySelector('[data-share-status-note]') : null;
-      if (box && text) {
-        box.className = `share-code-status-box ${st.type}`;
-        if (st.type === 'ready') {
-          text.textContent = '現在の状態：🟢 発行済み / 更新なし';
-          if (note) note.innerHTML = `発行済みコード：<b>${st.code}</b>`;
-        } else if (st.type === 'dirty') {
-          text.textContent = '現在の状態：🔴 未発行 / 更新あり';
-          if (note) note.textContent = `発行済みコード「${st.code}」があります。変更内容を反映するには「コードを再発行・更新」を押してください。`;
-        } else {
-          text.textContent = '現在の状態：⚪ 未発行';
-          if (note) note.textContent = 'まだ共有コードは発行されていません。';
-        }
+      if (!box || !text) return;
+      box.className = `share-code-status-box ${st.type}`;
+      if (st.type === 'ready') {
+        text.textContent = '現在の状態：🟢 発行済み / 更新なし';
+        if (note) note.innerHTML = `発行済みコード：<b>${st.code}</b><br>共有先へ自動反映中です。再発行は不要です。`;
+      } else if (st.type === 'syncing') {
+        text.textContent = '現在の状態：🟠 自動同期中';
+        if (note) note.innerHTML = `共有コード：<b>${st.code}</b><br>変更内容を共有先へ自動反映しています。`;
+      } else {
+        text.textContent = '現在の状態：⚪ 未発行';
+        if (note) note.textContent = 'まだ共有コードは発行されていません。';
       }
     }
 
-    function invalidateShareCode(mapObj, reason = 'マップ情報が更新されたため、この共有コードは無効になりました。') {
-      if (!mapObj || mapObj.isShared || !mapObj.shareCode || !currentUser.uid) return Promise.resolve();
-      const code = mapObj.shareCode;
-      const ownerUid = currentUser.uid;
-      const tombstone = {
-        ownerUid,
-        reason,
-        invalidatedAt: firebase.database.ServerValue.TIMESTAMP
+    function getJapaneseFirebaseError(error, fallback = '処理に失敗しました。') {
+      if (!error) return fallback;
+      const code = error.code || '';
+      const message = String(error.message || '');
+      const map = {
+        'PERMISSION_DENIED': 'Firebaseの権限設定により、この操作が拒否されました。Realtime Database の Security Rules を確認してください。',
+        'permission_denied': 'Firebaseの権限設定により、この操作が拒否されました。Realtime Database の Security Rules を確認してください。',
+        'auth/requires-recent-login': 'セキュリティ確認のため、いったんログインし直してからお試しください。',
+        'auth/network-request-failed': '通信に失敗しました。ネットワーク接続を確認してください。',
+        'NETWORK_ERROR': 'Firebaseとの通信に失敗しました。ネットワーク接続を確認してください。'
       };
-      mapObj.shareCode = '';
-      mapObj.shareSnapshot = '';
-      mapObj.shareVersion = (mapObj.shareVersion || 0) + 1;
-      mapObj.shareInvalidated = true;
-      mapObj.shareInvalidationReason = reason;
-      return database.ref(`sharedMaps/${code}`).remove()
-        .then(() => database.ref(`invalidSharedCodes/${code}`).set(tombstone))
-        .catch(e => console.error('共有コード無効化失敗:', e));
+      if (map[code]) return map[code];
+      if (/PERMISSION_DENIED|permission denied/i.test(message)) return map.PERMISSION_DENIED;
+      if (/network/i.test(message)) return map.NETWORK_ERROR;
+      return message || fallback;
     }
 
     async function publishShareCode(mapObj, code) {
@@ -1562,11 +1570,7 @@
       if (!mapObj || !currentUser.uid || !firebaseUser || firebaseUser.uid !== currentUser.uid) {
         throw new Error('共有コードを発行するには、Firebaseにログインしている必要があります。');
       }
-      // ここでは事前の「読み取り」を行わず、そのまま書き込みを試みる。
-      // sharedMaps の公開読み取り権限が無いSecurity Rulesでも、所有者としての書き込みが許可されていれば発行できる。
       const snapshot = getShareSnapshot(mapObj);
-      // 同じコードを何度でも更新可能。読み手（共有相手）は認証不要で読み取れるため、
-      // 同一コードを複数人へ渡して利用できる。書き込みは所有者だけに制限する。
       const version = (mapObj.shareVersion || 0) + 1;
       const payload = {
         ownerUid: currentUser.uid,
@@ -1575,18 +1579,18 @@
         stores: JSON.parse(JSON.stringify(mapObj.stores || [])),
         areas: JSON.parse(JSON.stringify(mapObj.areas || [])),
         lists: JSON.parse(JSON.stringify(mapObj.lists || [])),
+        areaLists: JSON.parse(JSON.stringify(mapObj.areaLists || [])),
         version,
         snapshot,
-        createdAt: firebase.database.ServerValue.TIMESTAMP,
+        createdAt: mapObj.shareCreatedAt || firebase.database.ServerValue.TIMESTAMP,
         updatedAt: firebase.database.ServerValue.TIMESTAMP
       };
       await database.ref(`sharedMaps/${code}`).set(payload);
-      // 無効コードの記録は残っていても、sharedMaps側が存在すれば有効コードを優先して読み込める。
-      // 別ユーザー所有の無効コードを削除しようとして権限エラーになることを防ぐ。
       try { await database.ref(`invalidSharedCodes/${code}`).remove(); } catch (e) { console.warn('無効コード記録の削除はスキップ:', e); }
       mapObj.shareCode = code;
       mapObj.shareSnapshot = snapshot;
       mapObj.shareVersion = version;
+      mapObj.shareCreatedAt = mapObj.shareCreatedAt || Date.now();
       mapObj.shareInvalidated = false;
       mapObj.shareInvalidationReason = '';
       return payload;
@@ -1600,49 +1604,104 @@
       return { status: 'missing', data: null };
     }
 
+    function stopSharedMapListener(mapId) {
+      const listener = sharedMapListeners[mapId];
+      if (!listener) return;
+      try { listener.ref.off('value', listener.handler); } catch (e) { console.warn('共有同期解除警告:', e); }
+      delete sharedMapListeners[mapId];
+    }
+
+    function startSharedMapListener(sharedMap) {
+      if (!sharedMap || !sharedMap.isShared || !sharedMap.sourceShareCode) return;
+      const code = sharedMap.sourceShareCode;
+      if (sharedMapListeners[sharedMap.id]) return;
+      const ref = database.ref(`sharedMaps/${code}`);
+      const handler = (snapshot) => {
+        if (!snapshot.exists()) return;
+        const latest = snapshot.val() || {};
+        const target = maps.find(m => m.id === sharedMap.id);
+        if (!target) return;
+        target.name = `${latest.name || '共有マップ'} (共有)`;
+        target.stores = JSON.parse(JSON.stringify(latest.stores || []));
+        target.areas = JSON.parse(JSON.stringify(latest.areas || []));
+        target.lists = JSON.parse(JSON.stringify(latest.lists || []));
+        target.areaLists = JSON.parse(JSON.stringify(latest.areaLists || []));
+        target.shareVersion = latest.version || target.shareVersion || 1;
+        target.sourceOwnerUid = latest.ownerUid || target.sourceOwnerUid || '';
+        target.shareUpdatedAt = latest.updatedAt || Date.now();
+        target.shareSnapshot = latest.snapshot || getShareSnapshot(latest);
+        try {
+          if (currentUser.uid) {
+            localStorage.setItem(`gourmet_user_maps_${currentUser.uid}`, JSON.stringify(maps));
+            localStorage.setItem(`gourmet_user_map_id_${currentUser.uid}`, currentMapId);
+          }
+        } catch (e) { console.warn('共有マップのローカル保存警告:', e); }
+        if (currentMapId === target.id) {
+          normalizeMapData();
+          if (typeof renderCurrentMap === 'function') renderCurrentMap();
+          updateShareCodeStatus();
+        }
+      };
+      ref.on('value', handler);
+      sharedMapListeners[sharedMap.id] = { ref, handler };
+    }
+
+    function startAllSharedMapListeners() {
+      Object.values(sharedMapListeners).forEach(listener => {
+        try { listener.ref.off('value', listener.handler); } catch (e) {}
+      });
+      sharedMapListeners = {};
+      (maps || []).filter(m => m && m.isShared && m.sourceShareCode).forEach(startSharedMapListener);
+    }
+
+    async function invalidateShareCode(mapObj, reason = '共有コードが変更されたため、このコードは無効になりました。') {
+      if (!mapObj || mapObj.isShared || !mapObj.shareCode || !currentUser.uid) return;
+      const code = mapObj.shareCode;
+      await database.ref(`sharedMaps/${code}`).remove();
+      await database.ref(`invalidSharedCodes/${code}`).set({
+        ownerUid: currentUser.uid, reason, invalidatedAt: firebase.database.ServerValue.TIMESTAMP
+      });
+      mapObj.shareCode = '';
+      mapObj.shareSnapshot = '';
+      mapObj.shareVersion = (mapObj.shareVersion || 0) + 1;
+      mapObj.shareInvalidated = true;
+      mapObj.shareInvalidationReason = reason;
+    }
+
     // Firebaseへの保存。
     // 複数操作が連続しても保存順序が逆転しないよう直列化する。
     function saveStorage(renderAfterSave = true) {
       const curMap = getCurrentMap();
-      // 保存対象のマップ情報が変わった場合だけ共有状態を更新する。
-      // 地図上のクリック・タッチで一時ピンを置くだけではsaveStorage()が呼ばれないため、誤操作では「更新あり」にならない。
       updateShareCodeStatus();
 
-      // 共有コードは、発行後にマップ情報を変更しても自動失効させない。
-      // 所有者が「コード再発行・更新」を押した時点で同じコードの共有データを更新する。
-      // これにより、同じコードを複数人へ渡して継続利用できる。
-
-      // 既存のローカル保存（ゲスト・共有機能用）も維持。
       try {
         if (curMap && !curMap.isShared) {
           sharedStoreDB[curMap.id] = {
-            id: curMap.id,
-            name: curMap.name,
+            id: curMap.id, name: curMap.name,
             stores: JSON.parse(JSON.stringify(curMap.stores || [])),
             areas: JSON.parse(JSON.stringify(curMap.areas || [])),
-            lists: JSON.parse(JSON.stringify(curMap.lists || []))
+            lists: JSON.parse(JSON.stringify(curMap.lists || [])),
+            areaLists: JSON.parse(JSON.stringify(curMap.areaLists || []))
           };
           localStorage.setItem('gourmet_shared_maps', JSON.stringify(sharedStoreDB));
         }
-      } catch (e) {
-        console.warn('localStorage保存警告:', e);
-      }
+      } catch (e) { console.warn('localStorage保存警告:', e); }
 
       if (currentUser.loggedIn && currentUser.uid) {
         const payload = {
-          name: currentUser.name || 'ユーザー',
-          email: currentUser.email || '',
-          maps: JSON.parse(JSON.stringify(maps || [])),
-          currentMapId: currentMapId || ''
+          name: currentUser.name || 'ユーザー', email: currentUser.email || '',
+          maps: JSON.parse(JSON.stringify(maps || [])), currentMapId: currentMapId || ''
         };
+        cloudSaveInProgress = cloudSaveInProgress.catch(() => {}).then(() => database.ref(`users/${currentUser.uid}`).set(payload));
 
-        cloudSaveInProgress = cloudSaveInProgress
-          .catch(() => {})
-          .then(() => database.ref(`users/${currentUser.uid}`).set(payload))
-          .catch((e) => {
-            console.error('Firebaseデータ保存失敗:', e);
-            throw e;
+        if (curMap && !curMap.isShared && curMap.shareCode) {
+          const code = curMap.shareCode;
+          shareSyncInProgress = shareSyncInProgress.catch(() => {}).then(() => publishShareCode(curMap, code)).then(() => {
+            updateShareCodeStatus(); return null;
+          }).catch(e => {
+            console.error('共有マップ自動同期失敗:', e); updateShareCodeStatus(); return null;
           });
+        }
 
         cloudSaveInProgress.then(() => {
           users = JSON.parse(localStorage.getItem('gourmet_users')) || {};
@@ -1651,9 +1710,8 @@
           localStorage.setItem(`gourmet_user_maps_${currentUser.uid}`, JSON.stringify(maps));
           localStorage.setItem(`gourmet_user_map_id_${currentUser.uid}`, currentMapId);
         }).catch(() => {});
-
         if (renderAfterSave && typeof renderCurrentMap === 'function') renderCurrentMap();
-        return cloudSaveInProgress;
+        return Promise.all([cloudSaveInProgress, shareSyncInProgress]);
       }
 
       localStorage.setItem('gourmet_guest_maps', JSON.stringify(maps));
@@ -2694,7 +2752,9 @@
              onclick="changeAreaColor('${area.id}', '${c.id}')" title="${c.label}"></div>
       `).join('');
 
-      const actionButtons = curMap.isShared ? '' : `
+      const actionButtons = curMap.isShared ? `
+        <button onclick="openSharedImportModal()" style="background:#4ecdc4; font-size:11px; padding:6px; width:100%;">📥 共有データを取り込む</button>
+      ` : `
         <button onclick="editAreaNameFromDetail('${area.id}')" style="background:#ff9f43; font-size:11px; padding:6px; width:100%;">✏️ 編集</button>
         <button onclick="deleteArea('${area.id}')" style="background:#dc3545; font-size:11px; padding:6px; width:100%;">削除</button>
       `;
@@ -3123,262 +3183,89 @@
     function exportCode() {
       toggleMenu();
       const curMap = getCurrentMap();
-      if (curMap.isShared) {
-        alert('🔒 共有されたマップのコード変更はできません。');
-        return;
-      }
-      if (!currentUser.loggedIn) {
-        alert('🔐 共有コードを発行するにはログインしてください。\n発行したコードは端末に依存せず、いつでも読み込めるようになります。');
-        return;
-      }
-
+      if (!curMap || curMap.isShared) { alert('🔒 共有されたマップでは共有コードを変更できません。'); return; }
+      if (!currentUser.loggedIn || !auth.currentUser) { alert('🔐 共有コードを発行するにはログインしてください。'); return; }
       const activeCode = curMap.shareCode || '';
       const content = document.getElementById('modal-content');
       document.getElementById('modal-overlay').style.display = 'flex';
       content.innerHTML = `
-        <div class="modal-header">
-          <h3>✨ 共有コードの設定・表示</h3>
-          <span style="cursor:pointer; font-size:16px; opacity:0.6;" onclick="closeModal()">✕</span>
-        </div>
-        <p style="font-size:11.5px; color:#666; margin-bottom:10px; line-height:1.5;">
-          このコードには<strong>時間制限はありません。</strong> 同じコードを複数人で利用できます。<br>
-          店舗・エリア・リスト・マップ名などを変更した場合は、「コードを再発行・更新」を押すと同じコードに最新版が反映されます。
+        <div class="modal-header"><h3>✨ 共有コードの設定・表示</h3><span style="cursor:pointer;font-size:16px;opacity:.6" onclick="closeModal()">✕</span></div>
+        <p style="font-size:11.5px;color:#666;margin-bottom:10px;line-height:1.5;">
+          このコードには<strong>有効期限がありません。</strong>同じコードを複数人へ渡して利用できます。<br>
+          店舗・エリア・リストを登録・編集・削除すると、発行済みコードへ自動反映され、共有先もリアルタイムで更新されます。<br>
+          共有元以外は閲覧のみで、共有データを自分のマップへ取り込む操作だけ可能です。
         </p>
-        <div class="form-group">
-          <label>共有コード (数字＋半角英字混在 6〜20文字)</label>
-          <div class="share-code-row">
-            <input type="text" id="custom-share-code" class="stylish-input" value="${activeCode}" minlength="6" maxlength="20" placeholder="例: gourmet2026">
-            <button type="button" class="copy-code-btn" onclick="copyShareCode()">📋 コピー</button>
-          </div>
-          <div id="share-code-error" class="error-msg"></div>
-          <div id="share-code-success" class="success-msg"></div>
+        <div class="form-group"><label>共有コード（数字＋半角英字 6〜20文字）</label>
+          <div class="share-code-row"><input type="text" id="custom-share-code" class="stylish-input" value="${activeCode}" minlength="6" maxlength="20" placeholder="例: gourmet2026"><button type="button" class="copy-code-btn" onclick="copyShareCode()">📋 コピー</button></div>
+          <div id="share-code-error" class="error-msg"></div><div id="share-code-success" class="success-msg"></div>
         </div>
-        <div id="share-code-status-box" class="share-code-status-box" style="margin:8px 0; padding:8px; border-radius:8px; border:2px solid #aaa;">
-          <div id="share-code-status-text" style="font-size:12px; font-weight:bold;">現在の状態：⚪ 未発行</div>
-          <div data-share-status-note style="font-size:10.5px; margin-top:3px; color:#666;"></div>
+        <div id="share-code-status-box" class="share-code-status-box none" style="margin:8px 0;padding:8px;border-radius:8px;border:2px solid #aaa;">
+          <div id="share-code-status-text" style="font-size:12px;font-weight:bold;">現在の状態：⚪ 未発行</div><div data-share-status-note style="font-size:10.5px;margin-top:3px;color:#666;"></div>
         </div>
-        <div class="btn-group">
-          <button onclick="saveCustomShareCode()">${activeCode ? 'コードを再発行・更新' : '共有コードを発行'}</button>
-          <button onclick="closeModal()" class="btn-secondary">閉じる</button>
-        </div>
-      `;
+        <div class="btn-group"><button onclick="saveCustomShareCode()">${activeCode ? 'コードを再発行・更新' : '共有コードを発行'}</button><button onclick="closeModal()" class="btn-secondary">閉じる</button></div>`;
       updateShareCodeStatus();
     }
 
     async function copyShareCode() {
-      const input = document.getElementById('custom-share-code');
-      const successEl = document.getElementById('share-code-success');
-      const errorEl = document.getElementById('share-code-error');
-      if (!input) return;
-      const code = input.value.trim();
-      if (!code) return;
-      try {
-        if (navigator.clipboard && window.isSecureContext) {
-          await navigator.clipboard.writeText(code);
-        } else {
-          input.focus(); input.select(); document.execCommand('copy');
-          input.setSelectionRange(input.value.length, input.value.length);
-        }
-        if (errorEl) errorEl.style.display = 'none';
-        if (successEl) { successEl.textContent = '✅ 共有コードをコピーしました。'; successEl.style.display = 'block'; }
-      } catch (e) {
-        if (successEl) successEl.style.display = 'none';
-        if (errorEl) { errorEl.textContent = '⚠️ コピーできませんでした。手動でコピーしてください。'; errorEl.style.display = 'block'; }
-      }
-    }
-
-    function getJapaneseFirebaseError(error, fallback = '処理に失敗しました。') {
-      if (!error) return fallback;
-      const code = error.code || '';
-      const message = String(error.message || '');
-      const map = {
-        'PERMISSION_DENIED': 'Firebaseの権限設定により、この操作が拒否されました。Realtime Database の Security Rules で「sharedMaps」と「invalidSharedCodes」の所有者書き込みを許可してください。',
-        'permission_denied': 'Firebaseの権限設定により、この操作が拒否されました。Realtime Database の Security Rules を確認してください。',
-        'auth/requires-recent-login': 'セキュリティ確認のため、いったんログインし直してからお試しください。',
-        'auth/network-request-failed': '通信に失敗しました。ネットワーク接続を確認してください。',
-        'NETWORK_ERROR': 'Firebaseとの通信に失敗しました。ネットワーク接続を確認してください。'
-      };
-      if (map[code]) return map[code];
-      if (/PERMISSION_DENIED|permission denied/i.test(message)) return map.PERMISSION_DENIED;
-      if (/network/i.test(message)) return map.NETWORK_ERROR;
-      return message || fallback;
+      const input=document.getElementById('custom-share-code'), ok=document.getElementById('share-code-success'), err=document.getElementById('share-code-error');
+      if(!input || !input.value.trim())return;
+      try { if(navigator.clipboard&&window.isSecureContext) await navigator.clipboard.writeText(input.value.trim()); else {input.focus();input.select();document.execCommand('copy');input.setSelectionRange(input.value.length,input.value.length);} if(err)err.style.display='none'; if(ok){ok.textContent='✅ 共有コードをコピーしました。';ok.style.display='block';} }
+      catch(e){if(err){err.textContent='⚠️ コピーできませんでした。手動でコピーしてください。';err.style.display='block';}}
     }
 
     async function saveCustomShareCode() {
-      const curMap = getCurrentMap();
-      if (!curMap || curMap.isShared) return;
-      if (!currentUser.loggedIn || !currentUser.uid || !auth.currentUser) {
-        const errorEl = document.getElementById('share-code-error');
-        if (errorEl) { errorEl.textContent = '🔐 共有コードを発行するにはログインしてください。'; errorEl.style.display = 'block'; }
-        return;
-      }
-      const input = document.getElementById('custom-share-code');
-      const errorEl = document.getElementById('share-code-error');
-      const successEl = document.getElementById('share-code-success');
-      if (!input || !errorEl || !successEl) return;
-      const newCode = input.value.trim();
-      errorEl.style.display = 'none';
-      successEl.style.display = 'none';
-
-      if (newCode.length < 6 || newCode.length > 20) {
-        errorEl.textContent = '⚠️ 共有コードは6〜20文字で入力してください。'; errorEl.style.display = 'block'; return;
-      }
-      if (!/^[a-zA-Z0-9]+$/.test(newCode)) {
-        errorEl.textContent = '⚠️ 記号や全角文字は使用できません。半角英字と数字のみ使用してください。'; errorEl.style.display = 'block'; return;
-      }
-      if (!/[a-zA-Z]/.test(newCode) || !/[0-9]/.test(newCode)) {
-        errorEl.textContent = '⚠️ 半角英字と数字の両方を使用してください。'; errorEl.style.display = 'block'; return;
-      }
-
-      try {
-        // ボタン押下直後に状態表示を更新し、発行処理の完了後に「発行済み / 更新なし」へ切り替える。
-        const statusBox = document.getElementById('share-code-status-box');
-        const statusText = document.getElementById('share-code-status-text');
-        const statusNote = statusBox ? statusBox.querySelector('[data-share-status-note]') : null;
-        if (statusBox) statusBox.className = 'share-code-status-box updating';
-        if (statusText) statusText.textContent = '現在の状態：🟠 更新処理中…';
-        if (statusNote) statusNote.textContent = '共有データを最新状態へ更新しています。';
-
-        // コード変更時は旧コードを無効化してから、新コードを発行する。
-        if (curMap.shareCode && curMap.shareCode !== newCode) {
-          const oldCode = curMap.shareCode;
-          try {
-            await database.ref(`sharedMaps/${oldCode}`).remove();
-            await database.ref(`invalidSharedCodes/${oldCode}`).set({
-              ownerUid: currentUser.uid,
-              reason: '共有コードが変更されたため、このコードは無効になりました。',
-              replacedBy: newCode,
-              invalidatedAt: firebase.database.ServerValue.TIMESTAMP
-            });
-          } catch (oldError) {
-            throw new Error('以前の共有コードを無効化できませんでした。FirebaseのSecurity Rulesを確認してください。');
-          }
-          curMap.shareCode = '';
-          curMap.shareSnapshot = '';
+      const curMap=getCurrentMap(), input=document.getElementById('custom-share-code'), err=document.getElementById('share-code-error'), ok=document.getElementById('share-code-success');
+      if(!curMap||curMap.isShared||!input||!err||!ok)return;
+      const newCode=input.value.trim(); err.style.display='none';ok.style.display='none';
+      if(!currentUser.loggedIn||!currentUser.uid||!auth.currentUser){err.textContent='🔐 共有コードを発行するにはログインしてください。';err.style.display='block';return;}
+      if(newCode.length<6||newCode.length>20||!/^[a-zA-Z0-9]+$/.test(newCode)||!/[a-zA-Z]/.test(newCode)||!/[0-9]/.test(newCode)){err.textContent='⚠️ 共有コードは数字と半角英字を組み合わせた6〜20文字です。';err.style.display='block';return;}
+      const statusText=document.getElementById('share-code-status-text'), statusBox=document.getElementById('share-code-status-box'), note=statusBox?statusBox.querySelector('[data-share-status-note]'):null;
+      if(statusText)statusText.textContent='現在の状態：🟠 発行・更新処理中…'; if(note)note.textContent='共有データをFirebaseへ反映しています。';
+      try{
+        if(curMap.shareCode&&curMap.shareCode!==newCode){
+          const oldCode=curMap.shareCode; await database.ref(`sharedMaps/${oldCode}`).remove();
+          await database.ref(`invalidSharedCodes/${oldCode}`).set({ownerUid:currentUser.uid,reason:'共有元で共有コードが変更されたため、このコードは利用できません。',replacedBy:newCode,invalidatedAt:firebase.database.ServerValue.TIMESTAMP});
+          curMap.shareCode='';curMap.shareSnapshot='';
         }
-
-        await publishShareCode(curMap, newCode);
-
-        // 共有データ自体の発行に成功した後、ユーザーデータも保存する。
-        // users 側の保存が失敗しても、発行済みコードそのものはFirebase上に残るため、
-        // 画面には「発行成功＋ユーザーデータ保存警告」として表示する。
-        let userSaveWarning = '';
-        try {
-          await saveStorage(false);
-        } catch (saveError) {
-          console.error('共有コード発行後のユーザーデータ保存失敗:', saveError);
-          userSaveWarning = '（クラウド側のユーザーデータ保存に失敗しました。Firebaseのusersルールを確認してください）';
-          // クラウド保存に失敗しても、この端末では発行状態を保持する。
-          try {
-            users = JSON.parse(localStorage.getItem('gourmet_users')) || {};
-            users[currentUser.uid] = {
-              name: currentUser.name || 'ユーザー', email: currentUser.email || '',
-              maps: JSON.parse(JSON.stringify(maps || [])), currentMapId: currentMapId || ''
-            };
-            localStorage.setItem('gourmet_users', JSON.stringify(users));
-            localStorage.setItem(`gourmet_user_maps_${currentUser.uid}`, JSON.stringify(maps));
-            localStorage.setItem(`gourmet_user_map_id_${currentUser.uid}`, currentMapId || '');
-          } catch (localError) { console.warn('共有コード状態のローカル保存にも失敗:', localError); }
-        }
-
-        successEl.textContent = `🎉 共有コード「${curMap.shareCode}」を更新しました。現在「発行済み・更新なし」です。複数人で同じコードを利用できます。${userSaveWarning}`;
-        successEl.style.display = 'block';
-        errorEl.style.display = 'none';
-        if (statusBox) { statusBox.style.borderColor = '#28a745'; statusBox.style.background = 'rgba(40,167,69,.10)'; }
-        if (statusText) statusText.textContent = '現在の状態：🟢 発行済み / 更新なし';
-        if (statusNote) statusNote.innerHTML = `発行済みコード：<b>${curMap.shareCode}</b>`;
-        input.value = curMap.shareCode;
+        await publishShareCode(curMap,newCode);
+        await saveStorage(false);
+        input.value=curMap.shareCode; ok.textContent=`🎉 共有コード「${curMap.shareCode}」を発行・更新しました。以後の登録・編集・削除は自動共有されます。`;ok.style.display='block';
         updateShareCodeStatus();
-      } catch (e) {
-        console.error('共有コード発行失敗:', e);
-        errorEl.textContent = '⚠️ ' + getJapaneseFirebaseError(e, '共有コードの発行に失敗しました。');
-        errorEl.style.display = 'block';
-        successEl.style.display = 'none';
-      }
+      }catch(e){console.error('共有コード発行失敗:',e);err.textContent='⚠️ '+getJapaneseFirebaseError(e,'共有コードの発行に失敗しました。');err.style.display='block';}
     }
 
-    async function importCodePrompt() {
-      toggleMenu();
-      const code = prompt('読み込む共有コードを入力してください:');
-      if (!code || !code.trim()) return;
-      const trimmed = code.trim();
-      if (trimmed.length < 6 || trimmed.length > 20 || !/[a-zA-Z]/.test(trimmed) || !/[0-9]/.test(trimmed) || !/^[a-zA-Z0-9]+$/.test(trimmed)) {
-        alert('⚠️ 共有コードは「数字と半角英字の組み合わせ（6〜20文字）」です。');
-        return;
-      }
-
-      try {
-        const result = await readSharedCode(trimmed);
-        if (result.status === 'invalid') {
-          alert(`🚫 この共有コードは古いコードのため拒否されました。\n\n⚠️ ${result.data?.reason || '共有元の情報が更新されたため無効になっています。'}\n\n共有元から新しい共有コードを取得してください。`);
-          return;
-        }
-        if (result.status !== 'valid' || !result.data) {
-          // 旧バージョンとの互換用に、この端末のlocalStorageも確認。
-          sharedStoreDB = JSON.parse(localStorage.getItem('gourmet_shared_maps')) || {};
-          const legacy = sharedStoreDB[trimmed];
-          if (!legacy) {
-            alert('⚠️ 指定された共有コードのマップが見つかりませんでした。コードを確認してください。');
-            return;
-          }
-          result.data = legacy;
-        }
-
-        const targetMapData = result.data;
-        const sharedMap = {
-          id: 'shared_' + trimmed,
-          sourceShareCode: trimmed,
-          name: `${targetMapData.name} (共有)`,
-          stores: JSON.parse(JSON.stringify(targetMapData.stores || [])),
-          areas: JSON.parse(JSON.stringify(targetMapData.areas || [])),
-          lists: JSON.parse(JSON.stringify(targetMapData.lists || [])),
-          areaLists: JSON.parse(JSON.stringify(targetMapData.areaLists || [])),
-          isShared: true,
-          shareVersion: targetMapData.version || 1
-        };
-        const existingIndex = maps.findIndex(m => m.isShared && m.sourceShareCode === trimmed);
-        if (existingIndex >= 0) maps[existingIndex] = sharedMap;
-        else maps.push(sharedMap);
-        currentMapId = sharedMap.id;
-        saveStorage();
-        closeDetailPanel(); closeSearchResultsPanel();
-        alert(`🎉 共有コード「${trimmed}」を読み込みました。\n（このコードは時間制限なしで利用できます）`);
-      } catch (e) {
-        console.error('共有コード読み込み失敗:', e);
-        alert('⚠️ 共有コードを読み込めませんでした。Firebaseの接続・Security Rulesを確認してください。');
-      }
+    async function importCodePrompt(){
+      toggleMenu(); const code=prompt('読み込む共有コードを入力してください:'); if(!code||!code.trim())return; const trimmed=code.trim();
+      if(trimmed.length<6||trimmed.length>20||!/[a-zA-Z]/.test(trimmed)||!/[0-9]/.test(trimmed)||!/^[a-zA-Z0-9]+$/.test(trimmed)){alert('⚠️ 共有コードは数字と半角英字を組み合わせた6〜20文字です。');return;}
+      try{const result=await readSharedCode(trimmed); if(result.status==='invalid'){alert(`🚫 この共有コードは古いコードのため拒否されました。\n\n⚠️ ${result.data?.reason||'共有元でコードが変更されました。'}\n\n共有元から現在のコードを取得してください。`);return;} if(result.status!=='valid'||!result.data){alert('⚠️ 指定された共有コードのマップが見つかりませんでした。コードを確認してください。');return;}
+        const d=result.data, sharedMap={id:'shared_'+trimmed,sourceShareCode:trimmed,sourceOwnerUid:d.ownerUid||'',name:`${d.name||'共有マップ'} (共有)`,stores:JSON.parse(JSON.stringify(d.stores||[])),areas:JSON.parse(JSON.stringify(d.areas||[])),lists:JSON.parse(JSON.stringify(d.lists||[])),areaLists:JSON.parse(JSON.stringify(d.areaLists||[])),isShared:true,shareVersion:d.version||1,shareSnapshot:d.snapshot||'',shareUpdatedAt:d.updatedAt||Date.now()};
+        const idx=maps.findIndex(m=>m.isShared&&m.sourceShareCode===trimmed); if(idx>=0)maps[idx]=sharedMap;else maps.push(sharedMap); currentMapId=sharedMap.id; await saveStorage(false); startSharedMapListener(sharedMap); closeDetailPanel();closeSearchResultsPanel();renderCurrentMap(); alert(`🎉 共有マップ「${d.name||'共有マップ'}」を読み込みました。\nこのマップは共有元の更新を自動受信します。`);
+      }catch(e){console.error('共有コード読み込み失敗:',e);alert('⚠️ 共有コードを読み込めませんでした。Firebaseの接続またはSecurity Rulesを確認してください。');}
     }
 
-    async function refreshSharedMap() {
-      toggleMenu();
-      const curMap = getCurrentMap();
-      if (!curMap.isShared || !curMap.sourceShareCode) {
-        alert('ℹ️ 現在のマップは共有マップではありません。');
-        return;
-      }
-      try {
-        const result = await readSharedCode(curMap.sourceShareCode);
-        if (result.status === 'invalid') {
-          alert(`🚫 この共有コードは古いコードのため更新できません。\n\n⚠️ ${result.data?.reason || '共有元の情報が更新されたため無効になっています。'}\n\n共有元から新しいコードを取得してください。`);
-          return;
-        }
-        if (result.status !== 'valid' || !result.data) {
-          alert('⚠️ 共有コードのデータが見つかりません。');
-          return;
-        }
-        const latestData = result.data;
-        curMap.name = `${latestData.name} (共有)`;
-        curMap.stores = JSON.parse(JSON.stringify(latestData.stores || []));
-        curMap.areas = JSON.parse(JSON.stringify(latestData.areas || []));
-        curMap.lists = JSON.parse(JSON.stringify(latestData.lists || []));
-        curMap.shareVersion = latestData.version || curMap.shareVersion;
-        saveStorage();
-        closeDetailPanel(); closeSearchResultsPanel();
-        alert('🔄 共有元の最新データに更新しました。');
-      } catch (e) {
-        console.error(e);
-        alert('⚠️ 共有マップの更新に失敗しました。');
-      }
+    async function refreshSharedMap(){
+      toggleMenu(); const curMap=getCurrentMap(); if(!curMap||!curMap.isShared||!curMap.sourceShareCode){alert('ℹ️ 現在のマップは共有マップではありません。');return;}
+      try{const result=await readSharedCode(curMap.sourceShareCode); if(result.status==='invalid'){alert(`🚫 この共有コードは古いコードのため拒否されました。\n\n⚠️ ${result.data?.reason||'共有元でコードが変更されました。'}`);return;} if(result.status!=='valid'||!result.data){alert('⚠️ 共有データが見つかりません。');return;} const d=result.data; curMap.name=`${d.name||'共有マップ'} (共有)`;curMap.stores=JSON.parse(JSON.stringify(d.stores||[]));curMap.areas=JSON.parse(JSON.stringify(d.areas||[]));curMap.lists=JSON.parse(JSON.stringify(d.lists||[]));curMap.areaLists=JSON.parse(JSON.stringify(d.areaLists||[]));curMap.shareVersion=d.version||curMap.shareVersion;curMap.shareSnapshot=d.snapshot||curMap.shareSnapshot;curMap.shareUpdatedAt=d.updatedAt||Date.now(); await saveStorage(false);startSharedMapListener(curMap);renderCurrentMap();alert('🔄 共有元の最新データを取得しました。通常は自動同期されるため、この操作は手動確認用です。');}catch(e){console.error(e);alert('⚠️ 共有マップの更新に失敗しました。');}
+    }
+
+    // ==================== 共有データの一部取り込み ====================
+    function openSharedImportModal(){
+      const curMap=getCurrentMap(); if(!curMap||!curMap.isShared){alert('共有マップを選択しているときに利用できます。');return;} toggleMenu(); const content=document.getElementById('modal-content'); document.getElementById('modal-overlay').style.display='flex';
+      const stores=curMap.stores||[],areas=curMap.areas||[],lists=curMap.lists||[],areaLists=curMap.areaLists||[];
+      content.innerHTML=`<div class="modal-header"><h3>📥 共有データを自分のマップへ取り込む</h3></div><p style="font-size:11px;color:#666;line-height:1.5;">共有元のデータは編集できません。必要な店舗・エリア・リストだけ選択して、自分のマップへコピーできます。複数選択可能です。</p><div style="max-height:58vh;overflow-y:auto;"><div style="font-weight:bold;margin:6px 0 3px;">🍽 店舗</div><div>${stores.map(s=>`<label style="display:flex;gap:6px;align-items:center;font-size:11px;padding:3px 0;"><input type="checkbox" class="shared-import-store" value="${s.id}"><span>${s.name||'名称未設定'}</span></label>`).join('')||'<span style="color:#888;font-size:10px;">店舗なし</span>'}</div><div style="font-weight:bold;margin:10px 0 3px;">🚩 エリア</div><div>${areas.map(a=>`<label style="display:flex;gap:6px;align-items:center;font-size:11px;padding:3px 0;"><input type="checkbox" class="shared-import-area" value="${a.id}"><span>${a.name||'名称未設定'}</span></label>`).join('')||'<span style="color:#888;font-size:10px;">エリアなし</span>'}</div><div style="font-weight:bold;margin:10px 0 3px;">📋 リスト</div><div>${lists.map(l=>`<label style="display:flex;gap:6px;align-items:center;font-size:11px;padding:3px 0;"><input type="checkbox" class="shared-import-list" value="${l.id}"><span>${l.name||'名称未設定'}</span></label>`).join('')||'<span style="color:#888;font-size:10px;">リストなし</span>'}</div><div style="font-weight:bold;margin:10px 0 3px;">🚩 エリアリスト</div><div>${areaLists.map(l=>`<label style="display:flex;gap:6px;align-items:center;font-size:11px;padding:3px 0;"><input type="checkbox" class="shared-import-area-list" value="${l.id}"><span>${l.name||'名称未設定'}</span></label>`).join('')||'<span style="color:#888;font-size:10px;">エリアリストなし</span>'}</div></div><div class="btn-group"><button onclick="importSelectedSharedData()">📥 選択したデータを取り込む</button><button onclick="closeModal()" class="btn-secondary">閉じる</button></div>`;
+    }
+
+    async function importSelectedSharedData(){
+      const sharedMap=getCurrentMap(); if(!sharedMap||!sharedMap.isShared)return; const storeIds=Array.from(document.querySelectorAll('.shared-import-store:checked')).map(x=>x.value),areaIds=Array.from(document.querySelectorAll('.shared-import-area:checked')).map(x=>x.value),listIds=Array.from(document.querySelectorAll('.shared-import-list:checked')).map(x=>x.value),areaListIds=Array.from(document.querySelectorAll('.shared-import-area-list:checked')).map(x=>x.value); if(!storeIds.length&&!areaIds.length&&!listIds.length&&!areaListIds.length){alert('取り込むデータを1つ以上選択してください。');return;}
+      const targets=maps.filter(m=>!m.isShared); if(!targets.length){alert('取り込み先の自分のマップがありません。先に新規マップを作成してください。');return;} const target=targets.find(m=>m.id===currentMapId)||targets[0]; target.stores=target.stores||[];target.areas=target.areas||[];target.lists=target.lists||[];target.areaLists=target.areaLists||[];
+      const selectedStores=(sharedMap.stores||[]).filter(s=>storeIds.includes(s.id)),selectedAreas=(sharedMap.areas||[]).filter(a=>areaIds.includes(a.id)),selectedLists=(sharedMap.lists||[]).filter(l=>listIds.includes(l.id)),selectedAreaLists=(sharedMap.areaLists||[]).filter(l=>areaListIds.includes(l.id));
+      const storeSet=new Map(selectedStores.map(s=>[s.id,s])); selectedLists.forEach(l=>(sharedMap.stores||[]).filter(s=>(s.listIds||[]).includes(l.id)||s.listId===l.id).forEach(s=>storeSet.set(s.id,s))); const areaSet=new Map(selectedAreas.map(a=>[a.id,a])); selectedLists.forEach(l=>(sharedMap.areas||[]).filter(a=>(l.areaIds||[]).includes(a.id)).forEach(a=>areaSet.set(a.id,a)));
+      const storeIdMap={},areaIdMap={}; let storeAdded=0,areaAdded=0,listAdded=0;
+      storeSet.forEach(source=>{if(target.stores.length>=200)return;const exists=target.stores.find(s=>s.name===source.name&&Number(s.lat)===Number(source.lat)&&Number(s.lng)===Number(source.lng));if(exists){storeIdMap[source.id]=exists.id;return;}const copy=JSON.parse(JSON.stringify(source));copy.id='str_'+Date.now()+'_'+Math.floor(Math.random()*100000);storeIdMap[source.id]=copy.id;target.stores.push(copy);storeAdded++;});
+      areaSet.forEach(source=>{if(target.areas.length>=100)return;const exists=target.areas.find(a=>a.name===source.name&&Number(a.lat)===Number(source.lat)&&Number(a.lng)===Number(source.lng));if(exists){areaIdMap[source.id]=exists.id;return;}const copy=JSON.parse(JSON.stringify(source));copy.id='area_'+Date.now()+'_'+Math.floor(Math.random()*100000);copy.listIds=[];areaIdMap[source.id]=copy.id;target.areas.push(copy);areaAdded++;});
+      selectedLists.forEach(source=>{const exists=target.lists.find(l=>l.name===source.name);if(exists){(target.stores||[]).filter(s=>Object.values(storeIdMap).includes(s.id)).forEach(s=>{s.listIds=s.listIds||[];if(!s.listIds.includes(exists.id))s.listIds.push(exists.id);});return;}if(target.lists.length>=50)return;const newList={id:'lst_'+Date.now()+'_'+Math.floor(Math.random()*100000),name:source.name,areaIds:[]};target.lists.push(newList);listAdded++;(target.stores||[]).filter(s=>Object.values(storeIdMap).includes(s.id)).forEach(s=>{s.listIds=s.listIds||[];if(!s.listIds.includes(newList.id))s.listIds.push(newList.id);});(source.areaIds||[]).map(id=>areaIdMap[id]).filter(Boolean).forEach(id=>newList.areaIds.push(id));});
+      selectedAreaLists.forEach(source=>{target.areaLists=target.areaLists||[];if(target.areaLists.length>=50)return;const exists=target.areaLists.find(l=>l.name===source.name);if(exists)return;const copy=JSON.parse(JSON.stringify(source));copy.id='alst_'+Date.now()+'_'+Math.floor(Math.random()*100000);copy.areaIds=(source.areaIds||[]).map(id=>areaIdMap[id]).filter(Boolean);target.areaLists.push(copy);});
+      currentMapId=target.id; await saveStorage(); closeModal(); alert(`📥 取り込み完了\n店舗：${storeAdded}件\nエリア：${areaAdded}件\nリスト：${listAdded}件\nエリアリスト：${selectedAreaLists.length}件\n\n取り込み先：${target.name}`);
     }
 
     function openMapSwitchModal() {
@@ -3455,6 +3342,8 @@
     }
 
     function deleteMap(mapId) {
+      const deleteTarget = maps.find(m => m.id === mapId);
+      if (deleteTarget && deleteTarget.isShared) stopSharedMapListener(deleteTarget.id);
       if (maps.length <= 1) {
         alert('⚠️ マップは最低1つ必要なため削除できません。');
         return;
